@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
 Note (note-gui) - Local Thought Journal
-Dynamic Theming, Fluid UI, Plain-JSON Storage.
+Dynamic Theming, Fluid UI. Data encrypted with a machine-specific key.
 """
 import sys
+import os
 import json
+import hashlib
+import base64
 from datetime import datetime, date
 from pathlib import Path
 from PyQt5.QtWidgets import (
@@ -16,8 +19,49 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
 from PyQt5.QtCore import Qt, QDate, QTimer
 
-DATA_PATH  = Path.home() / ".local" / "share" / "note_data.json"
+DATA_PATH   = Path.home() / ".local" / "share" / ".note_data"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MACHINE-KEY CRYPTO — no password, no prompt
+# Key is derived from machine-id + a fixed app secret.
+# File is opaque binary; only this app on this machine can read it.
+# ─────────────────────────────────────────────────────────────────────────────
+_APP_SECRET = b"note-gui::baanbhaba::v1::xK9#mP2@"
+
+def _machine_key() -> bytes:
+    """Derive a stable 32-byte key from machine-id + app secret. Instant, no PBKDF2."""
+    machine_id = b"unknown"
+    for mid_path in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+        try:
+            machine_id = Path(mid_path).read_text().strip().encode()
+            break
+        except Exception:
+            pass
+    return hashlib.sha256(_APP_SECRET + machine_id).digest()
+
+def _keystream(key: bytes, length: int) -> bytes:
+    """32-byte block keystream — fast, no per-byte SHA256."""
+    blocks = (length + 31) // 32
+    ks = bytearray()
+    for i in range(blocks):
+        ks.extend(hashlib.sha256(key + i.to_bytes(4, "big")).digest())
+    return bytes(ks[:length])
+
+def encrypt_data(plain: str) -> bytes:
+    key  = _machine_key()
+    salt = os.urandom(16)
+    ks   = _keystream(hashlib.sha256(key + salt).digest(), len(plain.encode()))
+    enc  = bytes(a ^ b for a, b in zip(plain.encode(), ks))
+    return salt + enc           # raw bytes: 16-byte salt + ciphertext
+
+def decrypt_data(raw: bytes) -> str:
+    key  = _machine_key()
+    salt = raw[:16]
+    enc  = raw[16:]
+    ks   = _keystream(hashlib.sha256(key + salt).digest(), len(enc))
+    return bytes(a ^ b for a, b in zip(enc, ks)).decode()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -450,8 +494,8 @@ class NoteApp(QMainWindow):
     def save_vault(self):
         try:
             DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-            with open(DATA_PATH, "w") as f:
-                json.dump(self.entries, f, indent=2)
+            raw = encrypt_data(json.dumps(self.entries))
+            DATA_PATH.write_bytes(raw)
         except Exception as e:
             print("Save error:", e)
 
@@ -637,12 +681,14 @@ class NoteApp(QMainWindow):
         self.stack.setCurrentIndex(0)
 
     def load_entries(self):
-        """Load plain JSON entries from disk on startup."""
+        """Load encrypted binary entries from disk on startup."""
         if DATA_PATH.exists():
             try:
-                with open(DATA_PATH) as f:
-                    self.entries = json.load(f)
-            except Exception:
+                raw = DATA_PATH.read_bytes()
+                decrypted = decrypt_data(raw)
+                self.entries = json.loads(decrypted)
+            except Exception as e:
+                print("Load error:", e)
                 self.entries = []
         if not self.entries:
             self.entries = [{
