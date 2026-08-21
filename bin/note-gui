@@ -46,28 +46,31 @@ def save_config(cfg: dict):
 def derive_key(pin: str, salt: bytes) -> bytes:
     return hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 100000)
 
+def _keystream(key: bytes, length: int) -> bytes:
+    """Generate keystream in 32-byte blocks — 32× faster than per-byte SHA256."""
+    blocks = (length + 31) // 32
+    stream = bytearray()
+    for i in range(blocks):
+        stream.extend(hashlib.sha256(key + i.to_bytes(4, 'big')).digest())
+    return bytes(stream[:length])
+
 def encrypt_string(plain: str, pin: str) -> dict:
     salt = os.urandom(16)
-    key = derive_key(pin, salt)
-    plain_bytes = plain.encode('utf-8')
-    encrypted = bytearray()
-    for i, b in enumerate(plain_bytes):
-        k = hashlib.sha256(key + i.to_bytes(4, 'big')).digest()[0]
-        encrypted.append(b ^ k)
+    key  = derive_key(pin, salt)
+    pb   = plain.encode('utf-8')
+    ks   = _keystream(key, len(pb))
+    enc  = bytes(a ^ b for a, b in zip(pb, ks))
     return {
         "salt": base64.b64encode(salt).decode('ascii'),
-        "data": base64.b64encode(bytes(encrypted)).decode('ascii')
+        "data": base64.b64encode(enc).decode('ascii')
     }
 
 def decrypt_string(payload: dict, pin: str) -> str:
-    salt = base64.b64decode(payload["salt"])
-    key = derive_key(pin, salt)
-    cipher_bytes = base64.b64decode(payload["data"])
-    decrypted = bytearray()
-    for i, b in enumerate(cipher_bytes):
-        k = hashlib.sha256(key + i.to_bytes(4, 'big')).digest()[0]
-        decrypted.append(b ^ k)
-    return decrypted.decode('utf-8')
+    salt   = base64.b64decode(payload["salt"])
+    key    = derive_key(pin, salt)
+    cipher = base64.b64decode(payload["data"])
+    ks     = _keystream(key, len(cipher))
+    return bytes(a ^ b for a, b in zip(cipher, ks)).decode('utf-8')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 13 PRODUCTION-GRADE PALETTES — precision OKLCH/Tailwind-calibrated
@@ -443,6 +446,7 @@ class NoteApp(QMainWindow):
         self.active_id = None
         self.is_zen = False
         self.active_date_str = date.today().isoformat()
+        self._entry_index = {}   # id → entry, rebuilt on vault load
         
         self.config = load_config()
         self.current_theme = self.config.get("theme", "Void (Dark)")
@@ -451,6 +455,12 @@ class NoteApp(QMainWindow):
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
+
+        # Debounced autosave — only writes to disk 1.5s after last keystroke
+        self._save_timer = QTimer(self)
+        self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(1500)
+        self._save_timer.timeout.connect(self.save_vault)
 
         self.init_lock_screen()
         self.init_main_workspace()
@@ -568,17 +578,9 @@ class NoteApp(QMainWindow):
         anim.start()
         self._shake_anim = anim
 
-    # Fluid Cross-Fade Transition
+    # View transition — instant stack switch (no compositing overhead)
     def animate_view_transition(self, target_index):
-        opacity_effect = QGraphicsOpacityEffect(self.stack)
-        self.stack.setGraphicsEffect(opacity_effect)
-        self.anim = QPropertyAnimation(opacity_effect, b"opacity")
-        self.anim.setDuration(180)
-        self.anim.setStartValue(0.2)
-        self.anim.setEndValue(1.0)
-        self.anim.setEasingCurve(QEasingCurve.OutCubic)
         self.stack.setCurrentIndex(target_index)
-        self.anim.start()
 
     def handle_auth(self):
         pin = self.pin_input.text().strip()
@@ -887,14 +889,21 @@ class NoteApp(QMainWindow):
 
     def load_workspace(self):
         self.animate_view_transition(1)
+        self._rebuild_entry_index()
         self.refresh_entries_list()
         today = date.today().isoformat()
+        today_entry = self._entry_index.get(today)  # not found by date — use list
         today_entry = next((e for e in self.entries if e["date"] == today), None)
         if today_entry:
             self.load_entry(today_entry["id"])
         elif self.entries:
             self.load_entry(self.entries[0]["id"])
         self.update_calendar_highlights()
+
+    def _rebuild_entry_index(self):
+        """O(1) lookup dict: entry_id → entry dict."""
+        self._entry_index = {e["id"]: e for e in self.entries}
+
 
     def update_calendar_highlights(self):
         meta = THEME_META.get(self.current_theme, THEME_META["Void (Dark)"])
@@ -962,15 +971,32 @@ class NoteApp(QMainWindow):
             "mood": "focused"
         }
         self.entries.insert(0, new_e)
+        self._entry_index[new_e["id"]] = new_e   # update index immediately
         self.save_vault()
         self.refresh_entries_list(filter_date=d_str)
         self.load_entry(new_e["id"])
         self.update_calendar_highlights()
         self.title_edit.setFocus()
 
+    def delete_entry(self):
+        if not self.active_id:
+            return
+        self._entry_index.pop(self.active_id, None)
+        self.entries = [e for e in self.entries if e["id"] != self.active_id]
+        self.save_vault()
+        self.refresh_entries_list()
+        self.update_calendar_highlights()
+        if self.entries:
+            self.load_entry(self.entries[0]["id"])
+        else:
+            self.title_edit.clear()
+            self.tags_edit.clear()
+            self.content_edit.clear()
+            self.active_id = None
+
     def load_entry(self, entry_id):
         self.active_id = entry_id
-        entry = next((e for e in self.entries if e["id"] == entry_id), None)
+        entry = self._entry_index.get(entry_id)
         if entry:
             self.title_edit.blockSignals(True)
             self.tags_edit.blockSignals(True)
@@ -989,13 +1015,14 @@ class NoteApp(QMainWindow):
     def on_content_modified(self):
         if not self.active_id:
             return
-        entry = next((e for e in self.entries if e["id"] == self.active_id), None)
+        entry = self._entry_index.get(self.active_id)
         if entry:
-            entry["title"] = self.title_edit.text()
-            entry["tags"] = self.tags_edit.text()
+            entry["title"]   = self.title_edit.text()
+            entry["tags"]    = self.tags_edit.text()
             entry["content"] = self.content_edit.toPlainText()
             self.update_word_count(entry["content"])
-            self.save_vault()
+            # Debounce: reset the 1.5s timer on every keystroke
+            self._save_timer.start()
 
     def update_word_count(self, text):
         words = len(text.strip().split()) if text.strip() else 0
@@ -1015,20 +1042,6 @@ class NoteApp(QMainWindow):
                     f.write(f"*Date: {entry.get('date')} {entry.get('time')} | Tags: {entry.get('tags', '')}*\n\n")
                     f.write(entry.get("content", ""))
 
-    def delete_entry(self):
-        if not self.active_id:
-            return
-        self.entries = [e for e in self.entries if e["id"] != self.active_id]
-        self.save_vault()
-        self.refresh_entries_list()
-        self.update_calendar_highlights()
-        if self.entries:
-            self.load_entry(self.entries[0]["id"])
-        else:
-            self.title_edit.clear()
-            self.tags_edit.clear()
-            self.content_edit.clear()
-            self.active_id = None
 
     def toggle_zen(self):
         self.is_zen = not self.is_zen
