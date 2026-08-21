@@ -1,5 +1,5 @@
 /* -----------------------------------------------------
-   COLOR BLOCK THEME - Waybar (Muted)
+   COLOR BLOCK THEME - Waybar (Muted Clean Light)
    ----------------------------------------------------- */
 
 * {
@@ -12,14 +12,14 @@
 }
 
 window#waybar {
-    background: rgba( 1, 110, 110, 0.92);
+    background: rgba(240, 235, 227, 0.94);
     color: #2d2d2d;
-    border-bottom: 0px solid #c4a35a;
+    border-bottom: 2px solid #a89ab5;
 }
 
 #workspaces button {
     padding: 0 12px;
-    color: #2d2d2d;
+    color: #666666;
     background: transparent;
     border-radius: 4px;
     transition: all 0.3s ease;
@@ -30,6 +30,7 @@ window#waybar {
     color: #f0ebe3;
     border-radius: 4px;
     box-shadow: 0 0 12px rgba(196, 163, 90, 0.4);
+    font-weight: bold;
 }
 
 #workspaces button:hover {
@@ -40,10 +41,15 @@ window#waybar {
 #clock {
     font-weight: bold;
     color: #2d2d2d;
-    background: rgba(139, 139, 90, 0.2);
+    background: rgba(196, 163, 90, 0.2);
     padding: 0 16px;
     border-radius: 4px;
-    border: 1px solid rgba(139, 139, 90, 0.3);
+    border: 1px solid rgba(196, 163, 90, 0.3);
+}
+
+#clock:hover {
+    background: #a89ab5;
+    color: #ffffff;
 }
 
 #custom-clipboard {
@@ -53,12 +59,12 @@ window#waybar {
 
 #pulseaudio {
     padding: 0 10px;
-    color: #c4907a;
+    color: #b58d8d;
 }
 
 #battery {
     padding: 0 10px;
-    color: #8b8b5a;
+    color: #7a8fa0;
 }
 
 #battery.warning { 
@@ -66,7 +72,7 @@ window#waybar {
 }
 
 #battery.critical { 
-    color: #c4907a;
+    color: #b58d8d;
     animation: blink 1s infinite;
 }
 
@@ -74,14 +80,19 @@ window#waybar {
     padding: 0 10px;
 }
 
-#cpu {
-    padding: 0 10px;
-    color: #7a8fa0;
+tooltip {
+    background: #f0ebe3;
+    border: 2px solid #a89ab5;
+    border-radius: 8px;
+    padding: 16px 20px;
 }
 
-#memory {
-    padding: 0 10px;
-    color: #9caf88;
+tooltip label {
+    color: #2d2d2d;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 15px;
+    font-weight: bold;
+    padding: 4px;
 }
 
 @keyframes blink {

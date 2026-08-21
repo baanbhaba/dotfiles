@@ -1,9 +1,8 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 26,
+    "height": 28,
     "spacing": 4,
-    "passthrough": false,
 
     "modules-left": [
         "hyprland/workspaces"
@@ -28,8 +27,30 @@
     },
 
     "clock": {
-        "format": "{:%I:%M %p | %a %d}",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><big>{calendar}</big></tt>"
+        "interval": 60,
+        "format": "󱑂 {:%I:%M %p | %a, %d %b}",
+        "format-alt": "󰃭 {:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
+        "calendar": {
+            "mode"          : "month",
+            "mode-mon-col"  : 3,
+            "weeks-pos"     : "right",
+            "on-scroll"     : 1,
+            "format": {
+                "months":     "<span color='#c4a35a'><b>{}</b></span>",
+                "days":       "<span color='#2d2d2d'><b>{}</b></span>",
+                "weeks":      "<span color='#7a8fa0'><b>W{}</b></span>",
+                "weekdays":   "<span color='#a89ab5'><b>{}</b></span>",
+                "today":      "<span background='#c4a35a' color='#f0ebe3'><b>{}</b></span>"
+            }
+        },
+        "actions": {
+            "on-click-right": "mode",
+            "on-click-forward": "tz_up",
+            "on-click-backward": "tz_down",
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
+        }
     },
 
     "custom/clipboard": {
@@ -53,19 +74,7 @@
             "critical": 10
         },
         "format": "battery {capacity}%",
-        "format-icons": [
-            "󰂎",
-            "󰁺",
-            "󰁻",
-            "󰁼",
-            "󰁽",
-            "󰁾",
-            "󰁿",
-            "󰂀",
-            "󰂁",
-            "󰂂",
-            "󰁹"
-        ]
+        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
     },
 
     "tray": {
