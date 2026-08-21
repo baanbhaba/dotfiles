@@ -218,111 +218,70 @@ class NoteApp(QMainWindow):
 
     def init_lock_screen(self):
         self.lock_widget = QWidget()
+        self.lock_widget.setStyleSheet("background-color: #080808;")
         layout = QVBoxLayout(self.lock_widget)
         layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(24)
 
-        # Glassmorphic Amber/Obsidian Lock Card
-        card = QFrame()
-        card.setFixedSize(440, 480)
-        card.setStyleSheet("""
-            QFrame {
-                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #121016, stop:1 #080808);
-                border: 1px solid #2d261e;
-                border-radius: 20px;
-            }
-        """)
-        
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setBlurRadius(60)
-        shadow.setColor(QColor(255, 176, 0, 50))
-        shadow.setOffset(0, 4)
-        card.setGraphicsEffect(shadow)
+        # 1. Giant Hyprlock Digital Time
+        self.time_lbl = QLabel("")
+        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 68, QFont.Bold))
+        self.time_lbl.setStyleSheet("color: #ffffff; border: none; background: transparent; letter-spacing: -2px;")
+        self.time_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.time_lbl)
 
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(36, 36, 36, 36)
-        card_layout.setSpacing(14)
+        # Date Label
+        self.date_lbl = QLabel("")
+        self.date_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13))
+        self.date_lbl.setStyleSheet("color: #777777; border: none; background: transparent; margin-top: -18px;")
+        self.date_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.date_lbl)
 
-        # Badge pill
-        badge = QLabel("󰒓 AES-256 ZERO-KNOWLEDGE VAULT")
-        badge.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
-        badge.setStyleSheet("color: #ffb000; background-color: #211604; border: 1px solid #634300; border-radius: 12px; padding: 4px 10px;")
-        badge.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(badge)
+        # Clock Timer
+        from PyQt5.QtCore import QTimer
+        self.clock_timer = QTimer(self)
+        self.clock_timer.timeout.connect(self.update_lock_clock)
+        self.clock_timer.start(1000)
+        self.update_lock_clock()
 
-        # Logo Icon
-        logo = QLabel("󱞪")
-        logo.setFont(QFont("JetBrainsMono Nerd Font", 38))
-        logo.setStyleSheet("color: #ffb000; border: none; background: transparent;")
-        logo.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(logo)
-
-        # Title
-        title = QLabel("NOTE")
-        title.setFont(QFont("JetBrainsMono Nerd Font", 20, QFont.Bold))
-        title.setStyleSheet("color: #ffffff; border: none; background: transparent; letter-spacing: 4px;")
-        title.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(title)
-
+        # 2. Hyprlock Rounded Input Pill
         is_setup = not VAULT_PATH.exists()
-        subtitle = QLabel("Create a Master PIN to encrypt your local journal." if is_setup else "Enter Master PIN to decrypt your private thoughts.")
-        subtitle.setWordWrap(True)
-        subtitle.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        subtitle.setStyleSheet("color: #a0a0a0; border: none; background: transparent; line-height: 1.4;")
-        subtitle.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(subtitle)
-
-        # High-Contrast Glowing PIN Input
         self.pin_input = QLineEdit()
         self.pin_input.setEchoMode(QLineEdit.Password)
-        self.pin_input.setPlaceholderText("••••")
+        self.pin_input.setPlaceholderText("Create Passcode" if is_setup else "******")
         self.pin_input.setAlignment(Qt.AlignCenter)
-        self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 18, QFont.Bold))
+        self.pin_input.setFixedSize(320, 56)
+        self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
         self.pin_input.setStyleSheet("""
             QLineEdit {
-                background-color: #17151a;
-                color: #ffb000;
-                border: 2px solid #363026;
-                border-radius: 12px;
-                padding: 12px;
+                background-color: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 18px;
+                padding: 8px 16px;
                 letter-spacing: 8px;
             }
             QLineEdit:focus {
-                border: 2px solid #ffb000;
-                background-color: #1e1b22;
+                border: 2px solid #ffffff;
+                background-color: rgba(255, 255, 255, 0.1);
             }
         """)
         self.pin_input.returnPressed.connect(self.handle_auth)
-        card_layout.addWidget(self.pin_input)
+        layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
 
-        # Auth Button
-        self.auth_btn = QPushButton("󰌆 Initialize Vault" if is_setup else "󰌆 Unlock Journal")
-        self.auth_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self.auth_btn.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        self.auth_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ffb000;
-                color: #080808;
-                border: none;
-                border-radius: 10px;
-                padding: 12px;
-                font-weight: 900;
-            }
-            QPushButton:hover {
-                background-color: #ffc43d;
-            }
-        """)
-        self.auth_btn.clicked.connect(self.handle_auth)
-        card_layout.addWidget(self.auth_btn)
-
-        # Error Message
-        self.auth_msg = QLabel("")
-        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 8))
-        self.auth_msg.setStyleSheet("color: #ff5c00; border: none; background: transparent;")
+        self.auth_msg = QLabel("Press Enter to Unlock" if not is_setup else "Press Enter to Initialize Vault")
+        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.auth_msg.setStyleSheet("color: #555555; border: none; background: transparent;")
         self.auth_msg.setAlignment(Qt.AlignCenter)
-        card_layout.addWidget(self.auth_msg)
+        layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
 
-        layout.addWidget(card)
         self.stack.addWidget(self.lock_widget)
+
+    def update_lock_clock(self):
+        now = datetime.now()
+        self.time_lbl.setText(now.strftime("%I:%M"))
+        self.date_lbl.setText(now.strftime("%A, %B %d").upper())
 
     def handle_auth(self):
         pin = self.pin_input.text().strip()
