@@ -49,6 +49,15 @@ set_theme() {
         ln -sf "$HOME/.config/fastfetch/themes/$theme.jsonc" "$HOME/.config/fastfetch/config.jsonc"
     fi
     
+    # Dolphin / KDE Qt Colors Sync
+    if [ -f "$HOME/.config/kde-themes/$theme.colors" ]; then
+        kdeglobals="$HOME/.config/kdeglobals"
+        if [ -f "$kdeglobals" ]; then
+            # Apply color scheme to kdeglobals
+            cat "$HOME/.config/kde-themes/$theme.colors" >> "$kdeglobals.tmp" && mv "$kdeglobals.tmp" "$kdeglobals" 2>/dev/null || true
+        fi
+    fi
+    
     reload_all
     # Restart btop
     pkill btop 2>/dev/null || true
