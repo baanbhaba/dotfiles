@@ -25,9 +25,21 @@ if [ -d "$WALLPAPER_DIR" ] && [ "$(ls -A "$WALLPAPER_DIR" 2>/dev/null)" ]; then
             NEXT_INDEX=0
         fi
         
-        # Set wallpaper
+        # Set wallpaper using hyprpaper or swaybg
         WALLPAPER="${WALLPAPERS[$NEXT_INDEX]}"
-        swaybg -i "$WALLPAPER" -m fill &
+        
+        if command -v hyprpaper >/dev/null 2>&1; then
+            killall hyprpaper 2>/dev/null
+            cat << EOF > /tmp/hyprpaper.conf
+preload = $WALLPAPER
+wallpaper = ,$WALLPAPER
+splash = false
+EOF
+            hyprpaper -c /tmp/hyprpaper.conf &
+        elif command -v swaybg >/dev/null 2>&1; then
+            killall swaybg 2>/dev/null
+            swaybg -i "$WALLPAPER" -m fill &
+        fi
         
         # Save next index for next time
         echo "$NEXT_INDEX" > "$INDEX_FILE"

@@ -1,0 +1,157 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 34,
+    "margin-top": 8,
+    "margin-left": 12,
+    "margin-right": 12,
+    "spacing": 8,
+
+    "modules-left": [
+        "custom/ws1",
+        "custom/ws2",
+        "custom/ws3",
+        "custom/ws4",
+        "custom/ws5",
+        "custom/ws6",
+        "custom/ws7",
+        "custom/ws8",
+        "custom/ws9"
+    ],
+
+    "modules-center": [
+        "clock"
+    ],
+
+    "modules-right": [
+        "custom/clipboard",
+        "pulseaudio",
+        "battery",
+        "tray"
+    ],
+
+    "custom/ws1": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 1",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 1 switch",
+        "tooltip": false
+    },
+
+    "custom/ws2": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 2",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 2 switch",
+        "tooltip": false
+    },
+
+    "custom/ws3": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 3",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 3 switch",
+        "tooltip": false
+    },
+
+    "custom/ws4": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 4",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 4 switch",
+        "tooltip": false
+    },
+
+    "custom/ws5": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 5",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 5 switch",
+        "tooltip": false
+    },
+
+    "custom/ws6": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 6",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 6 switch",
+        "tooltip": false
+    },
+
+    "custom/ws7": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 7",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 7 switch",
+        "tooltip": false
+    },
+
+    "custom/ws8": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 8",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 8 switch",
+        "tooltip": false
+    },
+
+    "custom/ws9": {
+        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 9",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 9 switch",
+        "tooltip": false
+    },
+
+    "clock": {
+        "interval": 60,
+        "format": "󱑂 {:%I:%M %p | %a, %d %b}",
+        "format-alt": "󰃭 {:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
+        "calendar": {
+            "mode"          : "month",
+            "mode-mon-col"  : 3,
+            "weeks-pos"     : "right",
+            "on-scroll"     : 1,
+            "format": {
+                "months":     "<span color='#000000'><b>{}</b></span>",
+                "days":       "<span color='#222222'><b>{}</b></span>",
+                "weeks":      "<span color='#ff006e'><b>W{}</b></span>",
+                "weekdays":   "<span color='#8338ec'><b>{}</b></span>",
+                "today":      "<span background='#ffbe0b' color='#000000'><b>{}</b></span>"
+            }
+        },
+        "actions": {
+            "on-click-right": "mode",
+            "on-click-forward": "tz_up",
+            "on-click-backward": "tz_down",
+            "on-scroll-up": "shift_up",
+            "on-scroll-down": "shift_down"
+        }
+    },
+
+    "custom/clipboard": {
+        "format": "📋 CLIPBOARD",
+        "on-click": "~/.local/bin/clipboard-menu",
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "format": "VOL {volume}%",
+        "format-muted": "MUTED",
+        "on-click": "pavucontrol"
+    },
+
+    "battery": {
+        "states": {
+            "warning": 20,
+            "critical": 10
+        },
+        "format": "BAT {capacity}%",
+        "format-charging": "CHG {capacity}%"
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8
+    }
+}

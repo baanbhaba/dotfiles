@@ -63,7 +63,7 @@ reload_all() {
 
 show_menu() {
     local current=$(get_current_theme)
-    local options="Charcoal\nJaipur\nColorBlock"
+    local options="Charcoal\nNeoBrutalism\nJaipur\nColorBlock"
     
     local rofi_theme="$HOME/.config/rofi/themes/${current}.rasi"
     if [ ! -f "$rofi_theme" ]; then
@@ -74,6 +74,7 @@ show_menu() {
     
     case "$chosen" in
         "Charcoal") set_theme "charcoal" ;;
+        "NeoBrutalism") set_theme "neobrutalism" ;;
         "Jaipur") set_theme "jaipur" ;;
         "ColorBlock") set_theme "colorblock" ;;
         *) exit 0 ;;

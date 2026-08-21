@@ -1,0 +1,105 @@
+/* -----------------------------------------------------
+   ROFI THEME - NEO-BRUTALISM (LIGHT MODE)
+   Hard black outlines, drop shadows, electric accent blocks
+   ----------------------------------------------------- */
+
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: "🚀 ";
+    display-run: "⚡ ";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+* {
+    bg: #fffdf0;               /* Warm Off-White / Cream */
+    black: #000000;            /* Pitch Black */
+    accent-pink: #ff006e;      /* Hot Pink */
+    accent-cyan: #00f5d4;      /* Cyber Cyan */
+    accent-yellow: #ffbe0b;    /* Electric Yellow */
+    fg: #000000;
+}
+
+window {
+    width: 680px;
+    background-color: @bg;
+    border: 3px;
+    border-color: @black;
+    border-radius: 4px;
+    padding: 24px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+    spacing: 16px;
+}
+
+inputbar {
+    background-color: @accent-yellow;
+    border: 3px;
+    border-color: @black;
+    border-radius: 4px;
+    padding: 10px 14px;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @black;
+    font-weight: bold;
+    margin: 0 8px 0 0;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @black;
+    font-weight: bold;
+    placeholder: "TYPE TO LAUNCH...";
+    placeholder-color: #555555;
+    cursor-color: @accent-pink;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 8px;
+    scrollbar: false;
+}
+
+element {
+    padding: 10px 16px;
+    border: 2px;
+    border-color: @black;
+    border-radius: 4px;
+    background-color: #ffffff;
+    text-color: @black;
+}
+
+element normal.normal {
+    background-color: #ffffff;
+    text-color: @black;
+}
+
+element alternate.normal {
+    background-color: #ffffff;
+    text-color: @black;
+}
+
+/* Neo-Brutalist Hot Pink Selected Block with Black text */
+element selected.normal, element selected.active {
+    background-color: @accent-pink;
+    border-color: @black;
+    text-color: #ffffff;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font-weight: bold;
+    highlight: inherit;
+    cursor: inherit;
+}
