@@ -758,6 +758,11 @@ class NoteApp(QMainWindow):
         self.tags_edit.textChanged.connect(self.on_content_modified)
         editor_layout.addWidget(self.tags_edit)
 
+        # Bottom Vim Mode indicator bar (subtle pill)
+        self.vim_status_lbl = QLabel("")
+        self.vim_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
+        self.vim_status_lbl.setVisible(self.config.get("vim_mode", False))
+
         # Textarea with Vim support
         self.content_edit = VimTextEdit()
         self.content_edit.setPlaceholderText("Write what's on your mind...")
@@ -766,11 +771,6 @@ class NoteApp(QMainWindow):
         self.content_edit.on_mode_change = self.update_vim_status
         self.content_edit.set_vim_enabled(self.config.get("vim_mode", False))
         editor_layout.addWidget(self.content_edit, 1)
-
-        # Bottom Vim Mode indicator bar (subtle pill)
-        self.vim_status_lbl = QLabel("")
-        self.vim_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
-        self.vim_status_lbl.setVisible(self.config.get("vim_mode", False))
         editor_layout.addWidget(self.vim_status_lbl)
 
         self.splitter.addWidget(self.editor_area)
