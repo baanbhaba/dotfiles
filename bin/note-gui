@@ -4,15 +4,16 @@ import os
 import json
 import hashlib
 import base64
+import calendar
 from datetime import datetime, date
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
-    QStackedWidget, QCalendarWidget, QFrame, QSplitter, QGraphicsDropShadowEffect
+    QStackedWidget, QFrame, QSplitter, QGridLayout, QGraphicsDropShadowEffect
 )
-from PyQt5.QtGui import QColor, QFont, QTextCharFormat, QCursor
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtGui import QColor, QFont, QCursor
+from PyQt5.QtCore import Qt
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 
@@ -42,6 +43,212 @@ def decrypt_string(payload: dict, pin: str) -> str:
         decrypted.append(b ^ k)
     return decrypted.decode('utf-8')
 
+class AestheticCalendarWidget(QFrame):
+    def __init__(self, on_date_selected_callback):
+        super().__init__()
+        self.on_date_selected = on_date_selected_callback
+        self.current_year = date.today().year
+        self.current_month = date.today().month
+        self.selected_date_str = date.today().isoformat()
+        self.entry_dates = set()
+
+        self.setStyleSheet("""
+            QFrame {
+                background-color: #0c0c0c;
+                border: 1px solid #1c1c1c;
+                border-radius: 12px;
+            }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(10)
+
+        # Header with Month/Year & Nav
+        header = QHBoxLayout()
+        self.month_lbl = QLabel("")
+        self.month_lbl.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        self.month_lbl.setStyleSheet("color: #ffb000; border: none; background: transparent;")
+        header.addWidget(self.month_lbl)
+        header.addStretch()
+
+        prev_btn = QPushButton("󰁍")
+        prev_btn.setFixedSize(28, 28)
+        prev_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        prev_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #141414;
+                color: #8c9b32;
+                border: 1px solid #222222;
+                border-radius: 6px;
+                padding: 0px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #ffb000;
+                color: #080808;
+                border-color: #ffb000;
+            }
+        """)
+        prev_btn.clicked.connect(self.prev_month)
+        header.addWidget(prev_btn)
+
+        next_btn = QPushButton("󰁔")
+        next_btn.setFixedSize(28, 28)
+        next_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        next_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #141414;
+                color: #8c9b32;
+                border: 1px solid #222222;
+                border-radius: 6px;
+                padding: 0px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #ffb000;
+                color: #080808;
+                border-color: #ffb000;
+            }
+        """)
+        next_btn.clicked.connect(self.next_month)
+        header.addWidget(next_btn)
+
+        layout.addLayout(header)
+
+        # Days of Week Row
+        days_header = QHBoxLayout()
+        days_header.setSpacing(4)
+        for day_name in ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]:
+            lbl = QLabel(day_name)
+            lbl.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
+            lbl.setStyleSheet("color: #555555; border: none; background: transparent;")
+            lbl.setAlignment(Qt.AlignCenter)
+            days_header.addWidget(lbl)
+        layout.addLayout(days_header)
+
+        # 6x7 Days Grid
+        self.grid = QGridLayout()
+        self.grid.setSpacing(4)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(self.grid)
+
+        self.render_grid()
+
+    def set_entry_dates(self, dates_set):
+        self.entry_dates = dates_set
+        self.render_grid()
+
+    def prev_month(self):
+        if self.current_month == 1:
+            self.current_month = 12
+            self.current_year -= 1
+        else:
+            self.current_month -= 1
+        self.render_grid()
+
+    def next_month(self):
+        if self.current_month == 12:
+            self.current_month = 1
+            self.current_year += 1
+        else:
+            self.current_month += 1
+        self.render_grid()
+
+    def render_grid(self):
+        # Clear existing grid
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        month_name = calendar.month_name[self.current_month]
+        self.month_lbl.setText(f"󰃭 {month_name[:3].upper()} {self.current_year}")
+
+        # Calendar matrix (Sunday = 6 in python calendar, let's format Sunday first)
+        cal = calendar.Calendar(firstweekday=6)
+        month_days = cal.monthdayscalendar(self.current_year, self.current_month)
+
+        today_str = date.today().isoformat()
+
+        for row_idx, week in enumerate(month_days):
+            for col_idx, day_num in enumerate(week):
+                if day_num == 0:
+                    empty = QLabel("")
+                    empty.setStyleSheet("border: none; background: transparent;")
+                    self.grid.addWidget(empty, row_idx, col_idx)
+                else:
+                    d_str = f"{self.current_year:04d}-{self.current_month:02d}-{day_num:02d}"
+                    is_selected = d_str == self.selected_date_str
+                    is_today = d_str == today_str
+                    has_entry = d_str in self.entry_dates
+
+                    btn = QPushButton(str(day_num))
+                    btn.setFixedSize(32, 30)
+                    btn.setCursor(QCursor(Qt.PointingHandCursor))
+                    btn.setFont(QFont("JetBrainsMono Nerd Font", 9))
+
+                    if is_selected:
+                        btn.setStyleSheet("""
+                            QPushButton {
+                                background-color: #ffb000;
+                                color: #080808;
+                                font-weight: bold;
+                                border: none;
+                                border-radius: 6px;
+                            }
+                        """)
+                    elif is_today:
+                        btn.setStyleSheet("""
+                            QPushButton {
+                                background-color: #1a1a1a;
+                                color: #ffb000;
+                                font-weight: bold;
+                                border: 1px solid #ffb000;
+                                border-radius: 6px;
+                            }
+                            QPushButton:hover {
+                                background-color: #ffb000;
+                                color: #080808;
+                            }
+                        """)
+                    elif has_entry:
+                        btn.setStyleSheet("""
+                            QPushButton {
+                                background-color: #141414;
+                                color: #ffd166;
+                                font-weight: bold;
+                                border: 1px solid #ffb000;
+                                border-radius: 6px;
+                            }
+                            QPushButton:hover {
+                                background-color: #ffb000;
+                                color: #080808;
+                            }
+                        """)
+                    else:
+                        btn.setStyleSheet("""
+                            QPushButton {
+                                background-color: transparent;
+                                color: #777777;
+                                border: none;
+                                border-radius: 6px;
+                            }
+                            QPushButton:hover {
+                                background-color: #161616;
+                                color: #e0e0e0;
+                            }
+                        """)
+
+                    btn.clicked.connect(lambda _, ds=d_str: self.select_date(ds))
+                    self.grid.addWidget(btn, row_idx, col_idx)
+
+    def select_date(self, date_str):
+        self.selected_date_str = date_str
+        self.render_grid()
+        self.on_date_selected(date_str)
+
 class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -52,6 +259,7 @@ class NoteApp(QMainWindow):
         self.entries = []
         self.active_id = None
         self.is_zen = False
+        self.active_date_str = date.today().isoformat()
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -59,7 +267,7 @@ class NoteApp(QMainWindow):
         self.init_lock_screen()
         self.init_main_workspace()
 
-        # Amber CRT Theme with Nerd Font Glyphs
+        # Amber CRT Theme
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #080808;
@@ -70,7 +278,6 @@ class NoteApp(QMainWindow):
                 font-family: 'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace;
             }
             
-            /* Inputs & Editors */
             QLineEdit {
                 background-color: #101010;
                 color: #ffb000;
@@ -101,7 +308,6 @@ class NoteApp(QMainWindow):
                 background-color: #0e0e0e;
             }
             
-            /* Buttons */
             QPushButton {
                 background-color: #141414;
                 color: #ffb000;
@@ -116,12 +322,7 @@ class NoteApp(QMainWindow):
                 color: #080808;
                 border: 1px solid #ffb000;
             }
-            QPushButton:pressed {
-                background-color: #ffd166;
-                color: #080808;
-            }
             
-            /* List Widget */
             QListWidget {
                 background-color: #0c0c0c;
                 border: 1px solid #1a1a1a;
@@ -149,60 +350,10 @@ class NoteApp(QMainWindow):
                 border: 1px solid #ffb000;
             }
             
-            /* Calendar Aesthetic */
-            QCalendarWidget {
-                background-color: #0c0c0c;
-                border: 1px solid #1a1a1a;
-                border-radius: 8px;
-            }
-            QCalendarWidget QWidget#qt_calendar_navigationbar {
-                background-color: #121212;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                padding: 4px;
-            }
-            QCalendarWidget QToolButton {
-                color: #ffb000;
-                background-color: transparent;
-                border: none;
-                border-radius: 4px;
-                padding: 4px 8px;
-                font-weight: bold;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: #222222;
-                color: #ffd166;
-            }
-            QCalendarWidget QSpinBox {
-                background-color: #1a1a1a;
-                color: #ffb000;
-                border: 1px solid #333333;
-                border-radius: 4px;
-                selection-background-color: #ffb000;
-                selection-color: #080808;
-            }
-            QCalendarWidget QMenu {
-                background-color: #141414;
-                color: #ffb000;
-                border: 1px solid #333333;
-            }
-            QCalendarWidget QTableView {
-                background-color: #0c0c0c;
-                alternate-background-color: #0e0e0e;
-                selection-background-color: #ffb000;
-                selection-color: #080808;
-                outline: none;
-            }
-            QCalendarWidget QTableView:enabled {
-                color: #8c9b32;
-            }
-            
-            /* Scrollbars */
             QScrollBar:vertical {
                 border: none;
                 background: #080808;
                 width: 6px;
-                margin: 0px;
                 border-radius: 3px;
             }
             QScrollBar::handle:vertical {
@@ -213,12 +364,8 @@ class NoteApp(QMainWindow):
             QScrollBar::handle:vertical:hover {
                 background: #ffb000;
             }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
         """)
 
         self.stack.setCurrentIndex(0)
@@ -354,13 +501,13 @@ class NoteApp(QMainWindow):
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.setStyleSheet("QSplitter::handle { background-color: #1a1a1a; width: 2px; }")
 
-        # Left Sidebar (Calendar + Entry List)
+        # Left Sidebar
         self.sidebar = QWidget()
         sidebar_layout = QVBoxLayout(self.sidebar)
         sidebar_layout.setContentsMargins(0, 0, 8, 0)
         sidebar_layout.setSpacing(12)
 
-        # Sidebar Header
+        # Header
         sb_header = QHBoxLayout()
         sb_title = QLabel("󰠮 NOTE")
         sb_title.setFont(QFont("JetBrainsMono Nerd Font", 13, QFont.Bold))
@@ -374,21 +521,19 @@ class NoteApp(QMainWindow):
         sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
 
-        # Working Calendar Widget
-        self.calendar = QCalendarWidget()
-        self.calendar.setGridVisible(True)
-        self.calendar.clicked.connect(self.on_date_selected)
+        # Bespoke Aesthetic Calendar
+        self.calendar = AestheticCalendarWidget(self.on_date_selected)
         sidebar_layout.addWidget(self.calendar)
 
         # Entry List Controls
         list_ctrl = QHBoxLayout()
-        self.list_lbl = QLabel("󰈙 Entries")
+        self.list_lbl = QLabel("󰈙 Journal Feed")
         self.list_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
         self.list_lbl.setStyleSheet("color: #8c9b32;")
         list_ctrl.addWidget(self.list_lbl)
         list_ctrl.addStretch()
 
-        new_btn = QPushButton("󰐕 New")
+        new_btn = QPushButton("󰐕 New Entry")
         new_btn.setCursor(QCursor(Qt.PointingHandCursor))
         new_btn.clicked.connect(self.create_entry)
         list_ctrl.addWidget(new_btn)
@@ -401,7 +546,7 @@ class NoteApp(QMainWindow):
 
         self.splitter.addWidget(self.sidebar)
 
-        # Right Editor (Zen Mode Area)
+        # Right Editor Area
         self.editor_area = QWidget()
         editor_layout = QVBoxLayout(self.editor_area)
         editor_layout.setContentsMargins(12, 0, 0, 0)
@@ -511,20 +656,11 @@ class NoteApp(QMainWindow):
         self.update_calendar_highlights()
 
     def update_calendar_highlights(self):
-        format_highlight = QTextCharFormat()
-        format_highlight.setBackground(QColor(255, 176, 0, 75))
-        format_highlight.setForeground(QColor(255, 176, 0))
-
         dates_with_entries = {e["date"] for e in self.entries}
-        for d_str in dates_with_entries:
-            try:
-                qd = QDate.fromString(d_str, Qt.ISODate)
-                self.calendar.setDateTextFormat(qd, format_highlight)
-            except Exception:
-                pass
+        self.calendar.set_entry_dates(dates_with_entries)
 
-    def on_date_selected(self, qdate):
-        d_str = qdate.toString(Qt.ISODate)
+    def on_date_selected(self, d_str):
+        self.active_date_str = d_str
         self.refresh_entries_list(filter_date=d_str)
         matched = [e for e in self.entries if e["date"] == d_str]
         if matched:
@@ -545,7 +681,7 @@ class NoteApp(QMainWindow):
             self.entry_list.addItem(item)
 
     def create_entry(self):
-        d_str = self.calendar.selectedDate().toString(Qt.ISODate)
+        d_str = self.active_date_str
         new_e = {
             "id": str(datetime.now().timestamp()),
             "date": d_str,
@@ -601,6 +737,7 @@ class NoteApp(QMainWindow):
         self.entries = [e for e in self.entries if e["id"] != self.active_id]
         self.save_vault()
         self.refresh_entries_list()
+        self.update_calendar_highlights()
         if self.entries:
             self.load_entry(self.entries[0]["id"])
         else:
