@@ -252,7 +252,8 @@ class HyprpickerGUI(QMainWindow):
         self.setWindowTitle("Colour Picker")
         self.setFixedSize(480, 710)
         self.history = self.load_history()
-        self.current_color = self.history[0] if self.history else "#89b4fa"
+        first_item = self.history[0] if self.history else "#89b4fa"
+        self.current_color = first_item.get("hex", "#89b4fa") if isinstance(first_item, dict) else str(first_item)
 
         self.init_ui()
         self.update_display(self.current_color, update_wheel=True)
