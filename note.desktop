@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Note
+Comment=Encrypted Zen Journal & Calendar Vault
+Exec=/home/baanbhaba/.local/bin/note
+Icon=accessories-text-editor
+Categories=Utility;Office;
+Terminal=false
+StartupNotify=true

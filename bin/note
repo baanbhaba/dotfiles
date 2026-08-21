@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+cd /home/baanbhaba/projects/note
+npm run dev -- --open
