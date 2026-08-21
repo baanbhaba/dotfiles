@@ -12,8 +12,8 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
     QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QPainter, QPainterPath
-from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect, QParallelAnimationGroup, pyqtProperty
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
+from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
@@ -254,38 +254,7 @@ THEME_META = {
     }
 }
 
-# KOKONUT / MOTION PRIMITIVE MICRO-INTERACTION BUTTON
-class AnimatedButton(QPushButton):
-    def __init__(self, text, parent=None):
-        super().__init__(text, parent)
-        self.setCursor(QCursor(Qt.PointingHandCursor))
-        self._scale = 1.0
-
-    def enterEvent(self, event):
-        self.animate_scale(1.04)
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self.animate_scale(1.0)
-        super().leaveEvent(event)
-
-    def animate_scale(self, target):
-        self.anim = QPropertyAnimation(self, b"scale_val")
-        self.anim.setDuration(140)
-        self.anim.setStartValue(self._scale)
-        self.anim.setEndValue(target)
-        self.anim.setEasingCurve(QEasingCurve.OutBack)
-        self.anim.start()
-
-    def get_scale(self):
-        return self._scale
-
-    def set_scale(self, val):
-        self._scale = val
-
-    scale_val = pyqtProperty(float, get_scale, set_scale)
-
-# MOTION-CARD WITH HOVER ELEVATION & GLOW (Bklit / Kokonut UI style)
+# MOTION THEME PREVIEW CARD (Declarative CSS hover - indestructible state)
 class MotionThemeCard(QFrame):
     def __init__(self, theme_name, meta, on_click_callback):
         super().__init__()
@@ -294,14 +263,7 @@ class MotionThemeCard(QFrame):
         self.on_click = on_click_callback
         self.setCursor(QCursor(Qt.PointingHandCursor))
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-
-        # Shadow glow effect
-        self.shadow = QGraphicsDropShadowEffect(self)
-        self.shadow.setBlurRadius(15)
-        r, g, b, a = meta["glow"]
-        self.shadow.setColor(QColor(r, g, b, int(a * 0.4)))
-        self.shadow.setOffset(0, 4)
-        self.setGraphicsEffect(self.shadow)
+        self.setObjectName("ThemePreviewCard")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
@@ -327,40 +289,27 @@ class MotionThemeCard(QFrame):
         self.desc_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; line-height: 1.4;")
         layout.addWidget(self.desc_lbl)
 
-        self.update_style(active=False)
+        self.apply_declarative_style(active=False)
 
     def mousePressEvent(self, event):
         self.on_click(self.theme_name)
         super().mousePressEvent(event)
 
-    def enterEvent(self, event):
-        # Micro-elevation animation
-        self.anim = QPropertyAnimation(self.shadow, b"blurRadius")
-        self.anim.setDuration(160)
-        self.anim.setStartValue(self.shadow.blurRadius())
-        self.anim.setEndValue(32)
-        self.anim.setEasingCurve(QEasingCurve.OutCubic)
-        self.anim.start()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self.anim = QPropertyAnimation(self.shadow, b"blurRadius")
-        self.anim.setDuration(160)
-        self.anim.setStartValue(self.shadow.blurRadius())
-        self.anim.setEndValue(15)
-        self.anim.setEasingCurve(QEasingCurve.OutCubic)
-        self.anim.start()
-        super().leaveEvent(event)
-
-    def update_style(self, active=False):
-        border_col = self.meta["acc"] if active else self.meta["border"]
+    def apply_declarative_style(self, active=False):
+        m = self.meta
+        border_col = m["acc"] if active else m["border"]
         border_w = "3px" if active else "1px"
-        bg_col = self.meta["card_hover"] if active else self.meta["card"]
+        bg_normal = m["card_hover"] if active else m["card"]
+        
         self.setStyleSheet(f"""
-            QFrame {{
-                background-color: {bg_col};
+            QFrame#ThemePreviewCard {{
+                background-color: {bg_normal};
                 border: {border_w} solid {border_col};
                 border-radius: 12px;
+            }}
+            QFrame#ThemePreviewCard:hover {{
+                background-color: {m['card_hover']};
+                border: 2px solid {m['acc']};
             }}
         """)
 
@@ -483,13 +432,13 @@ class NoteApp(QMainWindow):
             self.config["theme"] = theme_name
             save_config(self.config)
             
-            # Apply dynamic harmonic stylesheet
+            # Apply stylesheet
             self.setStyleSheet(generate_stylesheet(theme_name))
             self.sync_lock_screen_theme(theme_name)
             
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
-                    card.update_style(active=(name == theme_name))
+                    card.apply_declarative_style(active=(name == theme_name))
 
     def sync_lock_screen_theme(self, theme_name):
         meta = THEME_META.get(theme_name, THEME_META["Charcoal Amber (Dark)"])
@@ -586,13 +535,13 @@ class NoteApp(QMainWindow):
         anim.start()
         self._shake_anim = anim
 
-    # CUBIC OPACITY + SCALE TRANSITION ANIMATION
+    # CUBIC OPACITY TRANSITION ANIMATION
     def animate_view_transition(self, target_index):
         opacity_effect = QGraphicsOpacityEffect(self.stack)
         self.stack.setGraphicsEffect(opacity_effect)
         self.anim = QPropertyAnimation(opacity_effect, b"opacity")
-        self.anim.setDuration(220)
-        self.anim.setStartValue(0.1)
+        self.anim.setDuration(180)
+        self.anim.setStartValue(0.2)
         self.anim.setEndValue(1.0)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
         self.stack.setCurrentIndex(target_index)
@@ -665,11 +614,13 @@ class NoteApp(QMainWindow):
         sb_header.addWidget(sb_title)
         sb_header.addStretch()
 
-        settings_btn = AnimatedButton("󰒓 Settings")
+        settings_btn = QPushButton("󰒓 Settings")
+        settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
         settings_btn.clicked.connect(self.go_to_settings)
         sb_header.addWidget(settings_btn)
 
-        lock_btn = AnimatedButton("󰌾")
+        lock_btn = QPushButton("󰌾")
+        lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
         lock_btn.clicked.connect(self.lock_vault)
         sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
@@ -688,7 +639,8 @@ class NoteApp(QMainWindow):
         list_ctrl.addWidget(self.list_lbl)
         list_ctrl.addStretch()
 
-        new_btn = AnimatedButton("󰐕 New Entry")
+        new_btn = QPushButton("󰐕 New Entry")
+        new_btn.setCursor(QCursor(Qt.PointingHandCursor))
         new_btn.clicked.connect(self.create_entry)
         list_ctrl.addWidget(new_btn)
         sidebar_layout.addLayout(list_ctrl)
@@ -719,11 +671,13 @@ class NoteApp(QMainWindow):
         self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
         ed_bar.addWidget(self.word_lbl)
 
-        self.zen_btn = AnimatedButton("󰈈 Zen Focus")
+        self.zen_btn = QPushButton("󰈈 Zen Focus")
+        self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.zen_btn.clicked.connect(self.toggle_zen)
         ed_bar.addWidget(self.zen_btn)
 
-        del_btn = AnimatedButton("󰆴")
+        del_btn = QPushButton("󰆴")
+        del_btn.setCursor(QCursor(Qt.PointingHandCursor))
         del_btn.clicked.connect(self.delete_entry)
         ed_bar.addWidget(del_btn)
         editor_layout.addLayout(ed_bar)
@@ -763,7 +717,8 @@ class NoteApp(QMainWindow):
 
         # Header Bar
         header = QHBoxLayout()
-        back_btn = AnimatedButton("󰁍 Back to Workspace")
+        back_btn = QPushButton("󰁍 Back to Workspace")
+        back_btn.setCursor(QCursor(Qt.PointingHandCursor))
         back_btn.clicked.connect(self.go_to_workspace)
         header.addWidget(back_btn)
         header.addStretch()
@@ -800,7 +755,8 @@ class NoteApp(QMainWindow):
         self.confirm_pin_input.setPlaceholderText("Confirm PIN")
         pin_row.addWidget(self.confirm_pin_input)
 
-        update_pin_btn = AnimatedButton("󰑓 Update PIN")
+        update_pin_btn = QPushButton("󰑓 Update PIN")
+        update_pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
         update_pin_btn.clicked.connect(self.handle_settings_pin_change)
         pin_row.addWidget(update_pin_btn)
         pf_layout.addLayout(pin_row)
@@ -811,11 +767,11 @@ class NoteApp(QMainWindow):
         settings_layout.addWidget(pin_frame)
 
         # Themes Gallery Title
-        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Hover for elevation · Click card to activate):")
+        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Hover to preview highlight · Click to activate):")
         th_header.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
         settings_layout.addWidget(th_header)
 
-        # Scrollable Themes Gallery (Kokonut UI / Motion Card Grids)
+        # Scrollable Themes Gallery
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_content = QWidget()
