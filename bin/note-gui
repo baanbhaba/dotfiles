@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
     QSizePolicy, QGridLayout, QCheckBox
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QTextCursor
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QTextCursor, QIcon
 from PyQt5.QtCore import Qt, QDate, QTimer
 
 DATA_PATH   = Path.home() / ".local" / "share" / ".note_data"
@@ -594,6 +594,7 @@ class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Note")
+        self.setWindowIcon(QIcon(str(Path.home() / ".local" / "share" / "icons" / "note.png")))
         self.setMinimumSize(960, 660)
         self.resize(1140, 750)
         self.entries = []
@@ -1241,6 +1242,10 @@ class NoteApp(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Note")
+    app.setDesktopFileName("note.desktop")
+    icon_path = Path.home() / ".local" / "share" / "icons" / "note.png"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     window = NoteApp()
     window.show()
     sys.exit(app.exec_())
