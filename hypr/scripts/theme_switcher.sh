@@ -58,7 +58,8 @@ reload_all() {
     makoctl reload 2>/dev/null || (killall mako 2>/dev/null && mako &)
     pkill -SIGUSR1 kitty 2>/dev/null
     ~/.config/hypr/scripts/wallpaper.sh
-    notify-send "Theme Switcher" "Switched to $(get_current_theme | tr '[:lower:]' '[:upper:]') theme" -i color-select
+    local cur_name=$(get_current_theme)
+    notify-send "Theme Switcher" "Switched to ${cur_name^^} theme" -i color-select 2>/dev/null || true
 }
 
 show_menu() {
