@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 """
-Note (note-gui) - Encrypted Local Thought Journal & Knowledge Vault
-Built with AES-256 PBKDF2 Zero-Knowledge Security, Dynamic Theming & Fluid Micro-Interactions.
+Note (note-gui) - Local Thought Journal
+Dynamic Theming, Fluid UI, Plain-JSON Storage.
 """
 import sys
-import os
 import json
-import hashlib
-import base64
 from datetime import datetime, date
 from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
-    QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout,
-    QFileDialog, QMessageBox
+    QSizePolicy, QGridLayout, QFileDialog
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
-from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
+from PyQt5.QtCore import Qt, QDate, QTimer
 
-VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
+DATA_PATH  = Path.home() / ".local" / "share" / "note_data.json"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CONFIGURATION & CRYPTO ENGINE
+# CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 def load_config() -> dict:
     if CONFIG_PATH.exists():
@@ -33,7 +29,7 @@ def load_config() -> dict:
                 return json.load(f)
         except Exception:
             pass
-    return {"theme": "Void (Dark)", "zen": False}
+    return {"theme": "Void (Dark)"}
 
 def save_config(cfg: dict):
     try:
@@ -42,35 +38,6 @@ def save_config(cfg: dict):
             json.dump(cfg, f, indent=2)
     except Exception as e:
         print("Config save error:", e)
-
-def derive_key(pin: str, salt: bytes) -> bytes:
-    return hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 100000)
-
-def _keystream(key: bytes, length: int) -> bytes:
-    """Generate keystream in 32-byte blocks — 32× faster than per-byte SHA256."""
-    blocks = (length + 31) // 32
-    stream = bytearray()
-    for i in range(blocks):
-        stream.extend(hashlib.sha256(key + i.to_bytes(4, 'big')).digest())
-    return bytes(stream[:length])
-
-def encrypt_string(plain: str, pin: str) -> dict:
-    salt = os.urandom(16)
-    key  = derive_key(pin, salt)
-    pb   = plain.encode('utf-8')
-    ks   = _keystream(key, len(pb))
-    enc  = bytes(a ^ b for a, b in zip(pb, ks))
-    return {
-        "salt": base64.b64encode(salt).decode('ascii'),
-        "data": base64.b64encode(enc).decode('ascii')
-    }
-
-def decrypt_string(payload: dict, pin: str) -> str:
-    salt   = base64.b64decode(payload["salt"])
-    key    = derive_key(pin, salt)
-    cipher = base64.b64decode(payload["data"])
-    ks     = _keystream(key, len(cipher))
-    return bytes(a ^ b for a, b in zip(cipher, ks)).decode('utf-8')
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 13 PRODUCTION-GRADE PALETTES — precision OKLCH/Tailwind-calibrated
@@ -438,16 +405,15 @@ class MotionThemeCard(QFrame):
 class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Note — Zero-Knowledge Journal")
+        self.setWindowTitle("Note")
         self.setMinimumSize(960, 660)
         self.resize(1140, 750)
-        self.pin = ""
         self.entries = []
         self.active_id = None
         self.is_zen = False
         self.active_date_str = date.today().isoformat()
-        self._entry_index = {}   # id → entry, rebuilt on vault load
-        
+        self._entry_index = {}   # id → entry dict
+
         self.config = load_config()
         self.current_theme = self.config.get("theme", "Void (Dark)")
         if self.current_theme not in THEME_META:
@@ -462,12 +428,11 @@ class NoteApp(QMainWindow):
         self._save_timer.setInterval(1500)
         self._save_timer.timeout.connect(self.save_vault)
 
-        self.init_lock_screen()
-        self.init_main_workspace()
-        self.init_settings_page()
+        self.init_main_workspace()   # index 0
+        self.init_settings_page()    # index 1
 
         self.apply_theme(self.current_theme)
-        self.stack.setCurrentIndex(0)
+        self.load_entries()
 
     def apply_theme(self, theme_name):
         if theme_name in THEME_META:
@@ -476,154 +441,19 @@ class NoteApp(QMainWindow):
             save_config(self.config)
             
             self.setStyleSheet(generate_stylesheet(theme_name))
-            self.sync_lock_screen_theme(theme_name)
 
-            
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
                     card.apply_declarative_style(active=(name == theme_name))
 
-    def sync_lock_screen_theme(self, theme_name):
-        meta = THEME_META.get(theme_name, THEME_META["Void (Dark)"])
-        self.lock_widget.setStyleSheet(f"background-color: {meta['bg']};")
-        self.time_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent; letter-spacing: -2px;")
-        self.date_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; margin-top: -18px;")
-        
-        r, g, b, a = meta["glow"]
-        self.lock_shadow.setColor(QColor(r, g, b, a))
-        
-        self.pin_input.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {meta['input_bg']};
-                color: {meta['input_fg']};
-                border: 2px solid {meta['border']};
-                border-radius: {meta['pill_radius']};
-                padding: 8px 16px;
-                letter-spacing: 8px;
-            }}
-            QLineEdit:focus {{
-                border: 2px solid {meta['acc']};
-            }}
-        """)
-        self.auth_msg.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
-
-    # 1. HYPRLOCK MINIMALIST AUTH SCREEN
-    def init_lock_screen(self):
-        self.lock_widget = QWidget()
-        layout = QVBoxLayout(self.lock_widget)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(24)
-
-        # Digital Clock
-        self.time_lbl = QLabel("")
-        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 74, QFont.Bold))
-        self.time_lbl.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.time_lbl)
-
-        # Date Label
-        self.date_lbl = QLabel("")
-        self.date_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13))
-        self.date_lbl.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.date_lbl)
-
-        # Live Clock Timer
-        self.clock_timer = QTimer(self)
-        self.clock_timer.timeout.connect(self.update_lock_clock)
-        self.clock_timer.start(1000)
-        self.update_lock_clock()
-
-        # Input Pill
-        is_setup = not VAULT_PATH.exists()
-        self.pin_input = QLineEdit()
-        self.pin_input.setEchoMode(QLineEdit.Password)
-        self.pin_input.setPlaceholderText("Create Passcode" if is_setup else "******")
-        self.pin_input.setAlignment(Qt.AlignCenter)
-        self.pin_input.setFixedSize(320, 56)
-        self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
-        
-        self.lock_shadow = QGraphicsDropShadowEffect(self)
-        self.lock_shadow.setBlurRadius(40)
-        self.lock_shadow.setOffset(0, 0)
-        self.pin_input.setGraphicsEffect(self.lock_shadow)
-        
-        self.pin_input.returnPressed.connect(self.handle_auth)
-        layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
-
-        self.auth_msg = QLabel("Press Enter to Decrypt · AES-256 Vault" if not is_setup else "Press Enter to Initialize Vault")
-        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        self.auth_msg.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
-
-        self.stack.addWidget(self.lock_widget)
-
-    def update_lock_clock(self):
-        now = datetime.now()
-        self.time_lbl.setText(now.strftime("%I:%M"))
-        self.date_lbl.setText(now.strftime("%A, %B %d").upper())
-
-    # Physics Error Shake Animation
-    def trigger_shake_animation(self, widget):
-        anim = QPropertyAnimation(widget, b"pos")
-        anim.setDuration(300)
-        orig_pos = widget.pos()
-        anim.setKeyValueAt(0.0, orig_pos)
-        anim.setKeyValueAt(0.1, orig_pos + QPoint(-12, 0))
-        anim.setKeyValueAt(0.3, orig_pos + QPoint(12, 0))
-        anim.setKeyValueAt(0.5, orig_pos + QPoint(-8, 0))
-        anim.setKeyValueAt(0.7, orig_pos + QPoint(8, 0))
-        anim.setKeyValueAt(0.9, orig_pos + QPoint(-4, 0))
-        anim.setKeyValueAt(1.0, orig_pos)
-        anim.setEasingCurve(QEasingCurve.OutQuad)
-        anim.start()
-        self._shake_anim = anim
-
-    # View transition — instant stack switch (no compositing overhead)
-    def animate_view_transition(self, target_index):
-        self.stack.setCurrentIndex(target_index)
-
-    def handle_auth(self):
-        pin = self.pin_input.text().strip()
-        if len(pin) < 4:
-            self.auth_msg.setText("PIN must be at least 4 characters.")
-            self.trigger_shake_animation(self.pin_input)
-            return
-
-        if not VAULT_PATH.exists():
-            self.pin = pin
-            initial_entry = {
-                "id": str(datetime.now().timestamp()),
-                "date": date.today().isoformat(),
-                "time": datetime.now().strftime("%I:%M %p"),
-                "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Real-time search, instant tag filtering, and markdown exports are enabled.\n- Toggle Zen Focus for pure uninterrupted flow.",
-                "tags": "welcome, journal",
-                "mood": "zen"
-            }
-            self.entries = [initial_entry]
-            self.save_vault()
-            self.load_workspace()
-        else:
-            try:
-                with open(VAULT_PATH, "r") as f:
-                    payload = json.load(f)
-                decrypted_json = decrypt_string(payload, pin)
-                self.entries = json.loads(decrypted_json)
-                self.pin = pin
-                self.load_workspace()
-            except Exception:
-                self.auth_msg.setText("Incorrect passcode.")
-                self.trigger_shake_animation(self.pin_input)
 
     def save_vault(self):
-        if self.pin:
-            try:
-                VAULT_PATH.parent.mkdir(parents=True, exist_ok=True)
-                payload = encrypt_string(json.dumps(self.entries), self.pin)
-                with open(VAULT_PATH, "w") as f:
-                    json.dump(payload, f)
-            except Exception as e:
-                print("Save error:", e)
+        try:
+            DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with open(DATA_PATH, "w") as f:
+                json.dump(self.entries, f, indent=2)
+        except Exception as e:
+            print("Save error:", e)
 
     # 2. MAIN JOURNAL WORKSPACE
     def init_main_workspace(self):
@@ -654,11 +484,6 @@ class NoteApp(QMainWindow):
         settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
         settings_btn.clicked.connect(self.go_to_settings)
         sb_header.addWidget(settings_btn)
-
-        lock_btn = QPushButton("󰌾")
-        lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        lock_btn.clicked.connect(self.lock_vault)
-        sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
 
         # Search Bar
@@ -778,53 +603,8 @@ class NoteApp(QMainWindow):
         header.addStretch()
         settings_layout.addLayout(header)
 
-        # Master PIN & Stats Card
-        pin_frame = QFrame()
-        pin_frame.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; }")
-        pf_layout = QVBoxLayout(pin_frame)
-        pf_layout.setSpacing(12)
-
-        pf_top = QHBoxLayout()
-        pf_title = QLabel("󰌆 Security & Vault Re-Key")
-        pf_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        pf_top.addWidget(pf_title)
-        pf_top.addStretch()
-
-        self.stats_lbl = QLabel("")
-        self.stats_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        self.stats_lbl.setStyleSheet("color: #888888; border: none;")
-        pf_top.addWidget(self.stats_lbl)
-        pf_layout.addLayout(pf_top)
-
-        pin_row = QHBoxLayout()
-        self.old_pin_input = QLineEdit()
-        self.old_pin_input.setEchoMode(QLineEdit.Password)
-        self.old_pin_input.setPlaceholderText("Current PIN")
-        pin_row.addWidget(self.old_pin_input)
-
-        self.new_pin_input = QLineEdit()
-        self.new_pin_input.setEchoMode(QLineEdit.Password)
-        self.new_pin_input.setPlaceholderText("New PIN (Min 4 chars)")
-        pin_row.addWidget(self.new_pin_input)
-
-        self.confirm_pin_input = QLineEdit()
-        self.confirm_pin_input.setEchoMode(QLineEdit.Password)
-        self.confirm_pin_input.setPlaceholderText("Confirm PIN")
-        pin_row.addWidget(self.confirm_pin_input)
-
-        update_pin_btn = QPushButton("󰑓 Update PIN")
-        update_pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        update_pin_btn.clicked.connect(self.handle_settings_pin_change)
-        pin_row.addWidget(update_pin_btn)
-        pf_layout.addLayout(pin_row)
-
-        self.pin_status_lbl = QLabel("")
-        self.pin_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        pf_layout.addWidget(self.pin_status_lbl)
-        settings_layout.addWidget(pin_frame)
-
         # Themes Gallery Title
-        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Click card to activate):")
+        th_header = QLabel("🎨 Themes Gallery (Click to activate):")
         th_header.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
         settings_layout.addWidget(th_header)
 
@@ -850,49 +630,33 @@ class NoteApp(QMainWindow):
 
         self.stack.addWidget(self.settings_widget)
 
-    def handle_settings_pin_change(self):
-        old_pin = self.old_pin_input.text().strip()
-        new_pin = self.new_pin_input.text().strip()
-        confirm_pin = self.confirm_pin_input.text().strip()
-
-        if old_pin != self.pin:
-            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
-            self.pin_status_lbl.setText("Current PIN is incorrect.")
-            self.trigger_shake_animation(self.old_pin_input)
-            return
-        if len(new_pin) < 4:
-            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
-            self.pin_status_lbl.setText("New PIN must be at least 4 characters.")
-            self.trigger_shake_animation(self.new_pin_input)
-            return
-        if new_pin != confirm_pin:
-            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
-            self.pin_status_lbl.setText("New PINs do not match.")
-            self.trigger_shake_animation(self.confirm_pin_input)
-            return
-
-        self.pin = new_pin
-        self.save_vault()
-        self.pin_status_lbl.setStyleSheet("color: #10b981; border: none;")
-        self.pin_status_lbl.setText("Master PIN successfully updated!")
-        self.old_pin_input.clear()
-        self.new_pin_input.clear()
-        self.confirm_pin_input.clear()
-
     def go_to_settings(self):
-        total_words = sum(len(e.get("content", "").split()) for e in self.entries)
-        self.stats_lbl.setText(f"󰈙 {len(self.entries)} entries · 󱌒 {total_words} total words")
-        self.animate_view_transition(2)
+        self.stack.setCurrentIndex(1)
 
     def go_to_workspace(self):
-        self.animate_view_transition(1)
+        self.stack.setCurrentIndex(0)
 
-    def load_workspace(self):
-        self.animate_view_transition(1)
+    def load_entries(self):
+        """Load plain JSON entries from disk on startup."""
+        if DATA_PATH.exists():
+            try:
+                with open(DATA_PATH) as f:
+                    self.entries = json.load(f)
+            except Exception:
+                self.entries = []
+        if not self.entries:
+            self.entries = [{
+                "id": str(datetime.now().timestamp()),
+                "date": date.today().isoformat(),
+                "time": datetime.now().strftime("%I:%M %p"),
+                "title": "Welcome to Note",
+                "content": "# Welcome to Note\n\nWrite anything. It saves automatically.\n\n- Browse themes in Settings\n- Search by title or #tag\n- Zen Focus for distraction-free writing",
+                "tags": "welcome"
+            }]
+            self.save_vault()
         self._rebuild_entry_index()
         self.refresh_entries_list()
         today = date.today().isoformat()
-        today_entry = self._entry_index.get(today)  # not found by date — use list
         today_entry = next((e for e in self.entries if e["date"] == today), None)
         if today_entry:
             self.load_entry(today_entry["id"])
@@ -1048,13 +812,6 @@ class NoteApp(QMainWindow):
         self.sidebar.setVisible(not self.is_zen)
         self.zen_btn.setText("󰈊 Full View" if self.is_zen else "󰈈 Zen Focus")
 
-    def lock_vault(self):
-        self.pin = ""
-        self.pin_input.clear()
-        self.auth_msg.setText("Press Enter to Decrypt · AES-256 Vault")
-        self.sync_lock_screen_theme(self.current_theme)
-        self.animate_view_transition(0)
-        self.pin_input.setFocus()
 
 def main():
     app = QApplication(sys.argv)
