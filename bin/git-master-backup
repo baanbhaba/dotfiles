@@ -2,8 +2,8 @@
 
 # ============================================================
 # Script: Git Master Backup
-# Description: Automatically scans for Git repositories and syncs
-#              uncommitted changes to remote origins.
+# Description: Scans for Git repositories and syncs
+#              uncommitted changes & unpushed commits to remote.
 # Author: baanbhaba
 # ============================================================
 
@@ -15,6 +15,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -28,7 +29,6 @@ SCAN_DIRS=(
 [ -d "/run/media/baanbhaba/External" ] && SCAN_DIRS+=("/run/media/baanbhaba/External")
 
 # ---------------------- EXCLUSIONS ---------------------------
-# Directories and package caches to ignore completely from scanning
 EXCLUDE_PATTERNS=(
     "*/.cache/*"
     "*/.local/share/*"
@@ -39,6 +39,7 @@ EXCLUDE_PATTERNS=(
     "*/.mozilla/*"
     "*/node_modules/*"
     "*/.electron/*"
+    "*/.Trash*/*"
 )
 
 # ---------------------- REMOTE PROTOCOL SELECTION ------------
@@ -71,35 +72,37 @@ esac
 
 # ---------------------- HEADER -------------------------------
 echo ""
-echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                 🚀 GIT MASTER BACKUP               ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                   🚀 GIT MASTER BACKUP                   ║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}📅 Timestamp :${NC} $TIMESTAMP"
 echo -e "${CYAN}🌐 Mode      :${NC} $MODE_NAME"
 echo -e "${CYAN}🔍 Scanning  :${NC} ${SCAN_DIRS[*]}"
 echo ""
 
-# Build exclusion arguments for find
 FIND_EXCLUDES=()
 for excl in "${EXCLUDE_PATTERNS[@]}"; do
     FIND_EXCLUDES+=(-not -path "$excl")
 done
 
-SUCCESS_COUNT=0
-SKIPPED_COUNT=0
-FAILED_COUNT=0
+# Result tracking arrays
+PUSHED_REPOS=()
+UP_TO_DATE_REPOS=()
+SKIPPED_REPOS=()
+FAILED_REPOS=()
 
 # ---------------------- FIND AND PROCESS ---------------------
 while IFS= read -r gitdir; do
     repo="$(dirname "$gitdir")"
+    repo_name="$(basename "$repo")"
     
     echo -e "${CYAN}--------------------------------------------------${NC}"
     echo -e "${BOLD}📁 Repo:${NC} $repo"
     
     if ! git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
         echo -e "${RED}❌ Invalid git directory, skipping.${NC}\n"
-        ((FAILED_COUNT++))
+        FAILED_REPOS+=("$repo (Invalid git directory)")
         continue
     fi
     
@@ -107,7 +110,7 @@ while IFS= read -r gitdir; do
     
     if [[ -z "$remote_url" ]]; then
         echo -e "${YELLOW}⚠️  No remote origin configured, skipping.${NC}\n"
-        ((SKIPPED_COUNT++))
+        SKIPPED_REPOS+=("$repo (No remote origin)")
         continue
     fi
     
@@ -115,18 +118,18 @@ while IFS= read -r gitdir; do
     if [[ "$remote_url" == git@* ]]; then
         if [[ $ALLOW_SSH -eq 0 ]]; then
             echo -e "${YELLOW}🔒 SSH repo skipped by user mode.${NC}\n"
-            ((SKIPPED_COUNT++))
+            SKIPPED_REPOS+=("$repo (SSH mode disabled)")
             continue
         fi
     elif [[ "$remote_url" == https://* ]]; then
         if [[ $ALLOW_HTTPS -eq 0 ]]; then
             echo -e "${YELLOW}🔒 HTTPS repo skipped by user mode.${NC}\n"
-            ((SKIPPED_COUNT++))
+            SKIPPED_REPOS+=("$repo (HTTPS mode disabled)")
             continue
         fi
     else
         echo -e "${YELLOW}⚠️  Unknown remote format ($remote_url), skipping.${NC}\n"
-        ((SKIPPED_COUNT++))
+        SKIPPED_REPOS+=("$repo (Unknown remote format: $remote_url)")
         continue
     fi
     
@@ -139,8 +142,10 @@ while IFS= read -r gitdir; do
     
     # Check status
     changes=$(git -C "$repo" status --porcelain 2>/dev/null || true)
+    had_changes=0
     
     if [[ -n "$changes" ]]; then
+        had_changes=1
         count=$(echo "$changes" | wc -l)
         echo -e "${YELLOW}📝 Detected $count change(s). Staging & committing...${NC}"
         echo "$changes" | head -n 5
@@ -155,30 +160,65 @@ while IFS= read -r gitdir; do
     # Check if local is ahead of remote or unpushed commits exist
     ahead=$(git -C "$repo" rev-list --count "@{u}..HEAD" 2>/dev/null || echo "1")
     
-    if [[ "$ahead" -gt 0 ]] || [[ -n "$changes" ]]; then
+    if [[ "$ahead" -gt 0 ]] || [[ $had_changes -eq 1 ]]; then
         echo -e "${YELLOW}📤 Pushing branch '$current_branch'...${NC}"
         if git -C "$repo" push origin "$current_branch" 2>&1; then
-            echo -e "${GREEN}✅ Pushed successfully.${NC}\n"
-            ((SUCCESS_COUNT++))
+            echo -e "${GREEN}✅ Pushed successfully!${NC}\n"
+            PUSHED_REPOS+=("$repo [$current_branch -> $remote_url]")
         else
             echo -e "${YELLOW}   Retrying with upstream setup...${NC}"
             if git -C "$repo" push --set-upstream origin "$current_branch" 2>&1; then
-                echo -e "${GREEN}✅ Upstream set & push successful.${NC}\n"
-                ((SUCCESS_COUNT++))
+                echo -e "${GREEN}✅ Upstream set & push successful!${NC}\n"
+                PUSHED_REPOS+=("$repo [$current_branch -> $remote_url]")
             else
-                echo -e "${RED}❌ Push failed for $repo.${NC}\n"
-                ((FAILED_COUNT++))
+                echo -e "${RED}❌ Push failed!${NC}\n"
+                FAILED_REPOS+=("$repo [$remote_url]")
             fi
         fi
     else
-        echo -e "${GREEN}💤 Everything clean and up to date with remote.${NC}\n"
-        ((SUCCESS_COUNT++))
+        echo -e "${GREEN}💤 Clean & up to date with remote.${NC}\n"
+        UP_TO_DATE_REPOS+=("$repo")
     fi
 
 done < <(find "${SCAN_DIRS[@]}" "${FIND_EXCLUDES[@]}" -type d -name ".git" 2>/dev/null)
 
-# ---------------------- SUMMARY ------------------------------
-echo -e "${GREEN}╔════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║                🎉 ALL REPOS PROCESSED!             ║${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════════════════╝${NC}"
-echo -e "Summary: ${GREEN}$SUCCESS_COUNT succeeded${NC} | ${YELLOW}$SKIPPED_COUNT skipped${NC} | ${RED}$FAILED_COUNT failed${NC}\n"
+# ---------------------- DETAILED SUMMARY ---------------------
+echo ""
+echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                   📊 BACKUP SUMMARY REPORT               ║${NC}"
+echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+if [[ ${#PUSHED_REPOS[@]} -gt 0 ]]; then
+    echo -e "${GREEN}${BOLD}🚀 REPOSITORIES PUSHED WITH NEW CHANGES (${#PUSHED_REPOS[@]}):${NC}"
+    for r in "${PUSHED_REPOS[@]}"; do
+        echo -e "   ${GREEN}✔${NC} $r"
+    done
+    echo ""
+fi
+
+if [[ ${#UP_TO_DATE_REPOS[@]} -gt 0 ]]; then
+    echo -e "${CYAN}${BOLD}💤 REPOSITORIES ALREADY UP TO DATE (${#UP_TO_DATE_REPOS[@]}):${NC}"
+    for r in "${UP_TO_DATE_REPOS[@]}"; do
+        echo -e "   ${CYAN}•${NC} $r"
+    done
+    echo ""
+fi
+
+if [[ ${#SKIPPED_REPOS[@]} -gt 0 ]]; then
+    echo -e "${YELLOW}${BOLD}⚠️  REPOSITORIES SKIPPED (${#SKIPPED_REPOS[@]}):${NC}"
+    for r in "${SKIPPED_REPOS[@]}"; do
+        echo -e "   ${YELLOW}-${NC} $r"
+    done
+    echo ""
+fi
+
+if [[ ${#FAILED_REPOS[@]} -gt 0 ]]; then
+    echo -e "${RED}${BOLD}❌ REPOSITORIES FAILED TO PUSH (${#FAILED_REPOS[@]}):${NC}"
+    for r in "${FAILED_REPOS[@]}"; do
+        echo -e "   ${RED}✖${NC} $r"
+    done
+    echo ""
+fi
+
+echo -e "${BOLD}Totals:${NC} ${GREEN}${#PUSHED_REPOS[@]} pushed${NC} | ${CYAN}${#UP_TO_DATE_REPOS[@]} up to date${NC} | ${YELLOW}${#SKIPPED_REPOS[@]} skipped${NC} | ${RED}${#FAILED_REPOS[@]} failed${NC}\n"
