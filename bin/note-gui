@@ -14,9 +14,9 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
-    QSizePolicy, QGridLayout
+    QSizePolicy, QGridLayout, QCheckBox
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QTextCursor
 from PyQt5.QtCore import Qt, QDate, QTimer
 
 DATA_PATH   = Path.home() / ".local" / "share" / ".note_data"
@@ -442,6 +442,150 @@ class MotionThemeCard(QFrame):
                 border: 2px solid {m['acc']};
             }}
         """)
+# ─────────────────────────────────────────────────────────────────────────────
+# VIM-ENABLED TEXT EDITOR (Lightweight modal editing engine)
+# ─────────────────────────────────────────────────────────────────────────────
+class VimTextEdit(QTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.vim_enabled = False
+        self.mode = "NORMAL"  # "NORMAL" or "INSERT"
+        self._cmd_buffer = ""
+        self.on_mode_change = None  # callback(mode_str)
+
+    def set_vim_enabled(self, enabled: bool):
+        self.vim_enabled = enabled
+        if not enabled:
+            self.mode = "INSERT"
+            self.setCursorWidth(1)
+        else:
+            self.mode = "NORMAL"
+            self.setCursorWidth(8)
+        if self.on_mode_change:
+            self.on_mode_change(self.mode if self.vim_enabled else "")
+
+    def set_mode(self, mode: str):
+        self.mode = mode
+        if mode == "NORMAL":
+            self.setCursorWidth(8)
+        else:
+            self.setCursorWidth(1)
+        if self.on_mode_change:
+            self.on_mode_change(self.mode if self.vim_enabled else "")
+
+    def keyPressEvent(self, event):
+        if not self.vim_enabled:
+            super().keyPressEvent(event)
+            return
+
+        key = event.key()
+        text = event.text()
+        cursor = self.textCursor()
+
+        # Handle Escape everywhere
+        if key == Qt.Key_Escape:
+            self.set_mode("NORMAL")
+            self._cmd_buffer = ""
+            event.accept()
+            return
+
+        if self.mode == "INSERT":
+            super().keyPressEvent(event)
+            return
+
+        # ── NORMAL MODE DISPATCH ──────────────────────────────────────────
+        # Handle count prefixes or multi-key combos (like 'dd', 'gg')
+        if text == "i":
+            self.set_mode("INSERT")
+            event.accept()
+            return
+        elif text == "a":
+            cursor.movePosition(QTextCursor.Right)
+            self.setTextCursor(cursor)
+            self.set_mode("INSERT")
+            event.accept()
+            return
+        elif text == "A":
+            cursor.movePosition(QTextCursor.EndOfLine)
+            self.setTextCursor(cursor)
+            self.set_mode("INSERT")
+            event.accept()
+            return
+        elif text == "I":
+            cursor.movePosition(QTextCursor.StartOfLine)
+            self.setTextCursor(cursor)
+            self.set_mode("INSERT")
+            event.accept()
+            return
+        elif text == "o":
+            cursor.movePosition(QTextCursor.EndOfLine)
+            cursor.insertText("\n")
+            self.setTextCursor(cursor)
+            self.set_mode("INSERT")
+            event.accept()
+            return
+        elif text == "O":
+            cursor.movePosition(QTextCursor.StartOfLine)
+            cursor.insertText("\n")
+            cursor.movePosition(QTextCursor.Up)
+            self.setTextCursor(cursor)
+            self.set_mode("INSERT")
+            event.accept()
+            return
+
+        # Single key motions: h, j, k, l, w, b, 0, $, x
+        if text == "h" or key == Qt.Key_Left:
+            cursor.movePosition(QTextCursor.Left)
+        elif text == "l" or key == Qt.Key_Right:
+            cursor.movePosition(QTextCursor.Right)
+        elif text == "j" or key == Qt.Key_Down:
+            cursor.movePosition(QTextCursor.Down)
+        elif text == "k" or key == Qt.Key_Up:
+            cursor.movePosition(QTextCursor.Up)
+        elif text == "w":
+            cursor.movePosition(QTextCursor.NextWord)
+        elif text == "b":
+            cursor.movePosition(QTextCursor.PreviousWord)
+        elif text == "0":
+            cursor.movePosition(QTextCursor.StartOfLine)
+        elif text == "$":
+            cursor.movePosition(QTextCursor.EndOfLine)
+        elif text == "G":
+            cursor.movePosition(QTextCursor.End)
+        elif text == "x":
+            cursor.deleteChar()
+        elif text == "u":
+            self.undo()
+            event.accept()
+            return
+        elif text == "d":
+            if self._cmd_buffer == "d":
+                # dd: delete entire line
+                cursor.movePosition(QTextCursor.StartOfLine)
+                cursor.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor)
+                cursor.removeSelectedText()
+                self._cmd_buffer = ""
+            else:
+                self._cmd_buffer = "d"
+                event.accept()
+                return
+        elif text == "g":
+            if self._cmd_buffer == "g":
+                cursor.movePosition(QTextCursor.Start)
+                self._cmd_buffer = ""
+            else:
+                self._cmd_buffer = "g"
+                event.accept()
+                return
+        else:
+            self._cmd_buffer = ""
+            super().keyPressEvent(event)
+            return
+
+        self._cmd_buffer = ""
+        self.setTextCursor(cursor)
+        event.accept()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN APPLICATION CONTROLLER
@@ -584,6 +728,11 @@ class NoteApp(QMainWindow):
         ed_bar.addWidget(self.word_lbl)
 
 
+        self.pin_btn = QPushButton("󰤰 Pin")
+        self.pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.pin_btn.clicked.connect(self.toggle_pin_active_entry)
+        ed_bar.addWidget(self.pin_btn)
+
         self.zen_btn = QPushButton("󰈈 Zen Focus")
         self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.zen_btn.clicked.connect(self.toggle_zen)
@@ -609,12 +758,20 @@ class NoteApp(QMainWindow):
         self.tags_edit.textChanged.connect(self.on_content_modified)
         editor_layout.addWidget(self.tags_edit)
 
-        # Textarea
-        self.content_edit = QTextEdit()
-        self.content_edit.setPlaceholderText("Write what's on your mind... (Markdown supported · Encrypted in real-time)")
+        # Textarea with Vim support
+        self.content_edit = VimTextEdit()
+        self.content_edit.setPlaceholderText("Write what's on your mind...")
         self.content_edit.setFont(QFont("JetBrainsMono Nerd Font", 11))
         self.content_edit.textChanged.connect(self.on_content_modified)
+        self.content_edit.on_mode_change = self.update_vim_status
+        self.content_edit.set_vim_enabled(self.config.get("vim_mode", False))
         editor_layout.addWidget(self.content_edit, 1)
+
+        # Bottom Vim Mode indicator bar (subtle pill)
+        self.vim_status_lbl = QLabel("")
+        self.vim_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
+        self.vim_status_lbl.setVisible(self.config.get("vim_mode", False))
+        editor_layout.addWidget(self.vim_status_lbl)
 
         self.splitter.addWidget(self.editor_area)
         self.splitter.setSizes([340, 760])
@@ -642,6 +799,36 @@ class NoteApp(QMainWindow):
         header.addWidget(title)
         header.addStretch()
         settings_layout.addLayout(header)
+
+        # Editor Preferences Card (Vim Mode & Options)
+        pref_card = QFrame()
+        pref_card.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px 16px; }")
+        pref_layout = QHBoxLayout(pref_card)
+        pref_layout.setContentsMargins(14, 10, 14, 10)
+
+        vim_icon_lbl = QLabel("")
+        vim_icon_lbl.setFont(QFont("JetBrainsMono Nerd Font", 16))
+        pref_layout.addWidget(vim_icon_lbl)
+
+        vim_info = QVBoxLayout()
+        vim_info.setSpacing(2)
+        vim_title = QLabel("Modal Vim Keybindings")
+        vim_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        vim_desc = QLabel("Navigate with h/j/k/l, w/b, 0/$, edit with i/a/o/O, delete with dd/x, undo with u, Esc for Normal mode")
+        vim_desc.setFont(QFont("JetBrainsMono Nerd Font", 8))
+        vim_desc.setStyleSheet("color: #888888; border: none;")
+        vim_info.addWidget(vim_title)
+        vim_info.addWidget(vim_desc)
+        pref_layout.addLayout(vim_info)
+        pref_layout.addStretch()
+
+        self.vim_checkbox = QCheckBox("Enable Vim Mode")
+        self.vim_checkbox.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        self.vim_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
+        self.vim_checkbox.setChecked(self.config.get("vim_mode", False))
+        self.vim_checkbox.toggled.connect(self.toggle_vim_mode)
+        pref_layout.addWidget(self.vim_checkbox)
+        settings_layout.addWidget(pref_card)
 
         # Themes Gallery Title
         th_header = QLabel("🎨 Themes Gallery (Click to activate):")
@@ -707,7 +894,7 @@ class NoteApp(QMainWindow):
         self.update_calendar_highlights()
 
     def _rebuild_entry_index(self):
-        """O(1) lookup dict: entry_id → entry dict."""
+        """O(1) lookup dict: entry_id -> entry dict."""
         self._entry_index = {e["id"]: e for e in self.entries}
 
 
@@ -734,6 +921,54 @@ class NoteApp(QMainWindow):
         if matched:
             self.load_entry(matched[0]["id"])
 
+    def toggle_vim_mode(self, enabled: bool):
+        self.config["vim_mode"] = enabled
+        save_config(self.config)
+        self.content_edit.set_vim_enabled(enabled)
+        self.vim_status_lbl.setVisible(enabled)
+        if enabled:
+            self.update_vim_status("NORMAL")
+
+    def update_vim_status(self, mode_str: str):
+        if not self.config.get("vim_mode", False):
+            self.vim_status_lbl.setVisible(False)
+            return
+        self.vim_status_lbl.setVisible(True)
+        meta = THEME_META.get(self.current_theme, THEME_META["Void (Dark)"])
+        if mode_str == "NORMAL":
+            self.vim_status_lbl.setText(" -- NORMAL -- ")
+            self.vim_status_lbl.setStyleSheet(f"color: {meta['bg']}; background-color: {meta['acc']}; border-radius: 4px; padding: 2px 8px;")
+        elif mode_str == "INSERT":
+            self.vim_status_lbl.setText(" -- INSERT -- ")
+            self.vim_status_lbl.setStyleSheet(f"color: {meta['fg']}; background-color: rgba(255, 255, 255, 0.1); border: 1px solid {meta['border']}; border-radius: 4px; padding: 2px 8px;")
+        else:
+            self.vim_status_lbl.setText(f" -- {mode_str} -- ")
+
+    def toggle_pin_active_entry(self):
+        if not self.active_id:
+            return
+        entry = self._entry_index.get(self.active_id)
+        if entry:
+            entry["pinned"] = not entry.get("pinned", False)
+            self.save_vault()
+            self.update_pin_button_state(entry.get("pinned", False))
+            self.refresh_entries_list(filter_date=self.active_date_str)
+            # Reselect the active entry in the reordered list
+            for i in range(self.entry_list.count()):
+                it = self.entry_list.item(i)
+                if it.data(Qt.UserRole) == self.active_id:
+                    self.entry_list.setCurrentItem(it)
+                    break
+
+    def update_pin_button_state(self, is_pinned: bool):
+        meta = THEME_META.get(self.current_theme, THEME_META["Void (Dark)"])
+        if is_pinned:
+            self.pin_btn.setText("󰤱 Pinned")
+            self.pin_btn.setStyleSheet(f"color: {meta['bg']}; background-color: {meta['acc']}; border: 1px solid {meta['acc']};")
+        else:
+            self.pin_btn.setText("󰤰 Pin")
+            self.pin_btn.setStyleSheet("")
+
     def on_search_filter(self, text):
         query = text.strip().lower()
         if not query:
@@ -741,13 +976,15 @@ class NoteApp(QMainWindow):
             return
 
         self.entry_list.clear()
-        for e in self.entries:
+        target_list = sorted(self.entries, key=lambda e: (not e.get("pinned", False), e.get("date", "")), reverse=False)
+        for e in target_list:
             title = e.get("title", "").lower()
             content = e.get("content", "").lower()
             tags = e.get("tags", "").lower()
             if query in title or query in content or query in tags:
                 preview_title = e.get('title') or 'Untitled Thought'
-                item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
+                pin_badge = "󰤱 " if e.get("pinned", False) else "󱞪 "
+                item = QListWidgetItem(f"{pin_badge}{preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
                 item.setData(Qt.UserRole, e["id"])
                 self.entry_list.addItem(item)
 
@@ -758,10 +995,13 @@ class NoteApp(QMainWindow):
 
     def refresh_entries_list(self, filter_date=None):
         self.entry_list.clear()
+        # Pinned entries come first, then sorted by insertion order/date
         target_list = [e for e in self.entries if not filter_date or e["date"] == filter_date]
+        target_list.sort(key=lambda e: (not e.get("pinned", False)))
         for e in target_list:
             preview_title = e.get('title') or 'Untitled Thought'
-            item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
+            pin_badge = "󰤱 " if e.get("pinned", False) else "󱞪 "
+            item = QListWidgetItem(f"{pin_badge}{preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
             item.setData(Qt.UserRole, e["id"])
             self.entry_list.addItem(item)
 
@@ -774,7 +1014,8 @@ class NoteApp(QMainWindow):
             "title": "",
             "content": "",
             "tags": "",
-            "mood": "focused"
+            "mood": "focused",
+            "pinned": False
         }
         self.entries.insert(0, new_e)
         self._entry_index[new_e["id"]] = new_e   # update index immediately
@@ -799,6 +1040,7 @@ class NoteApp(QMainWindow):
             self.tags_edit.clear()
             self.content_edit.clear()
             self.active_id = None
+            self.update_pin_button_state(False)
 
     def load_entry(self, entry_id):
         self.active_id = entry_id
@@ -813,6 +1055,7 @@ class NoteApp(QMainWindow):
             self.content_edit.setText(entry.get("content", ""))
             self.meta_lbl.setText(f"󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
             self.update_word_count(entry.get("content", ""))
+            self.update_pin_button_state(entry.get("pinned", False))
 
             self.title_edit.blockSignals(False)
             self.tags_edit.blockSignals(False)
@@ -839,7 +1082,8 @@ class NoteApp(QMainWindow):
             current_item = self.entry_list.currentItem()
             if current_item and current_item.data(Qt.UserRole) == self.active_id:
                 preview_title = entry.get('title') or 'Untitled Thought'
-                current_item.setText(f"󱞪 {preview_title}\n󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
+                pin_badge = "󰤱 " if entry.get("pinned", False) else "󱞪 "
+                current_item.setText(f"{pin_badge}{preview_title}\n󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
             
             # Debounce: reset timer on keystroke
             self._save_timer.start()
