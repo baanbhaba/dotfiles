@@ -31,6 +31,28 @@ window#waybar {
 
 #clock {
     font-weight: bold;
+    color: #ffb000;
+    padding: 0 12px;
+    background: rgba(8, 8, 8, 0.6);
+    border-radius: 4px;
+}
+
+#clock:hover {
+    background: #ffb000;
+    color: #080808;
+}
+
+tooltip {
+    background: #080808;
+    border: 1px solid #ffb000;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+tooltip label {
+    color: #e0e0e0;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
 }
 
 #custom-clipboard, #pulseaudio, #battery, #tray {
