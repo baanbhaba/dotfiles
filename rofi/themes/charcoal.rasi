@@ -12,7 +12,7 @@ configuration {
     fg: #8c9b32;              /* Muted Amber Green */
     highlight: #ffb000;       /* Amber Selection Box */
     text-selected: #080808;   /* Dark text on selection */
-    text-active: #ffb000;     /* Amber typing text */
+    text-active: #ffffff;     /* Bright White Typing Text */
 }
 
 window {
@@ -41,14 +41,16 @@ inputbar {
 
 prompt {
     background-color: transparent;
-    text-color: @text-active;
+    text-color: #ffb000;
+    margin: 0 8px 0 0;
 }
 
 entry {
     background-color: transparent;
-    text-color: @text-active;
-    placeholder: " ";
-    placeholder-color: #3a3a3a;
+    text-color: #ffffff;      /* High-contrast crisp white typing text */
+    placeholder: "Search...";
+    placeholder-color: #555555;
+    cursor-color: #ffb000;
 }
 
 listview {
