@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+
+# ============================================================
+# Script: Git Master Backup
+# Description: Automatically scans for Git repositories and syncs
+#              uncommitted changes to remote origins.
+# Author: baanbhaba
+# ============================================================
+
+set -uo pipefail
+
+# ---------------------- COLORS & STYLING ---------------------
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# ---------------------- TIMESTAMP ----------------------------
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+# ---------------------- SCAN DIRECTORIES ---------------------
+SCAN_DIRS=(
+    "$HOME"
+)
+[ -d "/run/media/baanbhaba/External" ] && SCAN_DIRS+=("/run/media/baanbhaba/External")
+
+# ---------------------- EXCLUSIONS ---------------------------
+# Directories and package caches to ignore completely from scanning
+EXCLUDE_PATTERNS=(
+    "*/.cache/*"
+    "*/.local/share/*"
+    "*/.gemini/*"
+    "*/.cargo/*"
+    "*/.rustup/*"
+    "*/.npm/*"
+    "*/.mozilla/*"
+    "*/node_modules/*"
+    "*/.electron/*"
+)
+
+# ---------------------- REMOTE PROTOCOL SELECTION ------------
+echo ""
+echo -e "${BLUE}${BOLD}Select repository remote protocol to backup:${NC}"
+echo "1) SSH only (git@*)"
+echo "2) HTTPS only (https://*)"
+echo "3) Both SSH + HTTPS (Default)"
+echo ""
+
+read -r -p "Choice [1-3]: " REMOTE_MODE
+
+case "${REMOTE_MODE:-3}" in
+    1)
+        ALLOW_SSH=1
+        ALLOW_HTTPS=0
+        MODE_NAME="SSH Only"
+        ;;
+    2)
+        ALLOW_SSH=0
+        ALLOW_HTTPS=1
+        MODE_NAME="HTTPS Only"
+        ;;
+    *)
+        ALLOW_SSH=1
+        ALLOW_HTTPS=1
+        MODE_NAME="SSH + HTTPS"
+        ;;
+esac
+
+# ---------------------- HEADER -------------------------------
+echo ""
+echo -e "${BLUE}╔════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║                 🚀 GIT MASTER BACKUP               ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${CYAN}📅 Timestamp :${NC} $TIMESTAMP"
+echo -e "${CYAN}🌐 Mode      :${NC} $MODE_NAME"
+echo -e "${CYAN}🔍 Scanning  :${NC} ${SCAN_DIRS[*]}"
+echo ""
+
+# Build exclusion arguments for find
+FIND_EXCLUDES=()
+for excl in "${EXCLUDE_PATTERNS[@]}"; do
+    FIND_EXCLUDES+=(-not -path "$excl")
+done
+
+SUCCESS_COUNT=0
+SKIPPED_COUNT=0
+FAILED_COUNT=0
+
+# ---------------------- FIND AND PROCESS ---------------------
+while IFS= read -r gitdir; do
+    repo="$(dirname "$gitdir")"
+    
+    echo -e "${CYAN}--------------------------------------------------${NC}"
+    echo -e "${BOLD}📁 Repo:${NC} $repo"
+    
+    if ! git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
+        echo -e "${RED}❌ Invalid git directory, skipping.${NC}\n"
+        ((FAILED_COUNT++))
+        continue
+    fi
+    
+    remote_url=$(git -C "$repo" remote get-url origin 2>/dev/null || true)
+    
+    if [[ -z "$remote_url" ]]; then
+        echo -e "${YELLOW}⚠️  No remote origin configured, skipping.${NC}\n"
+        ((SKIPPED_COUNT++))
+        continue
+    fi
+    
+    # Filter remote protocol
+    if [[ "$remote_url" == git@* ]]; then
+        if [[ $ALLOW_SSH -eq 0 ]]; then
+            echo -e "${YELLOW}🔒 SSH repo skipped by user mode.${NC}\n"
+            ((SKIPPED_COUNT++))
+            continue
+        fi
+    elif [[ "$remote_url" == https://* ]]; then
+        if [[ $ALLOW_HTTPS -eq 0 ]]; then
+            echo -e "${YELLOW}🔒 HTTPS repo skipped by user mode.${NC}\n"
+            ((SKIPPED_COUNT++))
+            continue
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Unknown remote format ($remote_url), skipping.${NC}\n"
+        ((SKIPPED_COUNT++))
+        continue
+    fi
+    
+    current_branch=$(git -C "$repo" branch --show-current 2>/dev/null || true)
+    if [[ -z "$current_branch" ]]; then
+        current_branch=$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "HEAD")
+    fi
+    
+    echo -e "${BLUE}🌿 Branch:${NC} $current_branch | ${BLUE}🌐 Remote:${NC} $remote_url"
+    
+    # Check status
+    changes=$(git -C "$repo" status --porcelain 2>/dev/null || true)
+    
+    if [[ -n "$changes" ]]; then
+        count=$(echo "$changes" | wc -l)
+        echo -e "${YELLOW}📝 Detected $count change(s). Staging & committing...${NC}"
+        echo "$changes" | head -n 5
+        if [[ $count -gt 5 ]]; then
+            echo -e "${YELLOW}   ... and $((count - 5)) more files${NC}"
+        fi
+        
+        git -C "$repo" add -A
+        git -C "$repo" commit -m "Auto-backup: $TIMESTAMP" >/dev/null 2>&1 || true
+    fi
+    
+    # Check if local is ahead of remote or unpushed commits exist
+    ahead=$(git -C "$repo" rev-list --count "@{u}..HEAD" 2>/dev/null || echo "1")
+    
+    if [[ "$ahead" -gt 0 ]] || [[ -n "$changes" ]]; then
+        echo -e "${YELLOW}📤 Pushing branch '$current_branch'...${NC}"
+        if git -C "$repo" push origin "$current_branch" 2>&1; then
+            echo -e "${GREEN}✅ Pushed successfully.${NC}\n"
+            ((SUCCESS_COUNT++))
+        else
+            echo -e "${YELLOW}   Retrying with upstream setup...${NC}"
+            if git -C "$repo" push --set-upstream origin "$current_branch" 2>&1; then
+                echo -e "${GREEN}✅ Upstream set & push successful.${NC}\n"
+                ((SUCCESS_COUNT++))
+            else
+                echo -e "${RED}❌ Push failed for $repo.${NC}\n"
+                ((FAILED_COUNT++))
+            fi
+        fi
+    else
+        echo -e "${GREEN}💤 Everything clean and up to date with remote.${NC}\n"
+        ((SUCCESS_COUNT++))
+    fi
+
+done < <(find "${SCAN_DIRS[@]}" "${FIND_EXCLUDES[@]}" -type d -name ".git" 2>/dev/null)
+
+# ---------------------- SUMMARY ------------------------------
+echo -e "${GREEN}╔════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║                🎉 ALL REPOS PROCESSED!             ║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════╝${NC}"
+echo -e "Summary: ${GREEN}$SUCCESS_COUNT succeeded${NC} | ${YELLOW}$SKIPPED_COUNT skipped${NC} | ${RED}$FAILED_COUNT failed${NC}\n"
