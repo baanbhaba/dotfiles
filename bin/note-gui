@@ -44,8 +44,9 @@ def decrypt_string(payload: dict, pin: str) -> str:
         decrypted.append(b ^ k)
     return decrypted.decode('utf-8')
 
-# COMPLETE THEMES & COLORWAYS REPOSITORY (DARK, LIGHT, AMBER, PURPLE, EMERALD, CRIMSON, PASTEL, ETC.)
+# COMPLETE DUAL-MODE (DARK & LIGHT) THEME REPOSITORY ACROSS ALL 13 STYLES
 THEMES = {
+    # 1. CHARCOAL AMBER
     "Charcoal Amber (Dark)": """
         QMainWindow { background-color: #080808; }
         QWidget { background-color: #080808; color: #d6d6d6; font-family: 'JetBrainsMono Nerd Font', monospace; }
@@ -64,96 +65,26 @@ THEMES = {
         QSplitter::handle { background-color: #1f1f1f; width: 4px; }
         QSplitter::handle:hover { background-color: #ffb000; }
     """,
-    "Midnight Purple (Dark)": """
-        QMainWindow { background-color: #0d0614; }
-        QWidget { background-color: #0d0614; color: #e2d4f0; font-family: 'JetBrainsMono Nerd Font', monospace; }
-        QFrame#CalendarFrame { background-color: #160a22; border: 1px solid #3d1b5c; border-radius: 12px; }
-        QLineEdit, QTextEdit { background-color: #160a22; color: #c084fc; border: 1px solid #3d1b5c; border-radius: 8px; padding: 10px; selection-background-color: #c084fc; selection-color: #0d0614; }
-        QLineEdit:focus, QTextEdit:focus { border: 1px solid #c084fc; background-color: #1e0e2e; }
-        QTextEdit { background-color: #12081c; color: #f3e8ff; font-size: 14px; }
-        QPushButton { background-color: #210f36; color: #c084fc; border: 1px solid #4c1d95; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
-        QPushButton:hover { background-color: #c084fc; color: #0d0614; border-color: #c084fc; }
-        QListWidget { background-color: #12081c; border: 1px solid #3d1b5c; border-radius: 8px; padding: 4px; }
-        QListWidget::item { background-color: #1a0c2b; color: #d8b4fe; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #2e1065; }
-        QListWidget::item:hover { border: 1px solid #c084fc; background-color: #26123d; color: #ffffff; }
-        QListWidget::item:selected { background-color: #c084fc; color: #0d0614; font-weight: bold; }
-        QComboBox { background-color: #160a22; color: #c084fc; border: 1px solid #3d1b5c; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
-        QComboBox QAbstractItemView { background-color: #160a22; color: #c084fc; selection-background-color: #c084fc; selection-color: #0d0614; }
-        QSplitter::handle { background-color: #3d1b5c; width: 4px; }
-        QSplitter::handle:hover { background-color: #c084fc; }
+    "Charcoal Amber (Light)": """
+        QMainWindow { background-color: #fffbf0; }
+        QWidget { background-color: #fffbf0; color: #2d2416; font-family: 'JetBrainsMono Nerd Font', monospace; }
+        QFrame#CalendarFrame { background-color: #fff4d9; border: 1px solid #e0c896; border-radius: 12px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #b45309; border: 1px solid #e0c896; border-radius: 8px; padding: 10px; selection-background-color: #d97706; selection-color: #ffffff; }
+        QLineEdit:focus, QTextEdit:focus { border: 1px solid #d97706; background-color: #fffefb; }
+        QTextEdit { background-color: #ffffff; color: #2d2416; font-size: 14px; }
+        QPushButton { background-color: #fde68a; color: #78350f; border: 1px solid #d97706; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #d97706; color: #ffffff; }
+        QListWidget { background-color: #fff4d9; border: 1px solid #e0c896; border-radius: 8px; padding: 4px; }
+        QListWidget::item { background-color: #ffffff; color: #2d2416; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #fef3c7; }
+        QListWidget::item:hover { border: 1px solid #d97706; background-color: #fef9c3; }
+        QListWidget::item:selected { background-color: #d97706; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #b45309; border: 1px solid #d97706; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #2d2416; selection-background-color: #d97706; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #e0c896; width: 4px; }
+        QSplitter::handle:hover { background-color: #d97706; }
     """,
-    "Emerald Matrix (Dark)": """
-        QMainWindow { background-color: #050d08; }
-        QWidget { background-color: #050d08; color: #a7f3d0; font-family: 'JetBrainsMono Nerd Font', monospace; }
-        QFrame#CalendarFrame { background-color: #08170e; border: 1px solid #065f46; border-radius: 12px; }
-        QLineEdit, QTextEdit { background-color: #08170e; color: #34d399; border: 1px solid #065f46; border-radius: 8px; padding: 10px; selection-background-color: #34d399; selection-color: #050d08; }
-        QLineEdit:focus, QTextEdit:focus { border: 1px solid #10b981; background-color: #0c2417; }
-        QTextEdit { background-color: #06120b; color: #ecfdf5; font-size: 14px; }
-        QPushButton { background-color: #0a2114; color: #34d399; border: 1px solid #059669; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
-        QPushButton:hover { background-color: #10b981; color: #050d08; border-color: #10b981; }
-        QListWidget { background-color: #06120b; border: 1px solid #065f46; border-radius: 8px; padding: 4px; }
-        QListWidget::item { background-color: #0a1f13; color: #a7f3d0; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #064e3b; }
-        QListWidget::item:hover { border: 1px solid #34d399; background-color: #0f2e1c; color: #ffffff; }
-        QListWidget::item:selected { background-color: #10b981; color: #050d08; font-weight: bold; }
-        QComboBox { background-color: #08170e; color: #34d399; border: 1px solid #065f46; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
-        QComboBox QAbstractItemView { background-color: #08170e; color: #34d399; selection-background-color: #10b981; selection-color: #050d08; }
-        QSplitter::handle { background-color: #065f46; width: 4px; }
-        QSplitter::handle:hover { background-color: #10b981; }
-    """,
-    "Crimson Blood (Dark)": """
-        QMainWindow { background-color: #0f0505; }
-        QWidget { background-color: #0f0505; color: #fecdd3; font-family: 'JetBrainsMono Nerd Font', monospace; }
-        QFrame#CalendarFrame { background-color: #1a0808; border: 1px solid #881337; border-radius: 12px; }
-        QLineEdit, QTextEdit { background-color: #1a0808; color: #fb7185; border: 1px solid #881337; border-radius: 8px; padding: 10px; selection-background-color: #f43f5e; selection-color: #0f0505; }
-        QLineEdit:focus, QTextEdit:focus { border: 1px solid #f43f5e; background-color: #240b0b; }
-        QTextEdit { background-color: #140606; color: #fff1f2; font-size: 14px; }
-        QPushButton { background-color: #260c0c; color: #fb7185; border: 1px solid #be123c; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
-        QPushButton:hover { background-color: #f43f5e; color: #0f0505; border-color: #f43f5e; }
-        QListWidget { background-color: #140606; border: 1px solid #881337; border-radius: 8px; padding: 4px; }
-        QListWidget::item { background-color: #210a0a; color: #fda4af; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #4c0519; }
-        QListWidget::item:hover { border: 1px solid #fb7185; background-color: #310e0e; color: #ffffff; }
-        QListWidget::item:selected { background-color: #f43f5e; color: #0f0505; font-weight: bold; }
-        QComboBox { background-color: #1a0808; color: #fb7185; border: 1px solid #881337; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
-        QComboBox QAbstractItemView { background-color: #1a0808; color: #fb7185; selection-background-color: #f43f5e; selection-color: #0f0505; }
-        QSplitter::handle { background-color: #881337; width: 4px; }
-        QSplitter::handle:hover { background-color: #f43f5e; }
-    """,
-    "Daylight Minimal (Light)": """
-        QMainWindow { background-color: #f8fafc; }
-        QWidget { background-color: #f8fafc; color: #1e293b; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
-        QFrame#CalendarFrame { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; }
-        QLineEdit, QTextEdit { background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; selection-background-color: #0284c7; selection-color: #ffffff; }
-        QLineEdit:focus, QTextEdit:focus { border: 1px solid #0284c7; background-color: #f0f9ff; }
-        QTextEdit { background-color: #ffffff; font-size: 14px; }
-        QPushButton { background-color: #e2e8f0; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
-        QPushButton:hover { background-color: #0284c7; color: #ffffff; border-color: #0284c7; }
-        QListWidget { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px; }
-        QListWidget::item { background-color: #f1f5f9; color: #334155; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        QListWidget::item:hover { border: 1px solid #0284c7; background-color: #e0f2fe; color: #0284c7; }
-        QListWidget::item:selected { background-color: #0284c7; color: #ffffff; font-weight: bold; }
-        QComboBox { background-color: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
-        QComboBox QAbstractItemView { background-color: #ffffff; color: #0f172a; selection-background-color: #0284c7; selection-color: #ffffff; }
-        QSplitter::handle { background-color: #cbd5e1; width: 4px; }
-        QSplitter::handle:hover { background-color: #0284c7; }
-    """,
-    "Pastel Cream (Light)": """
-        QMainWindow { background-color: #faf6f0; }
-        QWidget { background-color: #faf6f0; color: #4a4036; font-family: 'JetBrainsMono Nerd Font', serif; }
-        QFrame#CalendarFrame { background-color: #f2eae0; border: 1px solid #d4c5b3; border-radius: 12px; }
-        QLineEdit, QTextEdit { background-color: #ffffff; color: #3a322b; border: 1px solid #d4c5b3; border-radius: 8px; padding: 10px; selection-background-color: #c4a35a; selection-color: #ffffff; }
-        QLineEdit:focus, QTextEdit:focus { border: 1px solid #c4a35a; background-color: #fffdfa; }
-        QTextEdit { background-color: #ffffff; font-size: 14px; }
-        QPushButton { background-color: #e8dccb; color: #4a4036; border: 1px solid #c4a35a; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
-        QPushButton:hover { background-color: #c4a35a; color: #ffffff; }
-        QListWidget { background-color: #f2eae0; border: 1px solid #d4c5b3; border-radius: 8px; padding: 4px; }
-        QListWidget::item { background-color: #ffffff; color: #4a4036; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #e3d7c8; }
-        QListWidget::item:hover { border: 1px solid #c4a35a; background-color: #fffaf0; }
-        QListWidget::item:selected { background-color: #c4a35a; color: #ffffff; font-weight: bold; }
-        QComboBox { background-color: #f2eae0; color: #4a4036; border: 1px solid #c4a35a; border-radius: 6px; padding: 4px 8px; }
-        QComboBox QAbstractItemView { background-color: #ffffff; color: #4a4036; selection-background-color: #c4a35a; selection-color: #ffffff; }
-        QSplitter::handle { background-color: #d4c5b3; width: 4px; }
-        QSplitter::handle:hover { background-color: #c4a35a; }
-    """,
+
+    # 2. NEO-BRUTALISM
     "Neo-Brutalism (Light)": """
         QMainWindow { background-color: #fffdf0; }
         QWidget { background-color: #fffdf0; color: #000000; font-family: 'JetBrainsMono Nerd Font', sans-serif; font-weight: bold; }
@@ -172,7 +103,27 @@ THEMES = {
         QSplitter::handle { background-color: #000000; width: 6px; }
         QSplitter::handle:hover { background-color: #ff006e; }
     """,
-    "Brutalism Raw (Dark)": """
+    "Neo-Brutalism (Dark)": """
+        QMainWindow { background-color: #121014; }
+        QWidget { background-color: #121014; color: #ffffff; font-family: 'JetBrainsMono Nerd Font', sans-serif; font-weight: bold; }
+        QFrame#CalendarFrame { background-color: #1c1822; border: 3px solid #ff006e; border-radius: 8px; }
+        QLineEdit, QTextEdit { background-color: #1c1822; color: #ffbe0b; border: 3px solid #00f5d4; border-radius: 6px; padding: 10px; font-weight: bold; }
+        QLineEdit:focus, QTextEdit:focus { border: 3px solid #ff006e; background-color: #241e2c; }
+        QTextEdit { background-color: #18141d; font-size: 14px; }
+        QPushButton { background-color: #ff006e; color: #ffffff; border: 3px solid #ffbe0b; border-radius: 6px; padding: 8px 14px; font-weight: 900; }
+        QPushButton:hover { background-color: #00f5d4; color: #000000; }
+        QListWidget { background-color: #18141d; border: 3px solid #ff006e; border-radius: 8px; padding: 4px; }
+        QListWidget::item { background-color: #241e2c; color: #ffffff; margin-bottom: 6px; padding: 10px; border-radius: 4px; border: 2px solid #00f5d4; }
+        QListWidget::item:hover { background-color: #ffbe0b; color: #000000; }
+        QListWidget::item:selected { background-color: #ff006e; color: #ffffff; }
+        QComboBox { background-color: #ffbe0b; color: #000000; border: 3px solid #ffffff; border-radius: 6px; padding: 4px 8px; font-weight: 900; }
+        QComboBox QAbstractItemView { background-color: #1c1822; color: #ffffff; selection-background-color: #ff006e; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #ff006e; width: 6px; }
+        QSplitter::handle:hover { background-color: #00f5d4; }
+    """,
+
+    # 3. BRUTALISM
+    "Brutalism (Dark)": """
         QMainWindow { background-color: #121212; }
         QWidget { background-color: #121212; color: #f0f0f0; font-family: 'JetBrainsMono Nerd Font', monospace; font-weight: bold; }
         QFrame#CalendarFrame { background-color: #1c1c1c; border: 3px solid #ffffff; border-radius: 0px; }
@@ -189,7 +140,26 @@ THEMES = {
         QComboBox QAbstractItemView { background-color: #181818; color: #ffffff; selection-background-color: #ffffff; selection-color: #000000; }
         QSplitter::handle { background-color: #ffffff; width: 5px; }
     """,
-    "Neo-Classical (Gold Dark)": """
+    "Brutalism (Light)": """
+        QMainWindow { background-color: #e5e5e5; }
+        QWidget { background-color: #e5e5e5; color: #000000; font-family: 'JetBrainsMono Nerd Font', monospace; font-weight: bold; }
+        QFrame#CalendarFrame { background-color: #f5f5f5; border: 3px solid #000000; border-radius: 0px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #000000; border: 3px solid #000000; border-radius: 0px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 3px solid #000000; background-color: #ffffff; }
+        QTextEdit { background-color: #ffffff; font-size: 14px; }
+        QPushButton { background-color: #cccccc; color: #000000; border: 3px solid #000000; border-radius: 0px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #000000; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 3px solid #000000; border-radius: 0px; }
+        QListWidget::item { background-color: #f0f0f0; color: #000000; border: 2px solid #000000; border-radius: 0px; margin-bottom: 4px; }
+        QListWidget::item:hover { background-color: #d9d9d9; }
+        QListWidget::item:selected { background-color: #000000; color: #ffffff; font-weight: 900; }
+        QComboBox { background-color: #ffffff; color: #000000; border: 3px solid #000000; border-radius: 0px; padding: 4px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #000000; selection-background-color: #000000; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #000000; width: 5px; }
+    """,
+
+    # 4. NEO-CLASSICAL
+    "Neo-Classical (Dark)": """
         QMainWindow { background-color: #1c1714; }
         QWidget { background-color: #1c1714; color: #ebdccb; font-family: 'JetBrainsMono Nerd Font', serif; }
         QFrame#CalendarFrame { background-color: #261f1b; border: 1px solid #c5a059; border-radius: 8px; }
@@ -207,7 +177,26 @@ THEMES = {
         QSplitter::handle { background-color: #634b35; width: 4px; }
         QSplitter::handle:hover { background-color: #c5a059; }
     """,
-    "Neumorphism Slate (Dark)": """
+    "Neo-Classical (Light)": """
+        QMainWindow { background-color: #fcf8f2; }
+        QWidget { background-color: #fcf8f2; color: #3e3228; font-family: 'JetBrainsMono Nerd Font', serif; }
+        QFrame#CalendarFrame { background-color: #f4ecdf; border: 1px solid #b38b4d; border-radius: 8px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #4a392b; border: 1px solid #b38b4d; border-radius: 6px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #8c6832; background-color: #ffffff; }
+        QTextEdit { background-color: #ffffff; color: #3e3228; font-size: 14px; }
+        QPushButton { background-color: #eddcc6; color: #4a392b; border: 1px solid #b38b4d; border-radius: 6px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #b38b4d; color: #ffffff; }
+        QListWidget { background-color: #f4ecdf; border: 1px solid #b38b4d; border-radius: 8px; }
+        QListWidget::item { background-color: #ffffff; color: #3e3228; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #e0d0bc; }
+        QListWidget::item:hover { border: 1px solid #b38b4d; background-color: #faf3e8; }
+        QListWidget::item:selected { background-color: #b38b4d; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #f4ecdf; color: #4a392b; border: 1px solid #b38b4d; border-radius: 6px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #3e3228; selection-background-color: #b38b4d; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #b38b4d; width: 4px; }
+    """,
+
+    # 5. NEUMORPHISM
+    "Neumorphism (Dark)": """
         QMainWindow { background-color: #23272f; }
         QWidget { background-color: #23272f; color: #bac3cf; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
         QFrame#CalendarFrame { background-color: #23272f; border: 2px solid #2d323c; border-radius: 16px; }
@@ -225,7 +214,26 @@ THEMES = {
         QSplitter::handle { background-color: #2d323c; width: 5px; }
         QSplitter::handle:hover { background-color: #61dafb; }
     """,
-    "Glassmorphism Cyan (Dark)": """
+    "Neumorphism (Light)": """
+        QMainWindow { background-color: #e0e5ec; }
+        QWidget { background-color: #e0e5ec; color: #4a5568; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
+        QFrame#CalendarFrame { background-color: #e0e5ec; border: 2px solid #ffffff; border-radius: 16px; }
+        QLineEdit, QTextEdit { background-color: #e0e5ec; color: #2b6cb0; border: 2px solid #cbd5e0; border-radius: 12px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #3182ce; background-color: #ebf0f7; }
+        QTextEdit { background-color: #e0e5ec; font-size: 14px; }
+        QPushButton { background-color: #e0e5ec; color: #2b6cb0; border: 2px solid #ffffff; border-radius: 12px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #3182ce; color: #ffffff; }
+        QListWidget { background-color: #e0e5ec; border: 2px solid #cbd5e0; border-radius: 14px; }
+        QListWidget::item { background-color: #e0e5ec; color: #4a5568; margin-bottom: 6px; padding: 10px; border-radius: 10px; border: 1px solid #ffffff; }
+        QListWidget::item:hover { border-color: #3182ce; }
+        QListWidget::item:selected { background-color: #3182ce; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #e0e5ec; color: #2b6cb0; border: 2px solid #cbd5e0; border-radius: 10px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #e0e5ec; color: #4a5568; selection-background-color: #3182ce; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #cbd5e0; width: 5px; }
+    """,
+
+    # 6. GLASSMORPHISM
+    "Glassmorphism (Dark)": """
         QMainWindow { background-color: #12151f; }
         QWidget { background-color: #12151f; color: #e2e8f0; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
         QFrame#CalendarFrame { background-color: #1a2030; border: 1px solid #2d3748; border-radius: 14px; }
@@ -243,7 +251,26 @@ THEMES = {
         QSplitter::handle { background-color: #2d3748; width: 4px; }
         QSplitter::handle:hover { background-color: #63b3ed; }
     """,
-    "Scrapbook Kraft (Light)": """
+    "Glassmorphism (Light)": """
+        QMainWindow { background-color: #e6eef8; }
+        QWidget { background-color: #e6eef8; color: #2d3748; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
+        QFrame#CalendarFrame { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #3182ce; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 1px solid #3182ce; background-color: #f7fafc; }
+        QTextEdit { background-color: #ffffff; color: #2d3748; font-size: 14px; }
+        QPushButton { background-color: #edf2f7; color: #3182ce; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #3182ce; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; }
+        QListWidget::item { background-color: #f7fafc; color: #4a5568; margin-bottom: 6px; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        QListWidget::item:hover { border: 1px solid #3182ce; background-color: #ebf8ff; }
+        QListWidget::item:selected { background-color: #3182ce; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #3182ce; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #2d3748; selection-background-color: #3182ce; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #cbd5e1; width: 4px; }
+    """,
+
+    # 7. SCRAPBOOK
+    "Scrapbook (Light)": """
         QMainWindow { background-color: #f7f1e5; }
         QWidget { background-color: #f7f1e5; color: #3d352e; font-family: 'JetBrainsMono Nerd Font', serif; font-size: 13px; }
         QFrame#CalendarFrame { background-color: #ede2cf; border: 2px dashed #a08264; border-radius: 8px; }
@@ -260,7 +287,26 @@ THEMES = {
         QComboBox QAbstractItemView { background-color: #fffaf0; color: #3d352e; selection-background-color: #8b5a2b; selection-color: #fffaf0; }
         QSplitter::handle { background-color: #a08264; width: 5px; }
     """,
-    "Pixel Art Dracula (Dark)": """
+    "Scrapbook (Dark)": """
+        QMainWindow { background-color: #241d17; }
+        QWidget { background-color: #241d17; color: #ede2cf; font-family: 'JetBrainsMono Nerd Font', serif; }
+        QFrame#CalendarFrame { background-color: #2e251e; border: 2px dashed #b89874; border-radius: 8px; }
+        QLineEdit, QTextEdit { background-color: #1d1611; color: #f7f1e5; border: 2px solid #8b6b4e; border-radius: 4px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #d4a373; background-color: #281f18; }
+        QTextEdit { background-color: #1d1611; font-size: 14px; }
+        QPushButton { background-color: #382c23; color: #f7f1e5; border: 2px solid #b89874; border-radius: 6px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #d4a373; color: #241d17; }
+        QListWidget { background-color: #2e251e; border: 2px solid #8b6b4e; border-radius: 6px; }
+        QListWidget::item { background-color: #1d1611; color: #ede2cf; margin-bottom: 6px; padding: 10px; border-radius: 4px; border: 1px dashed #b89874; }
+        QListWidget::item:hover { border: 1px solid #d4a373; background-color: #382c23; }
+        QListWidget::item:selected { background-color: #d4a373; color: #241d17; font-weight: bold; }
+        QComboBox { background-color: #2e251e; color: #f7f1e5; border: 2px solid #b89874; border-radius: 4px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #1d1611; color: #ede2cf; selection-background-color: #d4a373; selection-color: #241d17; }
+        QSplitter::handle { background-color: #b89874; width: 5px; }
+    """,
+
+    # 8. PIXEL ART / RETRO
+    "Pixel Art (Dark)": """
         QMainWindow { background-color: #1a1c23; }
         QWidget { background-color: #1a1c23; color: #8be9fd; font-family: 'JetBrainsMono Nerd Font', monospace; }
         QFrame#CalendarFrame { background-color: #282a36; border: 2px dashed #50fa7b; border-radius: 4px; }
@@ -278,6 +324,25 @@ THEMES = {
         QSplitter::handle { background-color: #6272a4; width: 4px; }
         QSplitter::handle:hover { background-color: #50fa7b; }
     """,
+    "Pixel Art (Light)": """
+        QMainWindow { background-color: #f0f4f8; }
+        QWidget { background-color: #f0f4f8; color: #24292e; font-family: 'JetBrainsMono Nerd Font', monospace; }
+        QFrame#CalendarFrame { background-color: #ffffff; border: 2px dashed #005cc5; border-radius: 4px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #005cc5; border: 2px solid #d1d5da; border-radius: 2px; padding: 8px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #28a745; }
+        QTextEdit { background-color: #ffffff; color: #24292e; font-size: 14px; }
+        QPushButton { background-color: #e1e4e8; color: #005cc5; border: 2px solid #005cc5; border-radius: 2px; padding: 6px 12px; font-weight: bold; }
+        QPushButton:hover { background-color: #28a745; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 2px solid #d1d5da; border-radius: 2px; }
+        QListWidget::item { background-color: #f6f8fa; color: #24292e; margin-bottom: 4px; padding: 8px; border: 1px solid #e1e4e8; }
+        QListWidget::item:hover { border: 1px solid #d73a49; color: #d73a49; }
+        QListWidget::item:selected { background-color: #d73a49; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #005cc5; border: 2px solid #005cc5; border-radius: 2px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #24292e; selection-background-color: #d73a49; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #d1d5da; width: 4px; }
+    """,
+
+    # 9. CONCEPTUAL SKETCHBOOK
     "Conceptual Sketchbook (Dark)": """
         QMainWindow { background-color: #2b2b2b; }
         QWidget { background-color: #2b2b2b; color: #dcdcdc; font-family: 'JetBrainsMono Nerd Font', monospace; }
@@ -295,7 +360,26 @@ THEMES = {
         QComboBox QAbstractItemView { background-color: #303030; color: #ffffff; selection-background-color: #ffffff; selection-color: #222222; }
         QSplitter::handle { background-color: #555555; width: 4px; }
     """,
-    "Y2K Cyberpunk (Dark)": """
+    "Conceptual Sketchbook (Light)": """
+        QMainWindow { background-color: #f5f5f5; }
+        QWidget { background-color: #f5f5f5; color: #333333; font-family: 'JetBrainsMono Nerd Font', monospace; }
+        QFrame#CalendarFrame { background-color: #ffffff; border: 1px solid #bbbbbb; border-radius: 4px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #222222; border: 1px solid #bbbbbb; border-radius: 4px; padding: 8px; }
+        QLineEdit:focus, QTextEdit:focus { border: 1px solid #000000; }
+        QTextEdit { background-color: #ffffff; font-size: 14px; }
+        QPushButton { background-color: #e0e0e0; color: #222222; border: 1px solid #999999; border-radius: 4px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #000000; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 1px solid #bbbbbb; border-radius: 4px; }
+        QListWidget::item { background-color: #f9f9f9; color: #333333; margin-bottom: 4px; padding: 8px; border: 1px solid #e0e0e0; }
+        QListWidget::item:hover { border-color: #000000; }
+        QListWidget::item:selected { background-color: #333333; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #222222; border: 1px solid #999999; border-radius: 4px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #333333; selection-background-color: #000000; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #bbbbbb; width: 4px; }
+    """,
+
+    # 10. Y2K AESTHETIC
+    "Y2K Aesthetic (Dark)": """
         QMainWindow { background-color: #180928; }
         QWidget { background-color: #180928; color: #ff8dfd; font-family: 'JetBrainsMono Nerd Font', monospace; }
         QFrame#CalendarFrame { background-color: #25103a; border: 2px solid #b845ff; border-radius: 12px; }
@@ -313,7 +397,63 @@ THEMES = {
         QSplitter::handle { background-color: #b845ff; width: 5px; }
         QSplitter::handle:hover { background-color: #00ffc8; }
     """,
-    "Cybercore Neon (Dark)": """
+    "Y2K Aesthetic (Light)": """
+        QMainWindow { background-color: #fdf2f8; }
+        QWidget { background-color: #fdf2f8; color: #86198f; font-family: 'JetBrainsMono Nerd Font', monospace; font-weight: bold; }
+        QFrame#CalendarFrame { background-color: #ffffff; border: 2px solid #ec4899; border-radius: 12px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #c026d3; border: 2px solid #ec4899; border-radius: 8px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #06b6d4; background-color: #fdf4ff; }
+        QTextEdit { background-color: #ffffff; color: #701a75; font-size: 14px; }
+        QPushButton { background-color: #f472b6; color: #ffffff; border: 2px solid #06b6d4; border-radius: 8px; padding: 8px 14px; font-weight: 900; }
+        QPushButton:hover { background-color: #06b6d4; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 2px solid #ec4899; border-radius: 10px; }
+        QListWidget::item { background-color: #fdf4ff; color: #86198f; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #fbcfe8; }
+        QListWidget::item:hover { border: 1px solid #06b6d4; background-color: #e0f2fe; }
+        QListWidget::item:selected { background-color: #ec4899; color: #ffffff; font-weight: 900; }
+        QComboBox { background-color: #ffffff; color: #c026d3; border: 2px solid #ec4899; border-radius: 8px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #86198f; selection-background-color: #ec4899; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #ec4899; width: 5px; }
+    """,
+
+    # 11. ANTHROPOMORPHIC WARMTH
+    "Anthropomorphic (Dark)": """
+        QMainWindow { background-color: #241e1c; }
+        QWidget { background-color: #241e1c; color: #f0e6df; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
+        QFrame#CalendarFrame { background-color: #302825; border: 1px solid #6b554e; border-radius: 10px; }
+        QLineEdit, QTextEdit { background-color: #2d2522; color: #ffab91; border: 1px solid #57443e; border-radius: 8px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 1px solid #ff7043; background-color: #362c28; }
+        QTextEdit { background-color: #28211e; color: #faece6; font-size: 14px; }
+        QPushButton { background-color: #3e322e; color: #ffab91; border: 1px solid #ff7043; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #ff7043; color: #1e1715; }
+        QListWidget { background-color: #28211e; border: 1px solid #57443e; border-radius: 8px; }
+        QListWidget::item { background-color: #332a26; color: #f0e6df; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #4a3b35; }
+        QListWidget::item:hover { border-color: #ff7043; background-color: #3d322d; }
+        QListWidget::item:selected { background-color: #ff7043; color: #1e1715; font-weight: bold; }
+        QComboBox { background-color: #302825; color: #ffab91; border: 1px solid #ff7043; border-radius: 6px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #28211e; color: #f0e6df; selection-background-color: #ff7043; selection-color: #1e1715; }
+        QSplitter::handle { background-color: #57443e; width: 4px; }
+        QSplitter::handle:hover { background-color: #ff7043; }
+    """,
+    "Anthropomorphic (Light)": """
+        QMainWindow { background-color: #fff7ed; }
+        QWidget { background-color: #fff7ed; color: #7c2d12; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
+        QFrame#CalendarFrame { background-color: #ffedd5; border: 1px solid #fdba74; border-radius: 10px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #c2410c; border: 1px solid #fdba74; border-radius: 8px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #ea580c; background-color: #ffffff; }
+        QTextEdit { background-color: #ffffff; color: #7c2d12; font-size: 14px; }
+        QPushButton { background-color: #fed7aa; color: #9a3412; border: 1px solid #ea580c; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #ea580c; color: #ffffff; }
+        QListWidget { background-color: #ffedd5; border: 1px solid #fdba74; border-radius: 8px; }
+        QListWidget::item { background-color: #ffffff; color: #7c2d12; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #fed7aa; }
+        QListWidget::item:hover { border-color: #ea580c; background-color: #fff7ed; }
+        QListWidget::item:selected { background-color: #ea580c; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #c2410c; border: 1px solid #ea580c; border-radius: 6px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #7c2d12; selection-background-color: #ea580c; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #fdba74; width: 4px; }
+    """,
+
+    # 12. CYBERCORE
+    "Cybercore (Dark)": """
         QMainWindow { background-color: #02020a; }
         QWidget { background-color: #02020a; color: #00f0ff; font-family: 'JetBrainsMono Nerd Font', monospace; }
         QFrame#CalendarFrame { background-color: #070719; border: 1px solid #ff007f; border-radius: 10px; }
@@ -331,6 +471,25 @@ THEMES = {
         QSplitter::handle { background-color: #00f0ff; width: 4px; }
         QSplitter::handle:hover { background-color: #ff007f; }
     """,
+    "Cybercore (Light)": """
+        QMainWindow { background-color: #f0fdff; }
+        QWidget { background-color: #f0fdff; color: #0e7490; font-family: 'JetBrainsMono Nerd Font', monospace; font-weight: bold; }
+        QFrame#CalendarFrame { background-color: #e0faff; border: 2px solid #06b6d4; border-radius: 10px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #0891b2; border: 2px solid #06b6d4; border-radius: 6px; padding: 10px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #ec4899; }
+        QTextEdit { background-color: #ffffff; color: #164e63; font-size: 14px; }
+        QPushButton { background-color: #cffafe; color: #0e7490; border: 2px solid #06b6d4; border-radius: 6px; padding: 8px 14px; font-weight: bold; }
+        QPushButton:hover { background-color: #ec4899; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 2px solid #06b6d4; border-radius: 6px; }
+        QListWidget::item { background-color: #ecfeff; color: #0e7490; margin-bottom: 6px; padding: 10px; border-radius: 4px; border: 1px solid #a5f3fc; }
+        QListWidget::item:hover { border: 1px solid #ec4899; background-color: #fdf2f8; }
+        QListWidget::item:selected { background-color: #06b6d4; color: #ffffff; font-weight: bold; }
+        QComboBox { background-color: #ffffff; color: #0891b2; border: 2px solid #06b6d4; border-radius: 6px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #0e7490; selection-background-color: #06b6d4; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #06b6d4; width: 4px; }
+    """,
+
+    # 13. GRAFFITI URBAN
     "Graffiti Urban (Dark)": """
         QMainWindow { background-color: #141414; }
         QWidget { background-color: #141414; color: #e2f952; font-family: 'JetBrainsMono Nerd Font', sans-serif; font-weight: 900; }
@@ -347,6 +506,23 @@ THEMES = {
         QComboBox { background-color: #1f1f1f; color: #00ffff; border: 2px solid #e2f952; border-radius: 4px; padding: 4px 8px; }
         QComboBox QAbstractItemView { background-color: #181818; color: #e2f952; selection-background-color: #ff0055; selection-color: #ffffff; }
         QSplitter::handle { background-color: #ff0055; width: 6px; }
+    """,
+    "Graffiti Urban (Light)": """
+        QMainWindow { background-color: #f4f4f5; }
+        QWidget { background-color: #f4f4f5; color: #18181b; font-family: 'JetBrainsMono Nerd Font', sans-serif; font-weight: 900; }
+        QFrame#CalendarFrame { background-color: #ffffff; border: 3px solid #db2777; border-radius: 4px; }
+        QLineEdit, QTextEdit { background-color: #ffffff; color: #0284c7; border: 2px solid #65a30d; border-radius: 4px; padding: 8px; }
+        QLineEdit:focus, QTextEdit:focus { border: 2px solid #db2777; background-color: #ffffff; }
+        QTextEdit { background-color: #ffffff; color: #18181b; font-size: 14px; }
+        QPushButton { background-color: #db2777; color: #ffffff; border: 2px solid #65a30d; border-radius: 4px; padding: 8px 14px; font-weight: 900; }
+        QPushButton:hover { background-color: #65a30d; color: #ffffff; }
+        QListWidget { background-color: #ffffff; border: 2px solid #0284c7; border-radius: 4px; }
+        QListWidget::item { background-color: #f4f4f5; color: #18181b; margin-bottom: 4px; padding: 8px; border: 1px solid #e4e4e7; }
+        QListWidget::item:hover { border: 1px solid #db2777; background-color: #fdf2f8; }
+        QListWidget::item:selected { background-color: #db2777; color: #ffffff; font-weight: 900; }
+        QComboBox { background-color: #ffffff; color: #0284c7; border: 2px solid #65a30d; border-radius: 4px; padding: 4px 8px; }
+        QComboBox QAbstractItemView { background-color: #ffffff; color: #18181b; selection-background-color: #db2777; selection-color: #ffffff; }
+        QSplitter::handle { background-color: #db2777; width: 6px; }
     """
 }
 
@@ -570,7 +746,7 @@ class NoteApp(QMainWindow):
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Switch between all 17 Colorways (Dark, Light, Amber, Midnight Purple, Emerald, Crimson, etc.).\n- Use the interactive Calendar to travel across dates.\n- Toggle Zen Focus for pure distraction-free flow.",
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Switch between all Dark and Light mode variants at the top-right.\n- Use the interactive Calendar to travel across dates.\n- Toggle Zen Focus for pure distraction-free flow.",
                 "tags": "welcome, journal",
                 "mood": "zen"
             }
@@ -665,7 +841,7 @@ class NoteApp(QMainWindow):
         ed_bar.addWidget(self.meta_lbl)
         ed_bar.addStretch()
 
-        # Theme Switcher Dropdown (Colorways & Styles)
+        # Theme Switcher Dropdown (All Dual Dark/Light Variants)
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(list(THEMES.keys()))
         self.theme_combo.currentTextChanged.connect(self.apply_theme)
