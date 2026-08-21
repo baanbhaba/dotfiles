@@ -1,0 +1,10 @@
+# Ignore private keys & credentials
+*.pem
+*.key
+*.priv
+*.id_rsa
+*.id_ed25519
+.env*
+!.env.example
+*.log
+.Trash*
