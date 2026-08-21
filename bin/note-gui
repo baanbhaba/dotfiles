@@ -783,46 +783,51 @@ class NoteApp(QMainWindow):
     def init_settings_page(self):
         self.settings_widget = QWidget()
         settings_layout = QVBoxLayout(self.settings_widget)
-        settings_layout.setContentsMargins(28, 28, 28, 28)
-        settings_layout.setSpacing(20)
+        settings_layout.setContentsMargins(32, 28, 32, 28)
+        settings_layout.setSpacing(18)
 
-        # Header Bar
+        # 1. Top Navigation & Stats Bar
         header = QHBoxLayout()
         back_btn = QPushButton("󰁍 Back to Workspace")
         back_btn.setCursor(QCursor(Qt.PointingHandCursor))
         back_btn.clicked.connect(self.go_to_workspace)
         header.addWidget(back_btn)
-        header.addStretch()
 
-        title = QLabel("󰒓 SETTINGS & THEMES GALLERY")
-        title.setFont(QFont("JetBrainsMono Nerd Font", 14, QFont.Bold))
+        header.addSpacing(16)
+        title = QLabel("󰒓 Settings & Preferences")
+        title.setFont(QFont("JetBrainsMono Nerd Font", 13, QFont.Bold))
         header.addWidget(title)
+
         header.addStretch()
+        self.settings_stats_lbl = QLabel("")
+        self.settings_stats_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.settings_stats_lbl.setStyleSheet("color: #888888; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 4px 10px;")
+        header.addWidget(self.settings_stats_lbl)
         settings_layout.addLayout(header)
 
-        # Editor Preferences Card (Vim Mode & Options)
+        # 2. Editor & Workflow Card
         pref_card = QFrame()
-        pref_card.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px 16px; }")
+        pref_card.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; }")
         pref_layout = QHBoxLayout(pref_card)
-        pref_layout.setContentsMargins(14, 10, 14, 10)
+        pref_layout.setContentsMargins(16, 12, 16, 12)
 
-        vim_icon_lbl = QLabel("")
-        vim_icon_lbl.setFont(QFont("JetBrainsMono Nerd Font", 16))
-        pref_layout.addWidget(vim_icon_lbl)
+        vim_icon = QLabel("")
+        vim_icon.setFont(QFont("JetBrainsMono Nerd Font", 18))
+        pref_layout.addWidget(vim_icon)
 
         vim_info = QVBoxLayout()
         vim_info.setSpacing(2)
-        vim_title = QLabel("Modal Vim Keybindings")
-        vim_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        vim_desc = QLabel("Navigate with h/j/k/l, w/b, 0/$, edit with i/a/o/O, delete with dd/x, undo with u, Esc for Normal mode")
+        vim_title = QLabel("Vim Keybindings")
+        vim_title.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        vim_desc = QLabel("Modal editing (h/j/k/l motions, w/b words, i/a/o edit, dd delete, u undo, Esc normal mode)")
         vim_desc.setFont(QFont("JetBrainsMono Nerd Font", 8))
-        vim_desc.setStyleSheet("color: #888888; border: none;")
+        vim_desc.setStyleSheet("color: #777777; border: none;")
         vim_info.addWidget(vim_title)
         vim_info.addWidget(vim_desc)
         pref_layout.addLayout(vim_info)
         pref_layout.addStretch()
 
-        self.vim_checkbox = QCheckBox("Enable Vim Mode")
+        self.vim_checkbox = QCheckBox("Enable")
         self.vim_checkbox.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
         self.vim_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
         self.vim_checkbox.setChecked(self.config.get("vim_mode", False))
@@ -830,34 +835,72 @@ class NoteApp(QMainWindow):
         pref_layout.addWidget(self.vim_checkbox)
         settings_layout.addWidget(pref_card)
 
-        # Themes Gallery Title
-        th_header = QLabel("🎨 Themes Gallery (Click to activate):")
-        th_header.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        settings_layout.addWidget(th_header)
+        # 3. Themes Filter Bar (Header + Category Filter Pills)
+        theme_bar = QHBoxLayout()
+        th_title = QLabel("🎨 Themes Gallery")
+        th_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        theme_bar.addWidget(th_title)
+        theme_bar.addStretch()
 
-        # Scrollable Themes Gallery
+        self.theme_filter_all = QPushButton("All")
+        self.theme_filter_dark = QPushButton("Dark")
+        self.theme_filter_light = QPushButton("Light")
+        
+        for btn, cat in [(self.theme_filter_all, "all"), (self.theme_filter_dark, "dark"), (self.theme_filter_light, "light")]:
+            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            btn.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
+            btn.clicked.connect(lambda checked, c=cat: self.filter_theme_gallery(c))
+            theme_bar.addWidget(btn)
+
+        settings_layout.addLayout(theme_bar)
+
+        # 4. Scrollable Themes Grid
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_content = QWidget()
-        grid = QGridLayout(scroll_content)
-        grid.setSpacing(14)
-        grid.setContentsMargins(4, 4, 4, 4)
+        self.theme_grid = QGridLayout(scroll_content)
+        self.theme_grid.setSpacing(12)
+        self.theme_grid.setContentsMargins(2, 2, 2, 2)
 
         self.theme_cards = {}
-
         for idx, (t_name, meta) in enumerate(THEME_META.items()):
             card = MotionThemeCard(t_name, meta, self.apply_theme)
             self.theme_cards[t_name] = card
             row = idx // 3
             col = idx % 3
-            grid.addWidget(card, row, col)
+            self.theme_grid.addWidget(card, row, col)
 
         scroll.setWidget(scroll_content)
         settings_layout.addWidget(scroll, 1)
 
         self.stack.addWidget(self.settings_widget)
 
+    def filter_theme_gallery(self, category: str):
+        # Clear and repopulate grid with filtered cards
+        for t_name, card in self.theme_cards.items():
+            card.setVisible(False)
+            self.theme_grid.removeWidget(card)
+
+        visible_cards = []
+        for t_name, card in self.theme_cards.items():
+            is_light = "(Light)" in t_name
+            if category == "all":
+                visible_cards.append((t_name, card))
+            elif category == "dark" and not is_light:
+                visible_cards.append((t_name, card))
+            elif category == "light" and is_light:
+                visible_cards.append((t_name, card))
+
+        for idx, (t_name, card) in enumerate(visible_cards):
+            card.setVisible(True)
+            row = idx // 3
+            col = idx % 3
+            self.theme_grid.addWidget(card, row, col)
+
     def go_to_settings(self):
+        total_words = sum(len(e.get("content", "").split()) for e in self.entries)
+        pinned_count = sum(1 for e in self.entries if e.get("pinned", False))
+        self.settings_stats_lbl.setText(f"󰈙 {len(self.entries)} notes  ·  󰤱 {pinned_count} pinned  ·  󱌒 {total_words} words")
         self.stack.setCurrentIndex(1)
 
     def go_to_workspace(self):
