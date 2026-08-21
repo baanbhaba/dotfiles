@@ -1,2 +1,12 @@
 #!/usr/bin/env bash
-cliphist list | rofi -dmenu -p "📋 Clipboard" | cliphist decode | wl-copy
+
+# Path fallback
+export PATH="$HOME/.local/bin:$PATH"
+
+selected=$(cliphist list | rofi -dmenu -i -p "📋 Clipboard" -lines 10)
+
+if [[ -n "$selected" ]]; then
+    echo "$selected" | cliphist decode | wl-copy
+    # Optional notification
+    command -v notify-send >/dev/null 2>&1 && notify-send -t 1500 "Clipboard" "Copied to clipboard!"
+fi
