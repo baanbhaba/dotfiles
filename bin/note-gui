@@ -12,8 +12,8 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
     QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
-from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, pyqtProperty
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QPainter, QPainterPath
+from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect, QParallelAnimationGroup, pyqtProperty
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
@@ -64,195 +64,305 @@ def decrypt_string(payload: dict, pin: str) -> str:
 # MASTER THEMES & HARMONIC PALETTES
 THEME_META = {
     "Charcoal Amber (Dark)": {
-        "bg": "#080808", "sidebar": "#0d0d0d", "card": "#121212", "fg": "#e2e2e2",
+        "bg": "#080808", "sidebar": "#0d0d0d", "card": "#121212", "card_hover": "#1a1a1a", "fg": "#e2e2e2",
         "acc": "#ffb000", "sub": "#8a7550", "border": "#222222",
         "input_bg": "#101010", "input_fg": "#ffb000", "pill_radius": "18px",
         "desc": "Phosphor Amber CRT Terminal aesthetic with amber glow.",
-        "glow": (255, 176, 0, 80)
+        "glow": (255, 176, 0, 95)
     },
     "Charcoal Amber (Light)": {
-        "bg": "#fcfaf4", "sidebar": "#f4ede0", "card": "#ebe2d1", "fg": "#2c2214",
+        "bg": "#fcfaf4", "sidebar": "#f4ede0", "card": "#ebe2d1", "card_hover": "#f5ece0", "fg": "#2c2214",
         "acc": "#d97706", "sub": "#92400e", "border": "#d8cca8",
         "input_bg": "#ffffff", "input_fg": "#b45309", "pill_radius": "18px",
         "desc": "Warm museum parchment with burnished amber ink.",
-        "glow": (217, 119, 6, 60)
+        "glow": (217, 119, 6, 80)
     },
     "Neo-Brutalism (Light)": {
-        "bg": "#fffdf0", "sidebar": "#fff6d6", "card": "#ffffff", "fg": "#000000",
+        "bg": "#fffdf0", "sidebar": "#fff6d6", "card": "#ffffff", "card_hover": "#fff2f8", "fg": "#000000",
         "acc": "#ff006e", "sub": "#444444", "border": "#000000",
         "input_bg": "#ffffff", "input_fg": "#000000", "pill_radius": "8px",
         "desc": "High-contrast pop yellow, electric magenta & 3px brutalist borders.",
-        "glow": (255, 0, 110, 80)
+        "glow": (255, 0, 110, 100)
     },
     "Neo-Brutalism (Dark)": {
-        "bg": "#0f0e13", "sidebar": "#16141c", "card": "#1d1a26", "fg": "#f5f5f5",
+        "bg": "#0f0e13", "sidebar": "#16141c", "card": "#1d1a26", "card_hover": "#262233", "fg": "#f5f5f5",
         "acc": "#00f5d4", "sub": "#a0a0a0", "border": "#ff006e",
         "input_bg": "#1a1724", "input_fg": "#00f5d4", "pill_radius": "8px",
         "desc": "Dark cyber pop with hot magenta 3px borders & electric mint.",
-        "glow": (0, 245, 212, 80)
+        "glow": (0, 245, 212, 100)
     },
     "Midnight Purple (Dark)": {
-        "bg": "#0a0512", "sidebar": "#120920", "card": "#1a0d2e", "fg": "#ecdcf9",
+        "bg": "#0a0512", "sidebar": "#120920", "card": "#1a0d2e", "card_hover": "#24133f", "fg": "#ecdcf9",
         "acc": "#c084fc", "sub": "#9333ea", "border": "#3b175c",
         "input_bg": "#150a24", "input_fg": "#e9d5ff", "pill_radius": "18px",
         "desc": "Deep velvet void with glowing royal lavender accents.",
-        "glow": (192, 132, 252, 80)
+        "glow": (192, 132, 252, 100)
     },
     "Cybercore (Dark)": {
-        "bg": "#02020a", "sidebar": "#06061a", "card": "#0a0a29", "fg": "#e0f7ff",
+        "bg": "#02020a", "sidebar": "#06061a", "card": "#0a0a29", "card_hover": "#10103b", "fg": "#e0f7ff",
         "acc": "#00f0ff", "sub": "#ff007f", "border": "#1a1a52",
         "input_bg": "#07071e", "input_fg": "#00f0ff", "pill_radius": "6px",
         "desc": "Abyss slate with neon cyan matrix glow & laser magenta.",
-        "glow": (0, 240, 255, 90)
+        "glow": (0, 240, 255, 110)
     },
     "Cybercore (Light)": {
-        "bg": "#f0fdff", "sidebar": "#e0f7fa", "card": "#ffffff", "fg": "#083344",
+        "bg": "#f0fdff", "sidebar": "#e0f7fa", "card": "#ffffff", "card_hover": "#ecfeff", "fg": "#083344",
         "acc": "#0891b2", "sub": "#0284c7", "border": "#7dd3fc",
         "input_bg": "#ffffff", "input_fg": "#0e7490", "pill_radius": "6px",
         "desc": "Clean futuristic laboratory data-slate with cyan accents.",
-        "glow": (8, 145, 178, 60)
+        "glow": (8, 145, 178, 80)
     },
     "Glassmorphism (Dark)": {
-        "bg": "#0e111a", "sidebar": "#151a27", "card": "#1d2436", "fg": "#e2e8f0",
+        "bg": "#0e111a", "sidebar": "#151a27", "card": "#1d2436", "card_hover": "#263047", "fg": "#e2e8f0",
         "acc": "#63b3ed", "sub": "#718096", "border": "#2d3748",
         "input_bg": "rgba(255, 255, 255, 0.04)", "input_fg": "#edf2f7", "pill_radius": "16px",
         "desc": "Frosted acrylic glass slate with diffused cyan-blue glow.",
-        "glow": (99, 179, 237, 75)
+        "glow": (99, 179, 237, 95)
     },
     "Glassmorphism (Light)": {
-        "bg": "#edf3f9", "sidebar": "#e2ecf5", "card": "#ffffff", "fg": "#1a202c",
+        "bg": "#edf3f9", "sidebar": "#e2ecf5", "card": "#ffffff", "card_hover": "#f7fafc", "fg": "#1a202c",
         "acc": "#3182ce", "sub": "#718096", "border": "#cbd5e1",
         "input_bg": "#ffffff", "input_fg": "#2b6cb0", "pill_radius": "16px",
         "desc": "Bright frosted daylight ice-glass cards with sky blue trim.",
-        "glow": (49, 130, 206, 60)
+        "glow": (49, 130, 206, 75)
     },
     "Y2K Aesthetic (Dark)": {
-        "bg": "#140622", "sidebar": "#1e0b32", "card": "#2a0f45", "fg": "#ffd6fc",
+        "bg": "#140622", "sidebar": "#1e0b32", "card": "#2a0f45", "card_hover": "#37155a", "fg": "#ffd6fc",
         "acc": "#00ffc8", "sub": "#c026d3", "border": "#6b21a8",
         "input_bg": "#220c38", "input_fg": "#00ffc8", "pill_radius": "12px",
         "desc": "Millennium rave neon with cyber violet and metallic turquoise.",
-        "glow": (0, 255, 200, 80)
+        "glow": (0, 255, 200, 100)
     },
     "Y2K Aesthetic (Light)": {
-        "bg": "#fdf2f8", "sidebar": "#fce7f3", "card": "#ffffff", "fg": "#701a75",
+        "bg": "#fdf2f8", "sidebar": "#fce7f3", "card": "#ffffff", "card_hover": "#fdf4ff", "fg": "#701a75",
         "acc": "#ec4899", "sub": "#a21caf", "border": "#f472b6",
         "input_bg": "#ffffff", "input_fg": "#be185d", "pill_radius": "12px",
         "desc": "Bubblegum millennium chrome pop with vibrant pink & cyan.",
-        "glow": (236, 72, 153, 70)
+        "glow": (236, 72, 153, 90)
     },
     "Pixel Art (Dark)": {
-        "bg": "#16181f", "sidebar": "#1e212b", "card": "#262936", "fg": "#f8f8f2",
+        "bg": "#16181f", "sidebar": "#1e212b", "card": "#262936", "card_hover": "#303444", "fg": "#f8f8f2",
         "acc": "#50fa7b", "sub": "#ff79c6", "border": "#44475a",
         "input_bg": "#1e212b", "input_fg": "#50fa7b", "pill_radius": "2px",
         "desc": "8-Bit Dracula retro palette with clean dashed pixel outlines.",
-        "glow": (80, 250, 123, 75)
+        "glow": (80, 250, 123, 95)
     },
     "Pixel Art (Light)": {
-        "bg": "#f3f5f8", "sidebar": "#e7ebf0", "card": "#ffffff", "fg": "#1f2328",
+        "bg": "#f3f5f8", "sidebar": "#e7ebf0", "card": "#ffffff", "card_hover": "#f6f8fa", "fg": "#1f2328",
         "acc": "#0969da", "sub": "#57606a", "border": "#d0d7de",
         "input_bg": "#ffffff", "input_fg": "#0969da", "pill_radius": "2px",
         "desc": "GameBoy LCD retro light palette with sharp pixel borders.",
-        "glow": (9, 105, 218, 60)
+        "glow": (9, 105, 218, 75)
     },
     "Brutalism (Dark)": {
-        "bg": "#0d0d0d", "sidebar": "#141414", "card": "#1c1c1c", "fg": "#f0f0f0",
+        "bg": "#0d0d0d", "sidebar": "#141414", "card": "#1c1c1c", "card_hover": "#262626", "fg": "#f0f0f0",
         "acc": "#ffffff", "sub": "#777777", "border": "#ffffff",
         "input_bg": "#181818", "input_fg": "#ffffff", "pill_radius": "0px",
         "desc": "Monochromatic stark cement with 3px sharp white borders.",
-        "glow": (255, 255, 255, 60)
+        "glow": (255, 255, 255, 80)
     },
     "Brutalism (Light)": {
-        "bg": "#e5e5e5", "sidebar": "#d8d8d8", "card": "#ffffff", "fg": "#000000",
+        "bg": "#e5e5e5", "sidebar": "#d8d8d8", "card": "#ffffff", "card_hover": "#f2f2f2", "fg": "#000000",
         "acc": "#000000", "sub": "#555555", "border": "#000000",
         "input_bg": "#ffffff", "input_fg": "#000000", "pill_radius": "0px",
         "desc": "Raw concrete light mode with bold high-contrast black framing.",
-        "glow": (0, 0, 0, 50)
+        "glow": (0, 0, 0, 70)
     },
     "Neo-Classical (Dark)": {
-        "bg": "#181310", "sidebar": "#211b17", "card": "#2a221d", "fg": "#f5ede3",
+        "bg": "#181310", "sidebar": "#211b17", "card": "#2a221d", "card_hover": "#362c26", "fg": "#f5ede3",
         "acc": "#c5a059", "sub": "#997b4d", "border": "#4a3a2a",
         "input_bg": "#211b17", "input_fg": "#dfcaa7", "pill_radius": "8px",
         "desc": "Royal antique library terracotta with burnished gold trim.",
-        "glow": (197, 160, 89, 70)
+        "glow": (197, 160, 89, 85)
     },
     "Neo-Classical (Light)": {
-        "bg": "#faf6f0", "sidebar": "#f2ebd9", "card": "#ffffff", "fg": "#3b2e21",
+        "bg": "#faf6f0", "sidebar": "#f2ebd9", "card": "#ffffff", "card_hover": "#faf3e8", "fg": "#3b2e21",
         "acc": "#b38b4d", "sub": "#7c5e34", "border": "#d6c4a5",
         "input_bg": "#ffffff", "input_fg": "#4a392b", "pill_radius": "8px",
         "desc": "Parchment manuscript with warm gilded gold highlights.",
-        "glow": (179, 139, 77, 60)
+        "glow": (179, 139, 77, 75)
     },
     "Neumorphism (Dark)": {
-        "bg": "#1e222b", "sidebar": "#242934", "card": "#2a303d", "fg": "#e2e8f0",
+        "bg": "#1e222b", "sidebar": "#242934", "card": "#2a303d", "card_hover": "#333a4a", "fg": "#e2e8f0",
         "acc": "#61dafb", "sub": "#8892b0", "border": "#161920",
         "input_bg": "#1a1d24", "input_fg": "#61dafb", "pill_radius": "14px",
         "desc": "Soft extruded dark slate with dual-depth shadows and cyan glow.",
-        "glow": (97, 218, 251, 70)
+        "glow": (97, 218, 251, 85)
     },
     "Neumorphism (Light)": {
-        "bg": "#e2e8f0", "sidebar": "#d8e1ec", "card": "#edf2f7", "fg": "#2d3748",
+        "bg": "#e2e8f0", "sidebar": "#d8e1ec", "card": "#edf2f7", "card_hover": "#f7fafc", "fg": "#2d3748",
         "acc": "#3182ce", "sub": "#718096", "border": "#cbd5e0",
         "input_bg": "#edf2f7", "input_fg": "#2b6cb0", "pill_radius": "14px",
         "desc": "Soft embossed tactile surface with smooth bevels and blue accents.",
-        "glow": (49, 130, 206, 50)
+        "glow": (49, 130, 206, 65)
     },
     "Scrapbook (Dark)": {
-        "bg": "#1c1611", "sidebar": "#261f18", "card": "#30261e", "fg": "#f4ede2",
+        "bg": "#1c1611", "sidebar": "#261f18", "card": "#30261e", "card_hover": "#3d3027", "fg": "#f4ede2",
         "acc": "#d4a373", "sub": "#a07850", "border": "#5c4530",
         "input_bg": "#221a13", "input_fg": "#f7f1e5", "pill_radius": "6px",
         "desc": "Vintage dark leather binder with kraft tape and warm cream ink.",
-        "glow": (212, 163, 115, 70)
+        "glow": (212, 163, 115, 85)
     },
     "Scrapbook (Light)": {
-        "bg": "#f7f2e7", "sidebar": "#ece3d0", "card": "#fffcf5", "fg": "#382f25",
+        "bg": "#f7f2e7", "sidebar": "#ece3d0", "card": "#fffcf5", "card_hover": "#faf4e6", "fg": "#382f25",
         "acc": "#8b5a2b", "sub": "#634320", "border": "#c9b69b",
         "input_bg": "#fffcf5", "input_fg": "#2e261f", "pill_radius": "6px",
         "desc": "Organic kraft cardboard journal with dashed tape and brown ink.",
-        "glow": (139, 90, 43, 60)
+        "glow": (139, 90, 43, 75)
     },
     "Conceptual Sketchbook (Dark)": {
-        "bg": "#222222", "sidebar": "#2a2a2a", "card": "#333333", "fg": "#ebebeb",
+        "bg": "#222222", "sidebar": "#2a2a2a", "card": "#333333", "card_hover": "#3e3e3e", "fg": "#ebebeb",
         "acc": "#ffffff", "sub": "#999999", "border": "#444444",
         "input_bg": "#2b2b2b", "input_fg": "#ffffff", "pill_radius": "4px",
         "desc": "Matte chalkboard drawing board with stark architectural chalk lines.",
-        "glow": (255, 255, 255, 60)
+        "glow": (255, 255, 255, 75)
     },
     "Conceptual Sketchbook (Light)": {
-        "bg": "#f4f4f4", "sidebar": "#eaeaea", "card": "#ffffff", "fg": "#1a1a1a",
+        "bg": "#f4f4f4", "sidebar": "#eaeaea", "card": "#ffffff", "card_hover": "#fcfcfc", "fg": "#1a1a1a",
         "acc": "#000000", "sub": "#666666", "border": "#cccccc",
         "input_bg": "#ffffff", "input_fg": "#111111", "pill_radius": "4px",
         "desc": "Clean draftsman paper with precise charcoal technical lines.",
-        "glow": (0, 0, 0, 50)
+        "glow": (0, 0, 0, 60)
     },
     "Anthropomorphic (Dark)": {
-        "bg": "#1c1614", "sidebar": "#261f1c", "card": "#302724", "fg": "#f5ede8",
+        "bg": "#1c1614", "sidebar": "#261f1c", "card": "#302724", "card_hover": "#3c312d", "fg": "#f5ede8",
         "acc": "#ff7043", "sub": "#a3624e", "border": "#543c35",
         "input_bg": "#241d1a", "input_fg": "#ffab91", "pill_radius": "10px",
         "desc": "Earthy clay, warm terracotta and rich roasted espresso tones.",
-        "glow": (255, 112, 67, 75)
+        "glow": (255, 112, 67, 90)
     },
     "Anthropomorphic (Light)": {
-        "bg": "#fff8f0", "sidebar": "#faede0", "card": "#ffffff", "fg": "#4a2818",
+        "bg": "#fff8f0", "sidebar": "#faede0", "card": "#ffffff", "card_hover": "#fff2e5", "fg": "#4a2818",
         "acc": "#ea580c", "sub": "#9a3412", "border": "#fed7aa",
         "input_bg": "#ffffff", "input_fg": "#c2410c", "pill_radius": "10px",
         "desc": "Warm sunrise terracotta and peach linen with clay accents.",
-        "glow": (234, 88, 12, 60)
+        "glow": (234, 88, 12, 75)
     },
     "Graffiti Urban (Dark)": {
-        "bg": "#111111", "sidebar": "#181818", "card": "#202020", "fg": "#f5f5f5",
+        "bg": "#111111", "sidebar": "#181818", "card": "#202020", "card_hover": "#2a2a2a", "fg": "#f5f5f5",
         "acc": "#e2f952", "sub": "#ff0055", "border": "#333333",
         "input_bg": "#181818", "input_fg": "#00ffff", "pill_radius": "4px",
         "desc": "High-contrast street canvas with neon volt spray & hot magenta.",
-        "glow": (226, 249, 82, 80)
+        "glow": (226, 249, 82, 95)
     },
     "Graffiti Urban (Light)": {
-        "bg": "#f4f4f6", "sidebar": "#e9e9ee", "card": "#ffffff", "fg": "#141416",
+        "bg": "#f4f4f6", "sidebar": "#e9e9ee", "card": "#ffffff", "card_hover": "#fafafa", "fg": "#141416",
         "acc": "#db2777", "sub": "#65a30d", "border": "#d4d4d8",
         "input_bg": "#ffffff", "input_fg": "#0284c7", "pill_radius": "4px",
         "desc": "Vibrant street mural with hot pink tags and electric lime.",
-        "glow": (219, 39, 119, 65)
+        "glow": (219, 39, 119, 80)
     }
 }
+
+# KOKONUT / MOTION PRIMITIVE MICRO-INTERACTION BUTTON
+class AnimatedButton(QPushButton):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self._scale = 1.0
+
+    def enterEvent(self, event):
+        self.animate_scale(1.04)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.animate_scale(1.0)
+        super().leaveEvent(event)
+
+    def animate_scale(self, target):
+        self.anim = QPropertyAnimation(self, b"scale_val")
+        self.anim.setDuration(140)
+        self.anim.setStartValue(self._scale)
+        self.anim.setEndValue(target)
+        self.anim.setEasingCurve(QEasingCurve.OutBack)
+        self.anim.start()
+
+    def get_scale(self):
+        return self._scale
+
+    def set_scale(self, val):
+        self._scale = val
+
+    scale_val = pyqtProperty(float, get_scale, set_scale)
+
+# MOTION-CARD WITH HOVER ELEVATION & GLOW (Bklit / Kokonut UI style)
+class MotionThemeCard(QFrame):
+    def __init__(self, theme_name, meta, on_click_callback):
+        super().__init__()
+        self.theme_name = theme_name
+        self.meta = meta
+        self.on_click = on_click_callback
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        # Shadow glow effect
+        self.shadow = QGraphicsDropShadowEffect(self)
+        self.shadow.setBlurRadius(15)
+        r, g, b, a = meta["glow"]
+        self.shadow.setColor(QColor(r, g, b, int(a * 0.4)))
+        self.shadow.setOffset(0, 4)
+        self.setGraphicsEffect(self.shadow)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(8)
+
+        # Top indicator row
+        top_row = QHBoxLayout()
+        self.dot = QLabel("●")
+        self.dot.setFont(QFont("JetBrainsMono Nerd Font", 12))
+        self.dot.setStyleSheet(f"color: {meta['acc']}; border: none; background: transparent;")
+        top_row.addWidget(self.dot)
+
+        self.title_lbl = QLabel(theme_name)
+        self.title_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        self.title_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent;")
+        top_row.addWidget(self.title_lbl)
+        top_row.addStretch()
+        layout.addLayout(top_row)
+
+        self.desc_lbl = QLabel(meta["desc"])
+        self.desc_lbl.setWordWrap(True)
+        self.desc_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8))
+        self.desc_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; line-height: 1.4;")
+        layout.addWidget(self.desc_lbl)
+
+        self.update_style(active=False)
+
+    def mousePressEvent(self, event):
+        self.on_click(self.theme_name)
+        super().mousePressEvent(event)
+
+    def enterEvent(self, event):
+        # Micro-elevation animation
+        self.anim = QPropertyAnimation(self.shadow, b"blurRadius")
+        self.anim.setDuration(160)
+        self.anim.setStartValue(self.shadow.blurRadius())
+        self.anim.setEndValue(32)
+        self.anim.setEasingCurve(QEasingCurve.OutCubic)
+        self.anim.start()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.anim = QPropertyAnimation(self.shadow, b"blurRadius")
+        self.anim.setDuration(160)
+        self.anim.setStartValue(self.shadow.blurRadius())
+        self.anim.setEndValue(15)
+        self.anim.setEasingCurve(QEasingCurve.OutCubic)
+        self.anim.start()
+        super().leaveEvent(event)
+
+    def update_style(self, active=False):
+        border_col = self.meta["acc"] if active else self.meta["border"]
+        border_w = "3px" if active else "1px"
+        bg_col = self.meta["card_hover"] if active else self.meta["card"]
+        self.setStyleSheet(f"""
+            QFrame {{
+                background-color: {bg_col};
+                border: {border_w} solid {border_col};
+                border-radius: 12px;
+            }}
+        """)
 
 def generate_stylesheet(name: str) -> str:
     m = THEME_META.get(name, THEME_META["Charcoal Amber (Dark)"])
@@ -266,18 +376,18 @@ def generate_stylesheet(name: str) -> str:
             background-color: {m['card']};
             color: {m['fg']};
             border: 1px solid {m['border']};
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 12px;
             selection-background-color: {m['acc']};
             selection-color: {m['bg']};
         }}
         QLineEdit:focus, QTextEdit:focus {{
             border: 1px solid {m['acc']};
-            background-color: {m['card']};
+            background-color: {m['card_hover']};
         }}
         QTextEdit {{
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
         }}
         
         QPushButton {{
@@ -297,19 +407,20 @@ def generate_stylesheet(name: str) -> str:
         QListWidget {{
             background-color: {m['sidebar']};
             border: 1px solid {m['border']};
-            border-radius: 8px;
-            padding: 4px;
+            border-radius: 10px;
+            padding: 6px;
         }}
         QListWidget::item {{
             background-color: {m['card']};
             color: {m['fg']};
             margin-bottom: 6px;
             padding: 10px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid {m['border']};
         }}
         QListWidget::item:hover {{
             border: 1px solid {m['acc']};
+            background-color: {m['card_hover']};
             color: {m['acc']};
         }}
         QListWidget::item:selected {{
@@ -343,8 +454,8 @@ class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Note")
-        self.setMinimumSize(950, 650)
-        self.resize(1120, 740)
+        self.setMinimumSize(960, 660)
+        self.resize(1140, 750)
         self.pin = ""
         self.entries = []
         self.active_id = None
@@ -378,10 +489,7 @@ class NoteApp(QMainWindow):
             
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
-                    is_active = (name == theme_name)
-                    card.setProperty("active", is_active)
-                    card.style().unpolish(card)
-                    card.style().polish(card)
+                    card.update_style(active=(name == theme_name))
 
     def sync_lock_screen_theme(self, theme_name):
         meta = THEME_META.get(theme_name, THEME_META["Charcoal Amber (Dark)"])
@@ -416,7 +524,7 @@ class NoteApp(QMainWindow):
 
         # 1. Giant Hyprlock Digital Time
         self.time_lbl = QLabel("")
-        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 68, QFont.Bold))
+        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 72, QFont.Bold))
         self.time_lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.time_lbl)
 
@@ -432,7 +540,7 @@ class NoteApp(QMainWindow):
         self.clock_timer.start(1000)
         self.update_lock_clock()
 
-        # 2. Hyprlock Input Pill with Glow Effect
+        # 2. Hyprlock Input Pill with Glow Effect & Shake capability
         is_setup = not VAULT_PATH.exists()
         self.pin_input = QLineEdit()
         self.pin_input.setEchoMode(QLineEdit.Password)
@@ -442,7 +550,7 @@ class NoteApp(QMainWindow):
         self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
         
         self.lock_shadow = QGraphicsDropShadowEffect(self)
-        self.lock_shadow.setBlurRadius(35)
+        self.lock_shadow.setBlurRadius(40)
         self.lock_shadow.setOffset(0, 0)
         self.pin_input.setGraphicsEffect(self.lock_shadow)
         
@@ -461,13 +569,30 @@ class NoteApp(QMainWindow):
         self.time_lbl.setText(now.strftime("%I:%M"))
         self.date_lbl.setText(now.strftime("%A, %B %d").upper())
 
+    # MOTION SHAKE ANIMATION ON FAILED PIN
+    def trigger_shake_animation(self, widget):
+        anim = QPropertyAnimation(widget, b"pos")
+        anim.setDuration(300)
+        anim.setLoopCount(1)
+        orig_pos = widget.pos()
+        anim.setKeyValueAt(0.0, orig_pos)
+        anim.setKeyValueAt(0.1, orig_pos + QPoint(-12, 0))
+        anim.setKeyValueAt(0.3, orig_pos + QPoint(12, 0))
+        anim.setKeyValueAt(0.5, orig_pos + QPoint(-8, 0))
+        anim.setKeyValueAt(0.7, orig_pos + QPoint(8, 0))
+        anim.setKeyValueAt(0.9, orig_pos + QPoint(-4, 0))
+        anim.setKeyValueAt(1.0, orig_pos)
+        anim.setEasingCurve(QEasingCurve.OutQuad)
+        anim.start()
+        self._shake_anim = anim
+
+    # CUBIC OPACITY + SCALE TRANSITION ANIMATION
     def animate_view_transition(self, target_index):
-        # Smooth Opacity Fade Animation
         opacity_effect = QGraphicsOpacityEffect(self.stack)
         self.stack.setGraphicsEffect(opacity_effect)
         self.anim = QPropertyAnimation(opacity_effect, b"opacity")
-        self.anim.setDuration(180)
-        self.anim.setStartValue(0.2)
+        self.anim.setDuration(220)
+        self.anim.setStartValue(0.1)
         self.anim.setEndValue(1.0)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
         self.stack.setCurrentIndex(target_index)
@@ -477,6 +602,7 @@ class NoteApp(QMainWindow):
         pin = self.pin_input.text().strip()
         if len(pin) < 4:
             self.auth_msg.setText("PIN must be at least 4 characters.")
+            self.trigger_shake_animation(self.pin_input)
             return
 
         if not VAULT_PATH.exists():
@@ -486,7 +612,7 @@ class NoteApp(QMainWindow):
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Smooth fade animations and glowing harmonic palettes are enabled.\n- Toggle Zen Focus for pure distraction-free flow.",
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all interactive motion theme cards.\n- Dynamic hover elevation, shake feedback, and fluid cubic transitions are active.\n- Toggle Zen Focus for pure distraction-free flow.",
                 "tags": "welcome, journal",
                 "mood": "zen"
             }
@@ -503,6 +629,7 @@ class NoteApp(QMainWindow):
                 self.load_workspace()
             except Exception:
                 self.auth_msg.setText("Incorrect passcode.")
+                self.trigger_shake_animation(self.pin_input)
 
     def save_vault(self):
         if self.pin:
@@ -528,7 +655,7 @@ class NoteApp(QMainWindow):
         self.sidebar.setObjectName("Sidebar")
         self.sidebar.setMinimumWidth(320)
         sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setContentsMargins(10, 10, 10, 10)
+        sidebar_layout.setContentsMargins(12, 12, 12, 12)
         sidebar_layout.setSpacing(10)
 
         # Header
@@ -538,13 +665,11 @@ class NoteApp(QMainWindow):
         sb_header.addWidget(sb_title)
         sb_header.addStretch()
 
-        settings_btn = QPushButton("󰒓 Settings")
-        settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        settings_btn = AnimatedButton("󰒓 Settings")
         settings_btn.clicked.connect(self.go_to_settings)
         sb_header.addWidget(settings_btn)
 
-        lock_btn = QPushButton("󰌾")
-        lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        lock_btn = AnimatedButton("󰌾")
         lock_btn.clicked.connect(self.lock_vault)
         sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
@@ -563,8 +688,7 @@ class NoteApp(QMainWindow):
         list_ctrl.addWidget(self.list_lbl)
         list_ctrl.addStretch()
 
-        new_btn = QPushButton("󰐕 New Entry")
-        new_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        new_btn = AnimatedButton("󰐕 New Entry")
         new_btn.clicked.connect(self.create_entry)
         list_ctrl.addWidget(new_btn)
         sidebar_layout.addLayout(list_ctrl)
@@ -581,7 +705,7 @@ class NoteApp(QMainWindow):
         self.editor_area.setObjectName("EditorArea")
         self.editor_area.setMinimumWidth(450)
         editor_layout = QVBoxLayout(self.editor_area)
-        editor_layout.setContentsMargins(6, 0, 0, 0)
+        editor_layout.setContentsMargins(8, 0, 0, 0)
         editor_layout.setSpacing(10)
 
         # Editor Top Bar
@@ -595,13 +719,11 @@ class NoteApp(QMainWindow):
         self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
         ed_bar.addWidget(self.word_lbl)
 
-        self.zen_btn = QPushButton("󰈈 Zen Focus")
-        self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.zen_btn = AnimatedButton("󰈈 Zen Focus")
         self.zen_btn.clicked.connect(self.toggle_zen)
         ed_bar.addWidget(self.zen_btn)
 
-        del_btn = QPushButton("󰆴")
-        del_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        del_btn = AnimatedButton("󰆴")
         del_btn.clicked.connect(self.delete_entry)
         ed_bar.addWidget(del_btn)
         editor_layout.addLayout(ed_bar)
@@ -636,13 +758,12 @@ class NoteApp(QMainWindow):
     def init_settings_page(self):
         self.settings_widget = QWidget()
         settings_layout = QVBoxLayout(self.settings_widget)
-        settings_layout.setContentsMargins(24, 24, 24, 24)
-        settings_layout.setSpacing(18)
+        settings_layout.setContentsMargins(28, 28, 28, 28)
+        settings_layout.setSpacing(20)
 
         # Header Bar
         header = QHBoxLayout()
-        back_btn = QPushButton("󰁍 Back to Workspace")
-        back_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        back_btn = AnimatedButton("󰁍 Back to Workspace")
         back_btn.clicked.connect(self.go_to_workspace)
         header.addWidget(back_btn)
         header.addStretch()
@@ -655,9 +776,9 @@ class NoteApp(QMainWindow):
 
         # Master PIN Card
         pin_frame = QFrame()
-        pin_frame.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; }")
+        pin_frame.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 18px; }")
         pf_layout = QVBoxLayout(pin_frame)
-        pf_layout.setSpacing(10)
+        pf_layout.setSpacing(12)
 
         pf_title = QLabel("󰌆 Security & Vault Passcode")
         pf_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
@@ -679,7 +800,7 @@ class NoteApp(QMainWindow):
         self.confirm_pin_input.setPlaceholderText("Confirm PIN")
         pin_row.addWidget(self.confirm_pin_input)
 
-        update_pin_btn = QPushButton("󰑓 Update PIN")
+        update_pin_btn = AnimatedButton("󰑓 Update PIN")
         update_pin_btn.clicked.connect(self.handle_settings_pin_change)
         pin_row.addWidget(update_pin_btn)
         pf_layout.addLayout(pin_row)
@@ -690,53 +811,22 @@ class NoteApp(QMainWindow):
         settings_layout.addWidget(pin_frame)
 
         # Themes Gallery Title
-        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Click card to activate):")
+        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Hover for elevation · Click card to activate):")
         th_header.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
         settings_layout.addWidget(th_header)
 
-        # Scrollable Themes Gallery
+        # Scrollable Themes Gallery (Kokonut UI / Motion Card Grids)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_content = QWidget()
         grid = QGridLayout(scroll_content)
-        grid.setSpacing(14)
+        grid.setSpacing(16)
+        grid.setContentsMargins(4, 4, 4, 4)
 
         self.theme_cards = {}
 
         for idx, (t_name, meta) in enumerate(THEME_META.items()):
-            card = QFrame()
-            card.setCursor(QCursor(Qt.PointingHandCursor))
-            card.setStyleSheet(f"""
-                QFrame {{
-                    background-color: {meta['card']};
-                    border: 2px solid {meta['border']};
-                    border-radius: 10px;
-                    padding: 14px;
-                }}
-                QFrame:hover {{
-                    border: 2px solid {meta['acc']};
-                }}
-                QFrame[active="true"] {{
-                    border: 3px solid {meta['acc']};
-                }}
-            """)
-            card_layout = QVBoxLayout(card)
-            card_layout.setSpacing(6)
-
-            card_title = QLabel(f"● {t_name}")
-            card_title.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-            card_title.setStyleSheet(f"color: {meta['acc']}; border: none; background: transparent;")
-            card_layout.addWidget(card_title)
-
-            card_desc = QLabel(meta["desc"])
-            card_desc.setWordWrap(True)
-            card_desc.setFont(QFont("JetBrainsMono Nerd Font", 8))
-            card_desc.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
-            card_layout.addWidget(card_desc)
-
-            # Click event
-            card.mousePressEvent = lambda _, tn=t_name: self.apply_theme(tn)
-
+            card = MotionThemeCard(t_name, meta, self.apply_theme)
             self.theme_cards[t_name] = card
             row = idx // 3
             col = idx % 3
@@ -755,14 +845,17 @@ class NoteApp(QMainWindow):
         if old_pin != self.pin:
             self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
             self.pin_status_lbl.setText("Current PIN is incorrect.")
+            self.trigger_shake_animation(self.old_pin_input)
             return
         if len(new_pin) < 4:
             self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
             self.pin_status_lbl.setText("New PIN must be at least 4 characters.")
+            self.trigger_shake_animation(self.new_pin_input)
             return
         if new_pin != confirm_pin:
             self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
             self.pin_status_lbl.setText("New PINs do not match.")
+            self.trigger_shake_animation(self.confirm_pin_input)
             return
 
         self.pin = new_pin
