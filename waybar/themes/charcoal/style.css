@@ -1,0 +1,42 @@
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 16px;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background-color: rgba(0, 0, 0, 0);
+    color: #ffb000;
+}
+
+#custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5, #custom-ws6, #custom-ws7, #custom-ws8, #custom-ws9 {
+    padding: 0 10px;
+    color: #8c9b32;
+    background: transparent;
+}
+
+#custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active, #custom-ws6.active, #custom-ws7.active, #custom-ws8.active, #custom-ws9.active {
+    background: #ffb000;
+    color: #080808;
+}
+
+#custom-ws1.hidden, #custom-ws2.hidden, #custom-ws3.hidden, #custom-ws4.hidden, #custom-ws5.hidden, #custom-ws6.hidden, #custom-ws7.hidden, #custom-ws8.hidden, #custom-ws9.hidden {
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+#clock {
+    font-weight: bold;
+}
+
+#custom-clipboard, #pulseaudio, #battery, #tray {
+    padding: 0 10px;
+    color: #ffb000;
+}
+
+#battery.warning { color: #ffd166; }
+#battery.critical { color: #ff5c00; }

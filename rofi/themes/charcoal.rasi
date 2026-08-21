@@ -1,0 +1,72 @@
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: " ";
+    display-run: " ";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+* {
+    bg: #121212;          /* Strict Charcoal Background */
+    fg: #888888;          /* Muted Gray for inactive text */
+    highlight: #D4D4D4;   /* Muted White Selection Box */
+    text-selected: #121212; /* Dark Charcoal text when selected */
+    text-active: #ffffff;   /* White text for typing area */
+}
+
+window {
+    width: 700px;         /* Wide layout */
+    background-color: @bg;
+    border: 0px;
+    padding: 25px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: transparent;
+    margin: 0 0 15px 0;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @text-active;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: "Search...";
+    placeholder-color: #444444;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 5;
+    scrollbar: false;
+}
+
+element {
+    padding: 12px;
+    border-radius: 2px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;   /* Muted White Box */
+    text-color: @text-selected;    /* Charcoal Text inside the White Box */
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;           /* Inherits Charcoal when selected */
+}

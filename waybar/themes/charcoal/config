@@ -1,0 +1,147 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 26,
+    "spacing": 4,
+
+    "modules-left": [
+        "custom/ws1",
+        "custom/ws2",
+        "custom/ws3",
+        "custom/ws4",
+        "custom/ws5",
+        "custom/ws6",
+        "custom/ws7",
+        "custom/ws8",
+        "custom/ws9"
+    ],
+
+    "modules-center": [
+        "clock"
+    ],
+
+    "modules-right": [
+        "custom/clipboard",
+        "pulseaudio",
+        "battery",
+        "tray"
+    ],
+
+    "custom/ws1": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 1",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 1 switch",
+        "tooltip": false
+    },
+
+    "custom/ws2": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 2",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 2 switch",
+        "tooltip": false
+    },
+
+    "custom/ws3": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 3",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 3 switch",
+        "tooltip": false
+    },
+
+    "custom/ws4": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 4",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 4 switch",
+        "tooltip": false
+    },
+
+    "custom/ws5": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 5",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 5 switch",
+        "tooltip": false
+    },
+
+    "custom/ws6": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 6",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 6 switch",
+        "tooltip": false
+    },
+
+    "custom/ws7": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 7",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 7 switch",
+        "tooltip": false
+    },
+
+    "custom/ws8": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 8",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 8 switch",
+        "tooltip": false
+    },
+
+    "custom/ws9": {
+        "exec": "~/.config/waybar/themes/charcoal/ws_button.sh 9",
+        "return-type": "json",
+        "interval": 1,
+        "on-click": "~/.config/waybar/themes/charcoal/ws_button.sh 9 switch",
+        "tooltip": false
+    },
+
+    "clock": {
+        "format": "{:%I:%M %p | %a %d}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><big>{calendar}</big></tt>"
+    },
+
+    "custom/clipboard": {
+        "format": "clipboard",
+        "on-click": "cliphist list | rofi -dmenu -theme ~/.config/rofi/config.rasi | cliphist decode | wl-copy",
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "format": "volume {volume}%",
+        "format-muted": "󰝟",
+        "format-icons": {
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol"
+    },
+
+    "battery": {
+        "states": {
+            "warning": 20,
+            "critical": 10
+        },
+        "format": "battery {capacity}%",
+        "format-icons": [
+            "󰂎",
+            "󰁺",
+            "󰁻",
+            "󰁼",
+            "󰁽",
+            "󰁾",
+            "󰁿",
+            "󰂀",
+            "󰂁",
+            "󰂂",
+            "󰁹"
+        ]
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 10
+    }
+}

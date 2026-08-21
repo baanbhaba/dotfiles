@@ -1,0 +1,85 @@
+/* -----------------------------------------------------
+   JAIPUR THEME - Waybar
+   Royal Earthy Colors
+   ----------------------------------------------------- */
+
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 14px;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background: rgba(45, 10, 10, 0.92);   /* Rich Burgundy with transparency */
+    color: #f5ede3;                       /* Cream White */
+    border-bottom: 2px solid #c45a3c;     /* Terracotta accent line */
+}
+
+#workspaces button {
+    padding: 0 12px;
+    color: #8b5a3c;                       /* Muted Brown */
+    background: transparent;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#workspaces button.active {
+    background: #c45a3c;                  /* Terracotta */
+    color: #f5ede3;                       /* Cream White */
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(196, 90, 60, 0.4);
+}
+
+#workspaces button:hover {
+    background: rgba(196, 90, 60, 0.3);
+    color: #f5ede3;
+}
+
+#clock {
+    font-weight: bold;
+    color: #d4a847;                       /* Mustard */
+    background: rgba(212, 168, 71, 0.1);
+    padding: 0 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(212, 168, 71, 0.2);
+}
+
+#custom-clipboard {
+    padding: 0 10px;
+    color: #d4a847;                       /* Mustard */
+}
+
+#pulseaudio {
+    padding: 0 10px;
+    color: #c45a3c;                       /* Terracotta */
+}
+
+#battery {
+    padding: 0 10px;
+    color: #d4a847;                       /* Mustard */
+}
+
+#battery.warning { 
+    color: #e8d5b7;                       /* Sand */
+}
+
+#battery.critical { 
+    color: #c45a3c;                       /* Terracotta */
+    animation: blink 1s infinite;
+}
+
+#tray {
+    padding: 0 10px;
+}
+
+#cpu, #memory {
+    padding: 0 10px;
+    color: #a0845c;                       /* Muted Olive/Tan */
+}
+
+@keyframes blink {
+    50% { opacity: 0.4; }
+}

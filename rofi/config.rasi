@@ -1,0 +1,72 @@
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: " ";
+    display-run: " ";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+* {
+    bg: #080808;              /* CRT Black */
+    fg: #8c9b32;              /* Muted Amber Green */
+    highlight: #ffb000;       /* Amber Selection */
+    text-selected: #080808;   /* Dark text on selection */
+    text-active: #ffb000;     /* Amber typing text */
+}
+
+window {
+    width: 700px;
+    background-color: @bg;
+    border: 0px;
+    padding: 25px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: transparent;
+    margin: 0 0 15px 0;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @text-active;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: " ";
+    placeholder-color: #3a3a3a;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 5;
+    scrollbar: false;
+}
+
+element {
+    padding: 12px;
+    border-radius: 2px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: @text-active;
+}

@@ -1,0 +1,37 @@
+# -----------------------------------------------------
+# COLOR BLOCK THEME - Mako (Muted)
+# -----------------------------------------------------
+
+max-history=100
+sort=-time
+font=JetBrainsMono Nerd Font 14
+width=350
+height=200
+margin=15
+padding=10
+default-timeout=4000
+icons=1
+max-icon-size=48
+
+background-color=#f0ebe3f5
+text-color=#2d2d2d
+border-color=#c4a35a
+border-size=2
+border-radius=6
+progress-color=source #8b8b5a
+
+[urgency=critical]
+border-color=#c4907a
+default-timeout=0
+ignore-timeout=1
+background-color=#f0ebe3f5
+
+[urgency=low]
+border-color=#a89ab5
+default-timeout=2000
+text-color=#666666
+
+[category=mpd]
+default-timeout=2000
+group-by=category
+border-color=#7a8fa0

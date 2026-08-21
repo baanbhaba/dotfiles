@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+SHADER_PATH="$HOME/.config/hypr/shaders/invert.frag"
+
+# Check if screen_shader is currently set
+CURRENT=$(hyprctl getoption decoration:screen_shader -j | grep '"str":' | awk -F '"' '{print $4}')
+
+if [ -n "$CURRENT" ] && [ "$CURRENT" != "[[EMPTY]]" ] && [ "$CURRENT" != "none" ]; then
+    hyprctl keyword decoration:screen_shader "[[EMPTY]]"
+else
+    hyprctl keyword decoration:screen_shader "$SHADER_PATH"
+fi

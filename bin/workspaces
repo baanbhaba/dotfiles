@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+VAULT="/run/media/$USER/External/6. Common/workspaces"
+
+if [[ ! -d "$VAULT" ]]; then
+    echo "Workspace drive not mounted"
+    exit 1
+fi
+
+cd "$VAULT" || exit
+
+nvim -c "lua require('core.workspace').open()"

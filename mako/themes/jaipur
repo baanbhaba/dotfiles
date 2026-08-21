@@ -1,0 +1,42 @@
+# -----------------------------------------------------
+# JAIPUR THEME - Mako Notifications
+# -----------------------------------------------------
+
+# --- GLOBAL SETTINGS ---
+max-history=100
+sort=-time
+font=JetBrainsMono Nerd Font 14
+width=350
+height=200
+margin=15
+padding=10
+default-timeout=4000
+icons=1
+max-icon-size=48
+
+# --- DEFAULT STYLE (Jaipur) ---
+background-color=#2d0a0af2          # Rich Burgundy with opacity
+text-color=#f5ede3                  # Cream White
+border-color=#c45a3c                # Terracotta
+border-size=2
+border-radius=6
+progress-color=source #d4a847       # Mustard
+
+# --- CRITICAL (Use Terracotta) ---
+[urgency=critical]
+border-color=#c45a3c
+default-timeout=0
+ignore-timeout=1
+background-color=#1a0808f5
+
+# --- LOW URGENCY (Use Muted colors) ---
+[urgency=low]
+border-color=#5a3a2a
+default-timeout=2000
+text-color=#a0845c
+
+# --- CATEGORY OVERRIDES ---
+[category=mpd]
+default-timeout=2000
+group-by=category
+border-color=#d4a847

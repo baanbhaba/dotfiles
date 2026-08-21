@@ -1,0 +1,83 @@
+/* -----------------------------------------------------
+   JAIPUR THEME - Rofi
+   Royal Earthy Colors
+   ----------------------------------------------------- */
+
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: " ";
+    display-run: " ";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+* {
+    bg: #2d0a0a;
+    fg: #a0845c;
+    highlight: #c45a3c;
+    text-selected: #f5ede3;
+    text-active: #d4a847;
+}
+
+window {
+    width: 700px;
+    background-color: @bg;
+    border: 2px;
+    border-color: #c45a3c;
+    border-radius: 8px;
+    padding: 25px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: transparent;
+    margin: 0 0 15px 0;
+    children: [ prompt, entry ];
+    border-bottom: 2px;
+    border-color: #c45a3c;
+    padding-bottom: 10px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @text-active;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: "Search...";
+    placeholder-color: #5a3a2a;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 5;
+    scrollbar: false;
+}
+
+element {
+    padding: 12px;
+    border-radius: 4px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 4px;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+}
