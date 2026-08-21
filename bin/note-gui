@@ -59,7 +59,7 @@ class NoteApp(QMainWindow):
         self.init_lock_screen()
         self.init_main_workspace()
 
-        # Ultra-Aesthetic Amber CRT & Studio Slate Theme
+        # Amber CRT Theme with Nerd Font Glyphs
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #080808;
@@ -67,7 +67,7 @@ class NoteApp(QMainWindow):
             QWidget {
                 background-color: #080808;
                 color: #d6d6d6;
-                font-family: 'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Inter', monospace;
+                font-family: 'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace;
             }
             
             /* Inputs & Editors */
@@ -238,7 +238,6 @@ class NoteApp(QMainWindow):
             }
         """)
         
-        # Subtle glow shadow
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(40)
         shadow.setColor(QColor(255, 176, 0, 45))
@@ -249,9 +248,9 @@ class NoteApp(QMainWindow):
         card_layout.setContentsMargins(32, 32, 32, 32)
         card_layout.setSpacing(16)
 
-        logo = QLabel("⚡")
-        logo.setFont(QFont("JetBrainsMono Nerd Font", 24))
-        logo.setStyleSheet("border: none; background: transparent;")
+        logo = QLabel("")
+        logo.setFont(QFont("JetBrainsMono Nerd Font", 26))
+        logo.setStyleSheet("color: #ffb000; border: none; background: transparent;")
         logo.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(logo)
 
@@ -264,7 +263,7 @@ class NoteApp(QMainWindow):
         is_setup = not VAULT_PATH.exists()
         subtitle = QLabel("Create a Master PIN to encrypt your local journal with AES-256." if is_setup else "Enter Master PIN to decrypt your private thoughts.")
         subtitle.setWordWrap(True)
-        subtitle.setFont(QFont("Inter", 9))
+        subtitle.setFont(QFont("JetBrainsMono Nerd Font", 9))
         subtitle.setStyleSheet("color: #8c9b32; border: none; background: transparent; line-height: 1.4;")
         subtitle.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(subtitle)
@@ -278,7 +277,7 @@ class NoteApp(QMainWindow):
         self.pin_input.returnPressed.connect(self.handle_auth)
         card_layout.addWidget(self.pin_input)
 
-        self.auth_btn = QPushButton("Initialize Vault" if is_setup else "Unlock Journal")
+        self.auth_btn = QPushButton("󰌆 Initialize Vault" if is_setup else "󰌆 Unlock Journal")
         self.auth_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.auth_btn.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
         self.auth_btn.setStyleSheet("""
@@ -297,7 +296,7 @@ class NoteApp(QMainWindow):
         card_layout.addWidget(self.auth_btn)
 
         self.auth_msg = QLabel("")
-        self.auth_msg.setFont(QFont("Inter", 8))
+        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 8))
         self.auth_msg.setStyleSheet("color: #ff5c00; border: none; background: transparent;")
         self.auth_msg.setAlignment(Qt.AlignCenter)
         card_layout.addWidget(self.auth_msg)
@@ -363,13 +362,13 @@ class NoteApp(QMainWindow):
 
         # Sidebar Header
         sb_header = QHBoxLayout()
-        sb_title = QLabel("📓 NOTE")
+        sb_title = QLabel("󰠮 NOTE")
         sb_title.setFont(QFont("JetBrainsMono Nerd Font", 13, QFont.Bold))
         sb_title.setStyleSheet("color: #ffb000; letter-spacing: 1px;")
         sb_header.addWidget(sb_title)
         sb_header.addStretch()
 
-        lock_btn = QPushButton("🔒 Lock")
+        lock_btn = QPushButton("󰌾 Lock")
         lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
         lock_btn.clicked.connect(self.lock_vault)
         sb_header.addWidget(lock_btn)
@@ -383,13 +382,13 @@ class NoteApp(QMainWindow):
 
         # Entry List Controls
         list_ctrl = QHBoxLayout()
-        self.list_lbl = QLabel("Journal Entries")
+        self.list_lbl = QLabel("󰈙 Entries")
         self.list_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
         self.list_lbl.setStyleSheet("color: #8c9b32;")
         list_ctrl.addWidget(self.list_lbl)
         list_ctrl.addStretch()
 
-        new_btn = QPushButton("+ New Entry")
+        new_btn = QPushButton("󰐕 New")
         new_btn.setCursor(QCursor(Qt.PointingHandCursor))
         new_btn.clicked.connect(self.create_entry)
         list_ctrl.addWidget(new_btn)
@@ -421,12 +420,12 @@ class NoteApp(QMainWindow):
         self.word_lbl.setStyleSheet("color: #666666;")
         ed_bar.addWidget(self.word_lbl)
 
-        self.zen_btn = QPushButton("🧘 Zen Focus")
+        self.zen_btn = QPushButton("󰈈 Zen Focus")
         self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.zen_btn.clicked.connect(self.toggle_zen)
         ed_bar.addWidget(self.zen_btn)
 
-        del_btn = QPushButton("🗑️")
+        del_btn = QPushButton("󰆴")
         del_btn.setCursor(QCursor(Qt.PointingHandCursor))
         del_btn.setStyleSheet("""
             QPushButton {
@@ -469,7 +468,7 @@ class NoteApp(QMainWindow):
 
         # Tags Row
         self.tags_edit = QLineEdit()
-        self.tags_edit.setPlaceholderText("# Tags: e.g. college, coding, deep-work")
+        self.tags_edit.setPlaceholderText("󰓹 Tags: e.g. college, coding, deep-work")
         self.tags_edit.setFont(QFont("JetBrainsMono Nerd Font", 10))
         self.tags_edit.setStyleSheet("""
             QLineEdit {
@@ -541,7 +540,7 @@ class NoteApp(QMainWindow):
         target_list = [e for e in self.entries if not filter_date or e["date"] == filter_date]
         for e in target_list:
             preview_title = e.get('title') or 'Untitled Thought'
-            item = QListWidgetItem(f"⚡ {preview_title}\n📅 {e.get('date')} · {e.get('time')}")
+            item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
             item.setData(Qt.UserRole, e["id"])
             self.entry_list.addItem(item)
 
@@ -574,7 +573,7 @@ class NoteApp(QMainWindow):
             self.title_edit.setText(entry.get("title", ""))
             self.tags_edit.setText(entry.get("tags", ""))
             self.content_edit.setText(entry.get("content", ""))
-            self.meta_lbl.setText(f"📅 {entry.get('date')} · {entry.get('time')}")
+            self.meta_lbl.setText(f"󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
             self.update_word_count(entry.get("content", ""))
 
             self.title_edit.blockSignals(False)
@@ -613,7 +612,7 @@ class NoteApp(QMainWindow):
     def toggle_zen(self):
         self.is_zen = not self.is_zen
         self.sidebar.setVisible(not self.is_zen)
-        self.zen_btn.setText("🗔 Full View" if self.is_zen else "🧘 Zen Focus")
+        self.zen_btn.setText("󰈊 Full View" if self.is_zen else "󰈈 Zen Focus")
 
     def lock_vault(self):
         self.pin = ""
