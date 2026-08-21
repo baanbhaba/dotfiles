@@ -190,6 +190,15 @@ THEME_META = {
         "category": "Slate Mist  ·  Sapphire", "desc": "Soft slate mist with deep sapphire — thoughtful and clear.",
         "glow": (36, 72, 192, 70), "swatches": ["#f2f4f8", "#ffffff", "#2448c0", "#0e1428"]
     },
+
+    # 14. VHS AMBER — Warm CRT phosphor, scanline static grain
+    "VHS Amber": {
+        "bg":          "#0e0900", "sidebar":  "#161000", "card":     "#1f1500", "card_hover": "#2a1d00",
+        "fg":          "#ffcc44", "acc":       "#ffaa00", "sub":      "#8a6a10", "border":    "#2e2000",
+        "input_bg":    "#161000", "input_fg":  "#ffcc44", "pill_radius": "4px", "btn_border": "#3d2c00",
+        "category": "CRT  ·  Phosphor Amber", "desc": "Warm VHS phosphor glow on pure black — tape static and scanlines.",
+        "glow": (255, 170, 0, 140), "swatches": ["#0e0900", "#1f1500", "#ffaa00", "#ffcc44"]
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
