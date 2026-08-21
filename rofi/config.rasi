@@ -8,19 +8,19 @@ configuration {
 }
 
 * {
-    bg: #080808;              /* CRT Black */
-    fg: #8c9b32;              /* Muted Amber Green */
-    highlight: #ffb000;       /* Amber Selection Box */
-    text-selected: #080808;   /* Dark text on selection */
-    text-active: #ffffff;     /* Bright White Typing Text */
+    bg: #080808;              /* Deep CRT Black */
+    fg: #a8a8a8;              /* Clean readable light gray for unselected */
+    highlight-bg: #ffb000;    /* Vibrant Amber Gold Wide Selector Bar */
+    highlight-fg: #080808;    /* Deep Black text on Amber Bar (High contrast) */
 }
 
 window {
-    width: 700px;
+    width: 750px;
     background-color: @bg;
     border: 1px;
     border-color: #ffb000;
-    padding: 25px;
+    border-radius: 4px;
+    padding: 24px;
     location: center;
     anchor: center;
 }
@@ -28,26 +28,26 @@ window {
 mainbox {
     background-color: transparent;
     children: [ inputbar, listview ];
+    spacing: 12px;
 }
 
 inputbar {
     background-color: transparent;
-    margin: 0 0 15px 0;
     children: [ prompt, entry ];
     border-bottom: 1px;
     border-color: #ffb000;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
 }
 
 prompt {
     background-color: transparent;
     text-color: #ffb000;
-    margin: 0 8px 0 0;
+    margin: 0 10px 0 0;
 }
 
 entry {
     background-color: transparent;
-    text-color: #ffffff;      /* High-contrast crisp white typing text */
+    text-color: #ffffff;
     placeholder: "Search...";
     placeholder-color: #555555;
     cursor-color: #ffb000;
@@ -56,23 +56,36 @@ entry {
 listview {
     background-color: transparent;
     lines: 7;
-    spacing: 5;
+    spacing: 6px;
     scrollbar: false;
 }
 
 element {
-    padding: 12px;
-    border-radius: 2px;
+    padding: 10px 16px;
+    border-radius: 4px;
     background-color: transparent;
     text-color: @fg;
 }
 
-element selected {
-    background-color: @highlight;
-    text-color: @text-selected;
+element normal.normal {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element alternate.normal {
+    background-color: transparent;
+    text-color: @fg;
+}
+
+/* Wide Amber Selector Bar */
+element selected.normal, element selected.active {
+    background-color: @highlight-bg;
+    text-color: @highlight-fg;
 }
 
 element-text {
     background-color: transparent;
     text-color: inherit;
+    highlight: inherit;
+    cursor: inherit;
 }
