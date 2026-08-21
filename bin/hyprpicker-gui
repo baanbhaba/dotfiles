@@ -249,7 +249,7 @@ class FormatRow(QFrame):
 class HyprpickerGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Hyprpicker & Palette")
+        self.setWindowTitle("Colour Picker")
         self.setFixedSize(480, 710)
         self.history = self.load_history()
         self.current_color = self.history[0] if self.history else "#89b4fa"
@@ -349,7 +349,7 @@ class HyprpickerGUI(QMainWindow):
         # Header bar
         header_box = QHBoxLayout()
         title_box = QVBoxLayout()
-        title = QLabel("Hyprpicker Studio")
+        title = QLabel("Colour Picker")
         title.setFont(QFont("Inter, Sans-serif", 15, QFont.Bold))
         subtitle = QLabel("Screen Dropper & Color Wheel")
         subtitle.setFont(QFont("Inter, Sans-serif", 9))
@@ -607,7 +607,14 @@ class HyprpickerGUI(QMainWindow):
                 with open(HISTORY_FILE, "r") as f:
                     data = json.load(f)
                     if isinstance(data, list) and data:
-                        return data
+                        cleaned = []
+                        for item in data:
+                            if isinstance(item, dict) and "hex" in item:
+                                cleaned.append(str(item["hex"]).lower())
+                            elif isinstance(item, str) and item.startswith("#"):
+                                cleaned.append(item.lower())
+                        if cleaned:
+                            return cleaned
             except Exception:
                 pass
         return ["#89b4fa", "#f38ba8", "#a6e3a1", "#f9e2af", "#cba6f7", "#fab387", "#94e2d5"]
@@ -622,7 +629,7 @@ class HyprpickerGUI(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName("Hyprpicker GUI")
+    app.setApplicationName("Colour Picker")
     app.setStyle("Fusion")
     
     icon_path = Path.home() / ".local" / "share" / "icons" / "hicolor" / "scalable" / "apps" / "hyprpicker-gui.svg"

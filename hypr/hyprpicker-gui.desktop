@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Colour Picker
+Comment=Colour Picker for Wayland / Hyprland
+Exec=/home/baanbhaba/.local/bin/hyprpicker-gui
+Icon=hyprpicker-gui
+Terminal=false
+Categories=Graphics;Utility;
+Keywords=color;colour;picker;dropper;eyedropper;hyprpicker;hex;rgb;hsl;
