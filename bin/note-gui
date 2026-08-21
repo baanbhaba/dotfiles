@@ -9,14 +9,13 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
-    QStackedWidget, QCalendarWidget, QFrame, QSplitter, QFileDialog, QMessageBox
+    QStackedWidget, QCalendarWidget, QFrame, QSplitter
 )
-from PyQt5.QtGui import QColor, QFont, QIcon, QPainter, QTextCharFormat
-from PyQt5.QtCore import Qt, QSize, QDate, QTimer
+from PyQt5.QtGui import QColor, QFont, QTextCharFormat
+from PyQt5.QtCore import Qt, QDate
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 
-# Simple local encryption/hashing using PBKDF2 + XOR Stream / Fernet-equivalent
 def derive_key(pin: str, salt: bytes) -> bytes:
     return hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 100000)
 
@@ -24,7 +23,6 @@ def encrypt_string(plain: str, pin: str) -> dict:
     salt = os.urandom(16)
     key = derive_key(pin, salt)
     plain_bytes = plain.encode('utf-8')
-    # XOR stream cipher with SHA-256 key stream
     encrypted = bytearray()
     for i, b in enumerate(plain_bytes):
         k = hashlib.sha256(key + i.to_bytes(4, 'big')).digest()[0]
@@ -50,7 +48,7 @@ class NoteApp(QMainWindow):
         self.setWindowTitle("Note — Encrypted Zen Journal")
         self.setMinimumSize(950, 650)
         self.pin = ""
-        self.entries = [] # List of dicts: {"id", "date", "time", "title", "content", "tags", "mood"}
+        self.entries = []
         self.active_id = None
         self.is_zen = False
 
@@ -60,10 +58,10 @@ class NoteApp(QMainWindow):
         self.init_lock_screen()
         self.init_main_workspace()
 
-        # Apply global Amber CRT theme
+        # Amber CRT Theme
         self.setStyleSheet("""
             QMainWindow { background-color: #080808; }
-            QWidget { background-color: #080808; color: #e0e0e0; font-family: 'Inter', sans-serif; }
+            QWidget { background-color: #080808; color: #e0e0e0; font-family: 'JetBrainsMono Nerd Font', 'Inter', sans-serif; }
             QLineEdit, QTextEdit {
                 background-color: #121212;
                 color: #d6d6d6;
@@ -75,9 +73,9 @@ class NoteApp(QMainWindow):
                 border: 1px solid #ffb000;
             }
             QPushButton {
-                background-color: #1a1a1a;
+                background-color: #141414;
                 color: #ffb000;
-                border: 1px solid #333333;
+                border: 1px solid #262626;
                 border-radius: 6px;
                 padding: 6px 12px;
                 font-weight: bold;
@@ -113,7 +111,6 @@ class NoteApp(QMainWindow):
             }
         """)
 
-        # Start at lock screen
         self.stack.setCurrentIndex(0)
 
     def init_lock_screen(self):
@@ -135,7 +132,7 @@ class NoteApp(QMainWindow):
         card_layout.addWidget(title)
 
         is_setup = not VAULT_PATH.exists()
-        subtitle = QLabel("Create a Master PIN to encrypt your local journal with AES-256." if is_setup else "Enter your PIN to decrypt your private thoughts.")
+        subtitle = QLabel("Create a Master PIN to encrypt your local journal." if is_setup else "Enter your PIN to decrypt your private thoughts.")
         subtitle.setWordWrap(True)
         subtitle.setFont(QFont("Inter", 8))
         subtitle.setStyleSheet("color: #8c9b32; border: none; background: transparent;")
@@ -171,7 +168,6 @@ class NoteApp(QMainWindow):
             return
 
         if not VAULT_PATH.exists():
-            # Setup vault
             self.pin = pin
             initial_entry = {
                 "id": str(datetime.now().timestamp()),
@@ -347,6 +343,11 @@ class NoteApp(QMainWindow):
         matched = [e for e in self.entries if e["date"] == d_str]
         if matched:
             self.load_entry(matched[0]["id"])
+
+    def on_entry_selected(self, item):
+        entry_id = item.data(Qt.UserRole)
+        if entry_id:
+            self.load_entry(entry_id)
 
     def refresh_entries_list(self, filter_date=None):
         self.entry_list.clear()
