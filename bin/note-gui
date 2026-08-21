@@ -10,8 +10,8 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
-    QStackedWidget, QFrame, QSplitter, QGridLayout, QGraphicsDropShadowEffect,
-    QSizePolicy
+    QStackedWidget, QFrame, QSplitter, QGridLayout, QComboBox,
+    QGraphicsDropShadowEffect, QSizePolicy
 )
 from PyQt5.QtGui import QColor, QFont, QCursor
 from PyQt5.QtCore import Qt
@@ -44,6 +44,142 @@ def decrypt_string(payload: dict, pin: str) -> str:
         decrypted.append(b ^ k)
     return decrypted.decode('utf-8')
 
+# THEME STYLESHEET REPOSITORY
+THEMES = {
+    "Charcoal Amber": {
+        "name": "Charcoal Amber",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #080808; }
+            QWidget { background-color: #080808; color: #d6d6d6; font-family: 'JetBrainsMono Nerd Font', monospace; }
+            QFrame#CalendarFrame { background-color: #0d0d0d; border: 1px solid #222222; border-radius: 12px; }
+            QLineEdit, QTextEdit { background-color: #101010; color: #ffb000; border: 1px solid #1f1f1f; border-radius: 8px; padding: 10px; selection-background-color: #ffb000; selection-color: #080808; }
+            QLineEdit:focus, QTextEdit:focus { border: 1px solid #ffb000; background-color: #141414; }
+            QTextEdit { background-color: #0c0c0c; color: #e0e0e0; font-size: 14px; }
+            QPushButton { background-color: #141414; color: #ffb000; border: 1px solid #262626; border-radius: 8px; padding: 8px 14px; font-weight: bold; }
+            QPushButton:hover { background-color: #ffb000; color: #080808; border-color: #ffb000; }
+            QListWidget { background-color: #0c0c0c; border: 1px solid #1a1a1a; border-radius: 8px; padding: 4px; }
+            QListWidget::item { background-color: #101010; color: #b0b0b0; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #181818; }
+            QListWidget::item:hover { border: 1px solid #333333; background-color: #161616; color: #ffffff; }
+            QListWidget::item:selected { background-color: #ffb000; color: #080808; font-weight: bold; }
+            QComboBox { background-color: #121212; color: #ffb000; border: 1px solid #262626; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
+            QComboBox QAbstractItemView { background-color: #121212; color: #ffb000; selection-background-color: #ffb000; selection-color: #080808; }
+            QSplitter::handle { background-color: #1f1f1f; width: 4px; }
+            QSplitter::handle:hover { background-color: #ffb000; }
+        """
+    },
+    "Neo-Brutalism": {
+        "name": "Neo-Brutalism",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #fffdf0; }
+            QWidget { background-color: #fffdf0; color: #000000; font-family: 'JetBrainsMono Nerd Font', sans-serif; font-weight: bold; }
+            QFrame#CalendarFrame { background-color: #ffffff; border: 3px solid #000000; border-radius: 8px; }
+            QLineEdit, QTextEdit { background-color: #ffffff; color: #000000; border: 3px solid #000000; border-radius: 6px; padding: 10px; font-weight: bold; }
+            QLineEdit:focus, QTextEdit:focus { border: 3px solid #ff006e; background-color: #fffbf2; }
+            QTextEdit { background-color: #ffffff; font-size: 14px; }
+            QPushButton { background-color: #ffbe0b; color: #000000; border: 3px solid #000000; border-radius: 6px; padding: 8px 14px; font-weight: 900; }
+            QPushButton:hover { background-color: #ff006e; color: #ffffff; }
+            QListWidget { background-color: #ffffff; border: 3px solid #000000; border-radius: 8px; padding: 4px; }
+            QListWidget::item { background-color: #fff5eb; color: #000000; margin-bottom: 6px; padding: 10px; border-radius: 4px; border: 2px solid #000000; }
+            QListWidget::item:hover { background-color: #00f5d4; }
+            QListWidget::item:selected { background-color: #ff006e; color: #ffffff; }
+            QComboBox { background-color: #00f5d4; color: #000000; border: 3px solid #000000; border-radius: 6px; padding: 4px 8px; font-weight: 900; }
+            QComboBox QAbstractItemView { background-color: #ffffff; color: #000000; selection-background-color: #ff006e; selection-color: #ffffff; }
+            QSplitter::handle { background-color: #000000; width: 6px; }
+            QSplitter::handle:hover { background-color: #ff006e; }
+        """
+    },
+    "Cybercore": {
+        "name": "Cybercore",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #02020a; }
+            QWidget { background-color: #02020a; color: #00f0ff; font-family: 'JetBrainsMono Nerd Font', monospace; }
+            QFrame#CalendarFrame { background-color: #070719; border: 1px solid #ff007f; border-radius: 10px; }
+            QLineEdit, QTextEdit { background-color: #070719; color: #00f0ff; border: 1px solid #00f0ff; border-radius: 6px; padding: 10px; }
+            QLineEdit:focus, QTextEdit:focus { border: 1px solid #ff007f; background-color: #0c0c28; }
+            QTextEdit { background-color: #050514; color: #e0f7ff; font-size: 14px; }
+            QPushButton { background-color: #0a0a20; color: #00f0ff; border: 1px solid #00f0ff; border-radius: 6px; padding: 8px 14px; font-weight: bold; }
+            QPushButton:hover { background-color: #00f0ff; color: #02020a; border-color: #00f0ff; }
+            QListWidget { background-color: #050514; border: 1px solid #00f0ff; border-radius: 6px; }
+            QListWidget::item { background-color: #08081c; color: #00f0ff; margin-bottom: 6px; padding: 10px; border-radius: 4px; border: 1px solid #1a1a40; }
+            QListWidget::item:hover { border: 1px solid #ff007f; background-color: #121230; color: #ffffff; }
+            QListWidget::item:selected { background-color: #ff007f; color: #ffffff; font-weight: bold; }
+            QComboBox { background-color: #0a0a20; color: #00f0ff; border: 1px solid #00f0ff; border-radius: 6px; padding: 4px 8px; font-weight: bold; }
+            QComboBox QAbstractItemView { background-color: #070719; color: #00f0ff; selection-background-color: #ff007f; selection-color: #ffffff; }
+            QSplitter::handle { background-color: #00f0ff; width: 4px; }
+            QSplitter::handle:hover { background-color: #ff007f; }
+        """
+    },
+    "Glassmorphism": {
+        "name": "Glassmorphism",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #12151f; }
+            QWidget { background-color: #12151f; color: #e2e8f0; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
+            QFrame#CalendarFrame { background-color: #1a2030; border: 1px solid #2d3748; border-radius: 14px; }
+            QLineEdit, QTextEdit { background-color: #1a2030; color: #63b3ed; border: 1px solid #2d3748; border-radius: 10px; padding: 10px; }
+            QLineEdit:focus, QTextEdit:focus { border: 1px solid #63b3ed; background-color: #21293d; }
+            QTextEdit { background-color: #171d2b; color: #edf2f7; font-size: 14px; }
+            QPushButton { background-color: #21293d; color: #63b3ed; border: 1px solid #2d3748; border-radius: 10px; padding: 8px 14px; font-weight: bold; }
+            QPushButton:hover { background-color: #63b3ed; color: #12151f; border-color: #63b3ed; }
+            QListWidget { background-color: #171d2b; border: 1px solid #2d3748; border-radius: 12px; }
+            QListWidget::item { background-color: #1d2436; color: #cbd5e0; margin-bottom: 6px; padding: 10px; border-radius: 8px; border: 1px solid #2d3748; }
+            QListWidget::item:hover { border: 1px solid #4a5568; background-color: #252e42; color: #ffffff; }
+            QListWidget::item:selected { background-color: #4299e1; color: #ffffff; font-weight: bold; }
+            QComboBox { background-color: #1a2030; color: #63b3ed; border: 1px solid #2d3748; border-radius: 8px; padding: 4px 8px; }
+            QComboBox QAbstractItemView { background-color: #1a2030; color: #63b3ed; selection-background-color: #4299e1; selection-color: #ffffff; }
+            QSplitter::handle { background-color: #2d3748; width: 4px; }
+            QSplitter::handle:hover { background-color: #63b3ed; }
+        """
+    },
+    "Y2K Aesthetic": {
+        "name": "Y2K Aesthetic",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #180928; }
+            QWidget { background-color: #180928; color: #ff8dfd; font-family: 'JetBrainsMono Nerd Font', cursive, monospace; }
+            QFrame#CalendarFrame { background-color: #25103a; border: 2px solid #b845ff; border-radius: 12px; }
+            QLineEdit, QTextEdit { background-color: #25103a; color: #00ffc8; border: 2px solid #b845ff; border-radius: 8px; padding: 10px; }
+            QLineEdit:focus, QTextEdit:focus { border: 2px solid #00ffc8; background-color: #31144c; }
+            QTextEdit { background-color: #1e0b32; color: #ffffff; font-size: 14px; }
+            QPushButton { background-color: #b845ff; color: #ffffff; border: 2px solid #00ffc8; border-radius: 8px; padding: 8px 14px; font-weight: 900; }
+            QPushButton:hover { background-color: #00ffc8; color: #180928; border-color: #ff8dfd; }
+            QListWidget { background-color: #1e0b32; border: 2px solid #b845ff; border-radius: 10px; }
+            QListWidget::item { background-color: #291240; color: #ff8dfd; margin-bottom: 6px; padding: 10px; border-radius: 6px; border: 1px solid #4a1c74; }
+            QListWidget::item:hover { border: 1px solid #00ffc8; background-color: #361754; color: #00ffc8; }
+            QListWidget::item:selected { background-color: #00ffc8; color: #180928; font-weight: 900; }
+            QComboBox { background-color: #25103a; color: #00ffc8; border: 2px solid #b845ff; border-radius: 8px; padding: 4px 8px; font-weight: bold; }
+            QComboBox QAbstractItemView { background-color: #25103a; color: #00ffc8; selection-background-color: #00ffc8; selection-color: #180928; }
+            QSplitter::handle { background-color: #b845ff; width: 5px; }
+            QSplitter::handle:hover { background-color: #00ffc8; }
+        """
+    },
+    "Pixel Art / Retro": {
+        "name": "Pixel Art / Retro",
+        "font": "JetBrainsMono Nerd Font",
+        "css": """
+            QMainWindow { background-color: #1a1c23; }
+            QWidget { background-color: #1a1c23; color: #8be9fd; font-family: 'JetBrainsMono Nerd Font', monospace; }
+            QFrame#CalendarFrame { background-color: #282a36; border: 2px dashed #50fa7b; border-radius: 4px; }
+            QLineEdit, QTextEdit { background-color: #282a36; color: #f1fa8c; border: 2px solid #6272a4; border-radius: 2px; padding: 8px; }
+            QLineEdit:focus, QTextEdit:focus { border: 2px solid #50fa7b; }
+            QTextEdit { background-color: #21222c; color: #f8f8f2; font-size: 14px; }
+            QPushButton { background-color: #44475a; color: #50fa7b; border: 2px solid #6272a4; border-radius: 2px; padding: 6px 12px; font-weight: bold; }
+            QPushButton:hover { background-color: #50fa7b; color: #282a36; border-color: #50fa7b; }
+            QListWidget { background-color: #21222c; border: 2px solid #6272a4; border-radius: 2px; }
+            QListWidget::item { background-color: #282a36; color: #f8f8f2; margin-bottom: 4px; padding: 8px; border: 1px solid #44475a; }
+            QListWidget::item:hover { border: 1px solid #ff79c6; color: #ff79c6; }
+            QListWidget::item:selected { background-color: #ff79c6; color: #282a36; font-weight: bold; }
+            QComboBox { background-color: #282a36; color: #50fa7b; border: 2px solid #6272a4; border-radius: 2px; padding: 4px 8px; }
+            QComboBox QAbstractItemView { background-color: #282a36; color: #50fa7b; selection-background-color: #ff79c6; selection-color: #282a36; }
+            QSplitter::handle { background-color: #6272a4; width: 4px; }
+            QSplitter::handle:hover { background-color: #50fa7b; }
+        """
+    }
+}
+
 class AestheticCalendarWidget(QFrame):
     def __init__(self, on_date_selected_callback):
         super().__init__()
@@ -53,94 +189,53 @@ class AestheticCalendarWidget(QFrame):
         self.selected_date_str = date.today().isoformat()
         self.entry_dates = set()
 
-        self.setMinimumSize(320, 260)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-
-        self.setStyleSheet("""
-            QFrame#AestheticCalendar {
-                background-color: #0d0d0d;
-                border: 1px solid #222222;
-                border-radius: 12px;
-            }
-        """)
-        self.setObjectName("AestheticCalendar")
+        self.setMinimumSize(280, 240)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.setObjectName("CalendarFrame")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(6)
 
-        # Header with Month/Year & Nav
+        # Header
         header = QHBoxLayout()
-        header.setContentsMargins(0, 0, 0, 4)
+        header.setContentsMargins(0, 0, 0, 2)
         self.month_lbl = QLabel("")
-        self.month_lbl.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        self.month_lbl.setStyleSheet("color: #ffb000; border: none; background: transparent;")
+        self.month_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        self.month_lbl.setStyleSheet("border: none; background: transparent;")
         header.addWidget(self.month_lbl)
         header.addStretch()
 
         prev_btn = QPushButton("󰁍")
-        prev_btn.setFixedSize(28, 28)
+        prev_btn.setFixedSize(26, 26)
         prev_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        prev_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #141414;
-                color: #ffb000;
-                border: 1px solid #262626;
-                border-radius: 6px;
-                padding: 0px;
-                font-size: 13px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #ffb000;
-                color: #080808;
-                border-color: #ffb000;
-            }
-        """)
         prev_btn.clicked.connect(self.prev_month)
         header.addWidget(prev_btn)
 
         next_btn = QPushButton("󰁔")
-        next_btn.setFixedSize(28, 28)
+        next_btn.setFixedSize(26, 26)
         next_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        next_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #141414;
-                color: #ffb000;
-                border: 1px solid #262626;
-                border-radius: 6px;
-                padding: 0px;
-                font-size: 13px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #ffb000;
-                color: #080808;
-                border-color: #ffb000;
-            }
-        """)
         next_btn.clicked.connect(self.next_month)
         header.addWidget(next_btn)
 
         layout.addLayout(header)
 
-        # Days of Week Row
+        # Days Header
         days_header = QHBoxLayout()
         days_header.setSpacing(2)
-        days_header.setContentsMargins(0, 0, 0, 4)
         for day_name in ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]:
             lbl = QLabel(day_name)
             lbl.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
-            lbl.setStyleSheet("color: #666666; border: none; background: transparent;")
+            lbl.setStyleSheet("color: #777777; border: none; background: transparent;")
             lbl.setAlignment(Qt.AlignCenter)
             days_header.addWidget(lbl)
         layout.addLayout(days_header)
 
-        # 6x7 Days Grid Widget Container
+        # Grid Widget Container
         self.grid_container = QWidget()
         self.grid_container.setStyleSheet("background: transparent; border: none;")
         self.grid = QGridLayout(self.grid_container)
-        self.grid.setSpacing(4)
+        self.grid.setSpacing(3)
         self.grid.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.grid_container)
 
@@ -185,7 +280,7 @@ class AestheticCalendarWidget(QFrame):
             for col_idx, day_num in enumerate(week):
                 if day_num == 0:
                     empty = QLabel("")
-                    empty.setFixedSize(34, 28)
+                    empty.setFixedSize(28, 24)
                     empty.setStyleSheet("border: none; background: transparent;")
                     self.grid.addWidget(empty, row_idx, col_idx)
                 else:
@@ -195,61 +290,18 @@ class AestheticCalendarWidget(QFrame):
                     has_entry = d_str in self.entry_dates
 
                     btn = QPushButton(str(day_num))
-                    btn.setFixedSize(34, 28)
+                    btn.setFixedSize(28, 24)
                     btn.setCursor(QCursor(Qt.PointingHandCursor))
-                    btn.setFont(QFont("JetBrainsMono Nerd Font", 9))
+                    btn.setFont(QFont("JetBrainsMono Nerd Font", 8))
 
                     if is_selected:
-                        btn.setStyleSheet("""
-                            QPushButton {
-                                background-color: #ffb000;
-                                color: #080808;
-                                font-weight: bold;
-                                border: none;
-                                border-radius: 6px;
-                            }
-                        """)
+                        btn.setStyleSheet("QPushButton { font-weight: bold; border-radius: 4px; }")
                     elif is_today:
-                        btn.setStyleSheet("""
-                            QPushButton {
-                                background-color: #1a1a1a;
-                                color: #ffb000;
-                                font-weight: bold;
-                                border: 1px solid #ffb000;
-                                border-radius: 6px;
-                            }
-                            QPushButton:hover {
-                                background-color: #ffb000;
-                                color: #080808;
-                            }
-                        """)
+                        btn.setStyleSheet("QPushButton { font-weight: bold; border-radius: 4px; }")
                     elif has_entry:
-                        btn.setStyleSheet("""
-                            QPushButton {
-                                background-color: #141414;
-                                color: #ffd166;
-                                font-weight: bold;
-                                border: 1px solid #8c9b32;
-                                border-radius: 6px;
-                            }
-                            QPushButton:hover {
-                                background-color: #ffb000;
-                                color: #080808;
-                            }
-                        """)
+                        btn.setStyleSheet("QPushButton { font-weight: bold; border-radius: 4px; }")
                     else:
-                        btn.setStyleSheet("""
-                            QPushButton {
-                                background-color: transparent;
-                                color: #888888;
-                                border: none;
-                                border-radius: 6px;
-                            }
-                            QPushButton:hover {
-                                background-color: #181818;
-                                color: #ffffff;
-                            }
-                        """)
+                        btn.setStyleSheet("QPushButton { font-weight: normal; border-radius: 4px; }")
 
                     btn.clicked.connect(lambda _, ds=d_str: self.select_date(ds))
                     self.grid.addWidget(btn, row_idx, col_idx)
@@ -263,13 +315,14 @@ class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Note")
-        self.setMinimumSize(1050, 720)
-        self.resize(1160, 760)
+        self.setMinimumSize(900, 600)
+        self.resize(1100, 720)
         self.pin = ""
         self.entries = []
         self.active_id = None
         self.is_zen = False
         self.active_date_str = date.today().isoformat()
+        self.current_theme = "Charcoal Amber"
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -277,107 +330,13 @@ class NoteApp(QMainWindow):
         self.init_lock_screen()
         self.init_main_workspace()
 
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #080808;
-            }
-            QWidget {
-                background-color: #080808;
-                color: #d6d6d6;
-                font-family: 'JetBrainsMono Nerd Font', 'Symbols Nerd Font', monospace;
-            }
-            
-            QLineEdit {
-                background-color: #101010;
-                color: #ffb000;
-                border: 1px solid #1f1f1f;
-                border-radius: 8px;
-                padding: 10px 14px;
-                font-size: 13px;
-                selection-background-color: #ffb000;
-                selection-color: #080808;
-            }
-            QLineEdit:focus {
-                border: 1px solid #ffb000;
-                background-color: #141414;
-            }
-            QTextEdit {
-                background-color: #0c0c0c;
-                color: #e0e0e0;
-                border: 1px solid #1a1a1a;
-                border-radius: 10px;
-                padding: 16px;
-                font-size: 14px;
-                line-height: 1.6;
-                selection-background-color: #ffb000;
-                selection-color: #080808;
-            }
-            QTextEdit:focus {
-                border: 1px solid #ffb000;
-                background-color: #0e0e0e;
-            }
-            
-            QPushButton {
-                background-color: #141414;
-                color: #ffb000;
-                border: 1px solid #262626;
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #ffb000;
-                color: #080808;
-                border: 1px solid #ffb000;
-            }
-            
-            QListWidget {
-                background-color: #0c0c0c;
-                border: 1px solid #1a1a1a;
-                border-radius: 8px;
-                outline: none;
-                padding: 4px;
-            }
-            QListWidget::item {
-                background-color: #101010;
-                color: #b0b0b0;
-                margin-bottom: 6px;
-                padding: 12px;
-                border-radius: 6px;
-                border: 1px solid #181818;
-            }
-            QListWidget::item:hover {
-                border: 1px solid #333333;
-                background-color: #161616;
-                color: #ffffff;
-            }
-            QListWidget::item:selected {
-                background-color: #ffb000;
-                color: #080808;
-                font-weight: bold;
-                border: 1px solid #ffb000;
-            }
-            
-            QScrollBar:vertical {
-                border: none;
-                background: #080808;
-                width: 6px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical {
-                background: #262626;
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background: #ffb000;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
-        """)
-
+        self.apply_theme(self.current_theme)
         self.stack.setCurrentIndex(0)
+
+    def apply_theme(self, theme_name):
+        if theme_name in THEMES:
+            self.current_theme = theme_name
+            self.setStyleSheet(THEMES[theme_name]["css"])
 
     def init_lock_screen(self):
         self.lock_widget = QWidget()
@@ -386,13 +345,7 @@ class NoteApp(QMainWindow):
 
         card = QFrame()
         card.setFixedSize(380, 360)
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #0d0d0d;
-                border: 1px solid #262626;
-                border-radius: 16px;
-            }
-        """)
+        card.setStyleSheet("QFrame { background-color: #0d0d0d; border: 1px solid #262626; border-radius: 16px; }")
         
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(40)
@@ -417,7 +370,7 @@ class NoteApp(QMainWindow):
         card_layout.addWidget(title)
 
         is_setup = not VAULT_PATH.exists()
-        subtitle = QLabel("Create a Master PIN to encrypt your local journal with AES-256." if is_setup else "Enter Master PIN to decrypt your private thoughts.")
+        subtitle = QLabel("Create a Master PIN to encrypt your local journal." if is_setup else "Enter Master PIN to decrypt your private thoughts.")
         subtitle.setWordWrap(True)
         subtitle.setFont(QFont("JetBrainsMono Nerd Font", 9))
         subtitle.setStyleSheet("color: #8c9b32; border: none; background: transparent; line-height: 1.4;")
@@ -436,18 +389,6 @@ class NoteApp(QMainWindow):
         self.auth_btn = QPushButton("󰌆 Initialize Vault" if is_setup else "󰌆 Unlock Journal")
         self.auth_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.auth_btn.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-        self.auth_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ffb000;
-                color: #080808;
-                border: none;
-                border-radius: 8px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #ffd166;
-            }
-        """)
         self.auth_btn.clicked.connect(self.handle_auth)
         card_layout.addWidget(self.auth_btn)
 
@@ -473,7 +414,7 @@ class NoteApp(QMainWindow):
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Use the calendar on the left to jump across days.\n- Toggle Zen Mode for full distraction-free writing.\n- Save entries with real-time keystroke encryption.",
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Switch between 6 Aesthetic Themes at the top-right.\n- Use the interactive Calendar to travel across dates.\n- Toggle Zen Focus for pure distraction-free flow.",
                 "tags": "welcome, journal",
                 "mood": "zen"
             }
@@ -504,25 +445,24 @@ class NoteApp(QMainWindow):
     def init_main_workspace(self):
         self.main_widget = QWidget()
         main_layout = QHBoxLayout(self.main_widget)
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        main_layout.setSpacing(16)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(12)
 
+        # Resizable Splitter (Left Sidebar vs Right Workspace)
         self.splitter = QSplitter(Qt.Horizontal)
-        self.splitter.setStyleSheet("QSplitter::handle { background-color: #1a1a1a; width: 2px; }")
+        self.splitter.setChildrenCollapsible(False)
 
-        # Left Sidebar (Fixed 360 width)
+        # Left Sidebar
         self.sidebar = QWidget()
-        self.sidebar.setMinimumWidth(340)
-        self.sidebar.setMaximumWidth(400)
+        self.sidebar.setMinimumWidth(260)
         sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setContentsMargins(0, 0, 8, 0)
-        sidebar_layout.setSpacing(12)
+        sidebar_layout.setContentsMargins(0, 0, 4, 0)
+        sidebar_layout.setSpacing(10)
 
         # Header
         sb_header = QHBoxLayout()
         sb_title = QLabel("󰠮 NOTE")
-        sb_title.setFont(QFont("JetBrainsMono Nerd Font", 13, QFont.Bold))
-        sb_title.setStyleSheet("color: #ffb000; letter-spacing: 1px;")
+        sb_title.setFont(QFont("JetBrainsMono Nerd Font", 12, QFont.Bold))
         sb_header.addWidget(sb_title)
         sb_header.addStretch()
 
@@ -532,7 +472,7 @@ class NoteApp(QMainWindow):
         sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
 
-        # Bespoke Aesthetic Calendar
+        # Calendar Widget
         self.calendar = AestheticCalendarWidget(self.on_date_selected)
         sidebar_layout.addWidget(self.calendar)
 
@@ -540,7 +480,6 @@ class NoteApp(QMainWindow):
         list_ctrl = QHBoxLayout()
         self.list_lbl = QLabel("󰈙 Journal Feed")
         self.list_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-        self.list_lbl.setStyleSheet("color: #8c9b32;")
         list_ctrl.addWidget(self.list_lbl)
         list_ctrl.addStretch()
 
@@ -559,21 +498,26 @@ class NoteApp(QMainWindow):
 
         # Right Editor Area
         self.editor_area = QWidget()
+        self.editor_area.setMinimumWidth(450)
         editor_layout = QVBoxLayout(self.editor_area)
-        editor_layout.setContentsMargins(12, 0, 0, 0)
-        editor_layout.setSpacing(12)
+        editor_layout.setContentsMargins(4, 0, 0, 0)
+        editor_layout.setSpacing(10)
 
         # Editor Top Bar
         ed_bar = QHBoxLayout()
         self.meta_lbl = QLabel("")
         self.meta_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10))
-        self.meta_lbl.setStyleSheet("color: #ffb000;")
         ed_bar.addWidget(self.meta_lbl)
         ed_bar.addStretch()
 
+        # Theme Switcher Dropdown
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(list(THEMES.keys()))
+        self.theme_combo.currentTextChanged.connect(self.apply_theme)
+        ed_bar.addWidget(self.theme_combo)
+
         self.word_lbl = QLabel("0 words")
         self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        self.word_lbl.setStyleSheet("color: #666666;")
         ed_bar.addWidget(self.word_lbl)
 
         self.zen_btn = QPushButton("󰈈 Zen Focus")
@@ -583,19 +527,6 @@ class NoteApp(QMainWindow):
 
         del_btn = QPushButton("󰆴")
         del_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        del_btn.setStyleSheet("""
-            QPushButton {
-                color: #ff5c00;
-                border: 1px solid #331515;
-                background-color: #140a0a;
-                padding: 8px 12px;
-            }
-            QPushButton:hover {
-                background-color: #ff5c00;
-                color: #080808;
-                border: 1px solid #ff5c00;
-            }
-        """)
         del_btn.clicked.connect(self.delete_entry)
         ed_bar.addWidget(del_btn)
         editor_layout.addLayout(ed_bar)
@@ -603,22 +534,7 @@ class NoteApp(QMainWindow):
         # Title Field
         self.title_edit = QLineEdit()
         self.title_edit.setPlaceholderText("Entry Title...")
-        self.title_edit.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
-        self.title_edit.setStyleSheet("""
-            QLineEdit {
-                font-size: 18px;
-                font-weight: bold;
-                color: #ffb000;
-                padding: 12px 16px;
-                background-color: #0e0e0e;
-                border: 1px solid #1f1f1f;
-                border-radius: 8px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #ffb000;
-                background-color: #121212;
-            }
-        """)
+        self.title_edit.setFont(QFont("JetBrainsMono Nerd Font", 15, QFont.Bold))
         self.title_edit.textChanged.connect(self.on_content_modified)
         editor_layout.addWidget(self.title_edit)
 
@@ -626,19 +542,6 @@ class NoteApp(QMainWindow):
         self.tags_edit = QLineEdit()
         self.tags_edit.setPlaceholderText("󰓹 Tags: e.g. college, coding, deep-work")
         self.tags_edit.setFont(QFont("JetBrainsMono Nerd Font", 10))
-        self.tags_edit.setStyleSheet("""
-            QLineEdit {
-                color: #8c9b32;
-                font-size: 11px;
-                padding: 6px 12px;
-                background-color: #0e0e0e;
-                border: 1px solid #1a1a1a;
-                border-radius: 6px;
-            }
-            QLineEdit:focus {
-                border: 1px solid #8c9b32;
-            }
-        """)
         self.tags_edit.textChanged.connect(self.on_content_modified)
         editor_layout.addWidget(self.tags_edit)
 
@@ -650,7 +553,7 @@ class NoteApp(QMainWindow):
         editor_layout.addWidget(self.content_edit, 1)
 
         self.splitter.addWidget(self.editor_area)
-        self.splitter.setSizes([360, 700])
+        self.splitter.setSizes([320, 780])
 
         main_layout.addWidget(self.splitter)
         self.stack.addWidget(self.main_widget)
