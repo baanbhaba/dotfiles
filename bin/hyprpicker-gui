@@ -8,7 +8,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QListWidget, QListWidgetItem, QFrame,
-    QTabWidget, QSlider
+    QTabWidget, QSlider, QInputDialog, QLineEdit
 )
 from PyQt5.QtGui import (
     QColor, QFont, QIcon, QPainter, QBrush, QPen, QCursor,
@@ -443,7 +443,10 @@ class HyprpickerGUI(QMainWindow):
         slider_box.addWidget(self.val_slider, 1)
         wheel_layout.addLayout(slider_box)
 
-        # Save to history button
+        # Save buttons row
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
+
         save_btn = QPushButton(" Save To History ")
         save_btn.setFont(QFont("Inter, Sans-serif", 9, QFont.Bold))
         save_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -461,7 +464,28 @@ class HyprpickerGUI(QMainWindow):
             }
         """)
         save_btn.clicked.connect(lambda: self.add_to_history(self.current_color, toast="Saved to history!"))
-        wheel_layout.addWidget(save_btn)
+
+        save_named_btn = QPushButton(" Save With Name ")
+        save_named_btn.setFont(QFont("Inter, Sans-serif", 9, QFont.Bold))
+        save_named_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        save_named_btn.setStyleSheet("""
+            QPushButton {
+                background: #313244;
+                color: #cdd6f4;
+                border-radius: 6px;
+                padding: 6px;
+                border: 1px solid #45475a;
+            }
+            QPushButton:hover {
+                background: #45475a;
+                color: #a6e3a1;
+            }
+        """)
+        save_named_btn.clicked.connect(self.save_with_name_prompt)
+
+        btn_row.addWidget(save_btn, 1)
+        btn_row.addWidget(save_named_btn, 1)
+        wheel_layout.addLayout(btn_row)
 
         self.tabs.addTab(wheel_tab, "🎨  Color Wheel")
 
@@ -501,6 +525,17 @@ class HyprpickerGUI(QMainWindow):
         main_layout.addWidget(self.status_lbl)
 
         self.populate_history_widget()
+
+    def save_with_name_prompt(self):
+        name, ok = QInputDialog.getText(
+            self, "Save Color With Name",
+            f"Enter name for {self.current_color.upper()}:",
+            QLineEdit.Normal, ""
+        )
+        if ok and name.strip():
+            self.add_to_history(self.current_color, name=name.strip(), toast=f"Saved as '{name.strip()}'!")
+        elif ok:
+            self.add_to_history(self.current_color, toast="Saved to history!")
 
     def update_display(self, hex_val, update_wheel=False):
         self.current_color = hex_val
@@ -567,10 +602,10 @@ class HyprpickerGUI(QMainWindow):
         except Exception as e:
             self.status_lbl.setText(f"Error: {e}")
 
-    def add_to_history(self, hex_val, toast=None):
-        if hex_val in self.history:
-            self.history.remove(hex_val)
-        self.history.insert(0, hex_val)
+    def add_to_history(self, hex_val, name="", toast=None):
+        # Remove existing if hex matches
+        self.history = [item for item in self.history if item.get("hex") != hex_val]
+        self.history.insert(0, {"hex": hex_val, "name": name})
         self.history = self.history[:MAX_HISTORY]
         self.save_history()
         self.populate_history_widget()
@@ -579,15 +614,21 @@ class HyprpickerGUI(QMainWindow):
 
     def populate_history_widget(self):
         self.history_list.clear()
-        for color in self.history:
-            r, g, b = hex_to_rgb(color)
-            item = QListWidgetItem(f"   {color.upper()}   —   rgb({r}, {g}, {b})")
+        for item in self.history:
+            hex_col = item.get("hex", "#ffffff")
+            name = item.get("name", "")
+            r, g, b = hex_to_rgb(hex_col)
             
+            label_txt = f"   {hex_col.upper()}   —   rgb({r}, {g}, {b})"
+            if name:
+                label_txt = f"   ⭐ {name}  [{hex_col.upper()}]"
+
+            list_item = QListWidgetItem(label_txt)
             pixmap = QPixmap(18, 18)
-            pixmap.fill(QColor(color))
-            item.setIcon(QIcon(pixmap))
-            item.setData(Qt.UserRole, color)
-            self.history_list.addItem(item)
+            pixmap.fill(QColor(hex_col))
+            list_item.setIcon(QIcon(pixmap))
+            list_item.setData(Qt.UserRole, hex_col)
+            self.history_list.addItem(list_item)
 
     def on_history_clicked(self, item):
         color = item.data(Qt.UserRole)
@@ -596,7 +637,7 @@ class HyprpickerGUI(QMainWindow):
             self.copy_to_clipboard(color)
 
     def clear_history(self):
-        self.history = [self.current_color]
+        self.history = [{"hex": self.current_color, "name": ""}]
         self.save_history()
         self.populate_history_widget()
         self.show_toast("History cleared")
@@ -610,20 +651,20 @@ class HyprpickerGUI(QMainWindow):
                         cleaned = []
                         for item in data:
                             if isinstance(item, dict) and "hex" in item:
-                                cleaned.append(str(item["hex"]).lower())
+                                cleaned.append({"hex": str(item["hex"]).lower(), "name": str(item.get("name", ""))})
                             elif isinstance(item, str) and item.startswith("#"):
-                                cleaned.append(item.lower())
+                                cleaned.append({"hex": item.lower(), "name": ""})
                         if cleaned:
                             return cleaned
             except Exception:
                 pass
-        return ["#89b4fa", "#f38ba8", "#a6e3a1", "#f9e2af", "#cba6f7", "#fab387", "#94e2d5"]
+        return [{"hex": col, "name": ""} for col in ["#89b4fa", "#f38ba8", "#a6e3a1", "#f9e2af", "#cba6f7", "#fab387", "#94e2d5"]]
 
     def save_history(self):
         try:
             HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
             with open(HISTORY_FILE, "w") as f:
-                json.dump(self.history, f)
+                json.dump(self.history, f, indent=2)
         except Exception:
             pass
 
