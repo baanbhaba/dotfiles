@@ -14,10 +14,10 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
-    QSizePolicy, QGridLayout
+    QSizePolicy, QGridLayout, QGraphicsDropShadowEffect
 )
 from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
-from PyQt5.QtCore import Qt, QDate, QTimer
+from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
 DATA_PATH   = Path.home() / ".local" / "share" / ".note_data"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
@@ -472,11 +472,19 @@ class NoteApp(QMainWindow):
         self._save_timer.setInterval(800)
         self._save_timer.timeout.connect(self.save_vault)
 
-        self.init_main_workspace()   # index 0
-        self.init_settings_page()    # index 1
+        self.init_lock_screen()      # index 0
+        self.init_main_workspace()   # index 1
+        self.init_settings_page()    # index 2
 
         self.apply_theme(self.current_theme)
         self.load_entries()
+        
+        # If lock pin is configured, start on lock screen (index 0); otherwise go straight to workspace (index 1)
+        if self.config.get("pin"):
+            self.stack.setCurrentIndex(0)
+            self.pin_input.setFocus()
+        else:
+            self.stack.setCurrentIndex(1)
 
     def apply_theme(self, theme_name):
         if theme_name in THEME_META:
@@ -485,12 +493,11 @@ class NoteApp(QMainWindow):
             save_config(self.config)
             
             self.setStyleSheet(generate_stylesheet(theme_name))
+            self.sync_lock_screen_theme(theme_name)
 
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
                     card.apply_declarative_style(active=(name == theme_name))
-
-
 
     def save_vault(self):
         try:
@@ -499,6 +506,120 @@ class NoteApp(QMainWindow):
             DATA_PATH.write_bytes(raw)
         except Exception as e:
             print("Save error:", e)
+
+    # 1. MINIMALIST HYPRLOCK-STYLE AUTH SCREEN
+    def init_lock_screen(self):
+        self.lock_widget = QWidget()
+        layout = QVBoxLayout(self.lock_widget)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(24)
+
+        # Digital Clock
+        self.time_lbl = QLabel("")
+        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 74, QFont.Bold))
+        self.time_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.time_lbl)
+
+        # Date Label
+        self.date_lbl = QLabel("")
+        self.date_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13))
+        self.date_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.date_lbl)
+
+        # Live Clock Timer
+        self.clock_timer = QTimer(self)
+        self.clock_timer.timeout.connect(self.update_lock_clock)
+        self.clock_timer.start(1000)
+        self.update_lock_clock()
+
+        # Input Pill
+        self.pin_input = QLineEdit()
+        self.pin_input.setEchoMode(QLineEdit.Password)
+        self.pin_input.setPlaceholderText("Enter Passcode")
+        self.pin_input.setAlignment(Qt.AlignCenter)
+        self.pin_input.setFixedSize(320, 56)
+        self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
+        
+        self.lock_shadow = QGraphicsDropShadowEffect(self)
+        self.lock_shadow.setBlurRadius(40)
+        self.lock_shadow.setOffset(0, 0)
+        self.pin_input.setGraphicsEffect(self.lock_shadow)
+        
+        self.pin_input.returnPressed.connect(self.handle_auth)
+        layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
+
+        self.auth_msg = QLabel("Press Enter to Unlock Vault")
+        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.auth_msg.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
+
+        self.stack.addWidget(self.lock_widget)
+
+    def update_lock_clock(self):
+        now = datetime.now()
+        self.time_lbl.setText(now.strftime("%I:%M"))
+        self.date_lbl.setText(now.strftime("%A, %B %d").upper())
+
+    def sync_lock_screen_theme(self, theme_name):
+        if not hasattr(self, 'lock_widget'):
+            return
+        meta = THEME_META.get(theme_name, THEME_META["Void (Dark)"])
+        self.lock_widget.setStyleSheet(f"background-color: {meta['bg']};")
+        self.time_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent; letter-spacing: -2px;")
+        self.date_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; margin-top: -18px;")
+        
+        r, g, b, a = meta["glow"]
+        self.lock_shadow.setColor(QColor(r, g, b, a))
+        
+        self.pin_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {meta['input_bg']};
+                color: {meta['input_fg']};
+                border: 2px solid {meta['border']};
+                border-radius: {meta['pill_radius']};
+                padding: 8px 16px;
+                letter-spacing: 8px;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {meta['acc']};
+            }}
+        """)
+        self.auth_msg.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
+
+    def trigger_shake_animation(self, widget):
+        anim = QPropertyAnimation(widget, b"pos")
+        anim.setDuration(300)
+        orig_pos = widget.pos()
+        anim.setKeyValueAt(0.0, orig_pos)
+        anim.setKeyValueAt(0.1, orig_pos + QPoint(-12, 0))
+        anim.setKeyValueAt(0.3, orig_pos + QPoint(12, 0))
+        anim.setKeyValueAt(0.5, orig_pos + QPoint(-8, 0))
+        anim.setKeyValueAt(0.7, orig_pos + QPoint(8, 0))
+        anim.setKeyValueAt(0.9, orig_pos + QPoint(-4, 0))
+        anim.setKeyValueAt(1.0, orig_pos)
+        anim.setEasingCurve(QEasingCurve.OutQuad)
+        anim.start()
+        self._shake_anim = anim
+
+    def handle_auth(self):
+        entered_pin = self.pin_input.text().strip()
+        configured_pin = self.config.get("pin", "")
+        if configured_pin and entered_pin == configured_pin:
+            self.pin_input.clear()
+            self.auth_msg.setText("Press Enter to Unlock Vault")
+            self.stack.setCurrentIndex(1)
+        else:
+            self.auth_msg.setText("Incorrect passcode.")
+            self.trigger_shake_animation(self.pin_input)
+
+    def lock_vault(self):
+        if self.config.get("pin"):
+            self.pin_input.clear()
+            self.auth_msg.setText("Press Enter to Unlock Vault")
+            self.sync_lock_screen_theme(self.current_theme)
+            self.stack.setCurrentIndex(0)
+            self.pin_input.setFocus()
 
     # 2. MAIN JOURNAL WORKSPACE
     def init_main_workspace(self):
@@ -529,6 +650,12 @@ class NoteApp(QMainWindow):
         settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
         settings_btn.clicked.connect(self.go_to_settings)
         sb_header.addWidget(settings_btn)
+
+        self.lock_sb_btn = QPushButton("󰌾")
+        self.lock_sb_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.lock_sb_btn.clicked.connect(self.lock_vault)
+        self.lock_sb_btn.setVisible(bool(self.config.get("pin")))
+        sb_header.addWidget(self.lock_sb_btn)
         sidebar_layout.addLayout(sb_header)
 
         # Search Bar
@@ -654,6 +781,54 @@ class NoteApp(QMainWindow):
         header.addWidget(self.settings_stats_lbl)
         settings_layout.addLayout(header)
 
+        # 2. Security & Lock Settings Card
+        sec_card = QFrame()
+        sec_card.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; }")
+        sec_layout = QVBoxLayout(sec_card)
+        sec_layout.setContentsMargins(18, 14, 18, 14)
+        sec_layout.setSpacing(10)
+
+        sec_header = QHBoxLayout()
+        sec_icon = QLabel("󰌆")
+        sec_icon.setFont(QFont("JetBrainsMono Nerd Font", 14, QFont.Bold))
+        sec_header.addWidget(sec_icon)
+        sec_title = QLabel("Vault Passcode Lock (Optional)")
+        sec_title.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        sec_header.addWidget(sec_title)
+        sec_header.addStretch()
+
+        self.sec_status_lbl = QLabel("Active" if self.config.get("pin") else "Disabled")
+        self.sec_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
+        self.sec_status_lbl.setStyleSheet("color: #2dd4aa;" if self.config.get("pin") else "color: #777777;")
+        sec_header.addWidget(self.sec_status_lbl)
+        sec_layout.addLayout(sec_header)
+
+        # Pin input row
+        pin_row = QHBoxLayout()
+        pin_row.setSpacing(8)
+
+        self.set_pin_input = QLineEdit()
+        self.set_pin_input.setEchoMode(QLineEdit.Password)
+        self.set_pin_input.setPlaceholderText("Set/Change Passcode (min 4 chars)" if not self.config.get("pin") else "New Passcode")
+        self.set_pin_input.setFont(QFont("JetBrainsMono Nerd Font", 10))
+        pin_row.addWidget(self.set_pin_input, 1)
+
+        self.save_pin_btn = QPushButton("Set Lock")
+        self.save_pin_btn.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
+        self.save_pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.save_pin_btn.clicked.connect(self.handle_save_pin)
+        pin_row.addWidget(self.save_pin_btn)
+
+        self.remove_pin_btn = QPushButton("Remove Lock")
+        self.remove_pin_btn.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
+        self.remove_pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.remove_pin_btn.clicked.connect(self.handle_remove_pin)
+        self.remove_pin_btn.setVisible(bool(self.config.get("pin")))
+        pin_row.addWidget(self.remove_pin_btn)
+
+        sec_layout.addLayout(pin_row)
+        settings_layout.addWidget(sec_card)
+
         # 3. Themes Filter Bar (Header + Category Filter Pills)
         theme_bar = QHBoxLayout()
         th_title = QLabel("🎨 Themes Gallery")
@@ -716,14 +891,37 @@ class NoteApp(QMainWindow):
             col = idx % 3
             self.theme_grid.addWidget(card, row, col)
 
+    def handle_save_pin(self):
+        new_pin = self.set_pin_input.text().strip()
+        if len(new_pin) < 4:
+            self.set_pin_input.setPlaceholderText("Minimum 4 characters required!")
+            self.trigger_shake_animation(self.set_pin_input)
+            return
+        self.config["pin"] = new_pin
+        save_config(self.config)
+        self.set_pin_input.clear()
+        self.sec_status_lbl.setText("Active")
+        self.sec_status_lbl.setStyleSheet("color: #2dd4aa;")
+        self.remove_pin_btn.setVisible(True)
+        self.lock_sb_btn.setVisible(True)
+
+    def handle_remove_pin(self):
+        self.config.pop("pin", None)
+        save_config(self.config)
+        self.set_pin_input.clear()
+        self.sec_status_lbl.setText("Disabled")
+        self.sec_status_lbl.setStyleSheet("color: #777777;")
+        self.remove_pin_btn.setVisible(False)
+        self.lock_sb_btn.setVisible(False)
+
     def go_to_settings(self):
         total_words = sum(len(e.get("content", "").split()) for e in self.entries)
         pinned_count = sum(1 for e in self.entries if e.get("pinned", False))
         self.settings_stats_lbl.setText(f"󰈙 {len(self.entries)} notes  ·  󰤱 {pinned_count} pinned  ·  󱌒 {total_words} words")
-        self.stack.setCurrentIndex(1)
+        self.stack.setCurrentIndex(2)
 
     def go_to_workspace(self):
-        self.stack.setCurrentIndex(0)
+        self.stack.setCurrentIndex(1)
 
     def load_entries(self):
         """Load encrypted binary entries from disk on startup."""
