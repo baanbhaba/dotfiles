@@ -1,8 +1,11 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 28,
-    "spacing": 4,
+    "height": 32,
+    "margin-top": 10,
+    "margin-left": 18,
+    "margin-right": 18,
+    "spacing": 8,
 
     "modules-left": [
         "hyprland/workspaces"
@@ -22,63 +25,37 @@
     "hyprland/workspaces": {
         "active-only": false,
         "all-outputs": true,
-        "format": "{id}",
+        "format": "{name}",
         "on-click": "hyprctl dispatch workspace {id}"
     },
 
     "clock": {
         "interval": 60,
-        "format": "󱑂 {:%I:%M %p | %a, %d %b}",
-        "format-alt": "󰃭 {:%A, %B %d, %Y}",
-        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
-        "calendar": {
-            "mode"          : "month",
-            "mode-mon-col"  : 3,
-            "weeks-pos"     : "right",
-            "on-scroll"     : 1,
-            "format": {
-                "months":     "<span color='#c4a35a'><b>{}</b></span>",
-                "days":       "<span color='#2d2d2d'><b>{}</b></span>",
-                "weeks":      "<span color='#7a8fa0'><b>W{}</b></span>",
-                "weekdays":   "<span color='#a89ab5'><b>{}</b></span>",
-                "today":      "<span background='#c4a35a' color='#f0ebe3'><b>{}</b></span>"
-            }
-        },
-        "actions": {
-            "on-click-right": "mode",
-            "on-click-forward": "tz_up",
-            "on-click-backward": "tz_down",
-            "on-scroll-up": "shift_up",
-            "on-scroll-down": "shift_down"
-        }
+        "format": "☕ {:%I:%M %p  ·  %a %d}",
+        "format-alt": "🗓️ {:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>"
     },
 
     "custom/clipboard": {
-        "format": "clipboard",
+        "format": "󰅌",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
 
     "pulseaudio": {
-        "format": "volume {volume}%",
+        "format": "󰕾 {volume}%",
         "format-muted": "󰝟",
-        "format-icons": {
-            "default": ["󰕿", "󰖀", "󰕾"]
-        },
         "on-click": "pavucontrol"
     },
 
     "battery": {
-        "states": {
-            "warning": 20,
-            "critical": 10
-        },
-        "format": "battery {capacity}%",
-        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+        "states": { "warning": 20, "critical": 10 },
+        "format": "󰁹 {capacity}%",
+        "format-charging": "󰂄 {capacity}%"
     },
 
     "tray": {
         "icon-size": 16,
-        "spacing": 10
+        "spacing": 8
     }
 }

@@ -1,10 +1,11 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 28,
-    "spacing": 4,
+    "height": 30,
+    "spacing": 6,
 
     "modules-left": [
+        "custom/arch",
         "hyprland/workspaces"
     ],
 
@@ -19,6 +20,11 @@
         "tray"
     ],
 
+    "custom/arch": {
+        "format": "🕌 JAIPUR",
+        "tooltip": false
+    },
+
     "hyprland/workspaces": {
         "active-only": false,
         "all-outputs": true,
@@ -28,57 +34,30 @@
 
     "clock": {
         "interval": 60,
-        "format": "󱑂 {:%I:%M %p | %a, %d %b}",
-        "format-alt": "󰃭 {:%A, %B %d, %Y}",
-        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
-        "calendar": {
-            "mode"          : "month",
-            "mode-mon-col"  : 3,
-            "weeks-pos"     : "right",
-            "on-scroll"     : 1,
-            "format": {
-                "months":     "<span color='#d4a847'><b>{}</b></span>",
-                "days":       "<span color='#f5ede3'><b>{}</b></span>",
-                "weeks":      "<span color='#a0845c'><b>W{}</b></span>",
-                "weekdays":   "<span color='#c45a3c'><b>{}</b></span>",
-                "today":      "<span background='#c45a3c' color='#f5ede3'><b>{}</b></span>"
-            }
-        },
-        "actions": {
-            "on-click-right": "mode",
-            "on-click-forward": "tz_up",
-            "on-click-backward": "tz_down",
-            "on-scroll-up": "shift_up",
-            "on-scroll-down": "shift_down"
-        }
+        "format": "🏛️ {:%I:%M %p | %A, %d %B}",
+        "format-alt": "📜 {:%Y · %b %d}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>"
     },
 
     "custom/clipboard": {
-        "format": "clipboard",
+        "format": "📋",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
 
     "pulseaudio": {
-        "format": "volume {volume}%",
-        "format-muted": "󰝟",
-        "format-icons": {
-            "default": ["󰕿", "󰖀", "󰕾"]
-        },
+        "format": "🕪 {volume}%",
+        "format-muted": "🕨 MUTE",
         "on-click": "pavucontrol"
     },
 
     "battery": {
-        "states": {
-            "warning": 20,
-            "critical": 10
-        },
-        "format": "battery {capacity}%",
-        "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
+        "states": { "warning": 20, "critical": 10 },
+        "format": "🗲 {capacity}%"
     },
 
     "tray": {
         "icon-size": 16,
-        "spacing": 10
+        "spacing": 8
     }
 }

@@ -1,10 +1,11 @@
 /* -----------------------------------------------------
-   COLOR BLOCK THEME - Waybar (Muted Clean Light)
+   COLORBLOCK WAYBAR (FLOATING PASTEL CAPSULE ISLANDS)
    ----------------------------------------------------- */
 
 * {
     font-family: "JetBrainsMono Nerd Font";
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: bold;
     border: none;
     border-radius: 0;
     margin: 0;
@@ -12,78 +13,66 @@
 }
 
 window#waybar {
-    background: rgba(240, 235, 227, 0.94);
+    background-color: transparent;
     color: #2d2d2d;
-    border-bottom: 2px solid #a89ab5;
+}
+
+/* Island Capsules */
+#workspaces {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 2px 8px;
+    border: 1px solid #e0d8cc;
+    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
 }
 
 #workspaces button {
-    padding: 0 12px;
-    color: #666666;
+    padding: 0 10px;
+    margin: 2px 2px;
+    color: #777777;
     background: transparent;
-    border-radius: 4px;
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 #workspaces button.active {
     background: #c4a35a;
-    color: #f0ebe3;
-    border-radius: 4px;
-    box-shadow: 0 0 12px rgba(196, 163, 90, 0.4);
-    font-weight: bold;
-}
-
-#workspaces button:hover {
-    background: rgba(196, 163, 90, 0.3);
-    color: #2d2d2d;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(196, 163, 90, 0.4);
 }
 
 #clock {
-    font-weight: bold;
+    background: #ffffff;
     color: #2d2d2d;
-    background: rgba(196, 163, 90, 0.2);
-    padding: 0 16px;
-    border-radius: 4px;
-    border: 1px solid rgba(196, 163, 90, 0.3);
+    padding: 3px 20px;
+    border-radius: 18px;
+    border: 1px solid #e0d8cc;
+    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
 }
 
 #clock:hover {
-    background: #a89ab5;
-    color: #ffffff;
-}
-
-#custom-clipboard {
-    padding: 0 10px;
-    color: #a89ab5;
-}
-
-#pulseaudio {
-    padding: 0 10px;
-    color: #b58d8d;
-}
-
-#battery {
-    padding: 0 10px;
-    color: #7a8fa0;
-}
-
-#battery.warning { 
+    background: #f7f4ee;
     color: #c4a35a;
 }
 
-#battery.critical { 
-    color: #b58d8d;
-    animation: blink 1s infinite;
+#custom-clipboard, #pulseaudio, #battery, #tray {
+    background: #ffffff;
+    padding: 3px 12px;
+    margin: 0 2px;
+    color: #4a4a4a;
+    border-radius: 18px;
+    border: 1px solid #e0d8cc;
+    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
 }
 
-#tray {
-    padding: 0 10px;
-}
+#battery.warning { color: #c4a35a; }
+#battery.critical { color: #b58d8d; }
 
 tooltip {
-    background: #f0ebe3;
-    border: 2px solid #a89ab5;
-    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #c4a35a;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(168, 154, 181, 0.3);
     padding: 16px 20px;
 }
 
@@ -92,9 +81,4 @@ tooltip label {
     font-family: "JetBrainsMono Nerd Font", monospace;
     font-size: 15px;
     font-weight: bold;
-    padding: 4px;
-}
-
-@keyframes blink {
-    50% { opacity: 0.4; }
 }

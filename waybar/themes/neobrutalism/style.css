@@ -1,7 +1,5 @@
 /* -----------------------------------------------------
-   WAYBAR THEME - NEO-BRUTALISM (LIGHT MODE)
-   Thick 3px solid black outlines, electric color tags,
-   bold drop-shadow boxes.
+   NEO-BRUTALISM BOTTOM WAYBAR (LOUD & RETRO-GRAPHIC)
    ----------------------------------------------------- */
 
 * {
@@ -19,23 +17,30 @@ window#waybar {
     color: #000000;
 }
 
-/* Base Pill / Block Style */
+#custom-launcher {
+    background: #ff006e;
+    color: #ffffff;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
 #custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5, #custom-ws6, #custom-ws7, #custom-ws8, #custom-ws9 {
-    padding: 2px 10px;
+    padding: 4px 12px;
     margin: 0 2px;
     background: #ffffff;
     color: #000000;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 2px 2px 0px #000000;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
-/* Active Workspace (Electric Yellow + Offset Shadow) */
 #custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active, #custom-ws6.active, #custom-ws7.active, #custom-ws8.active, #custom-ws9.active {
     background: #ffbe0b;
     color: #000000;
-    border: 2px solid #000000;
-    box-shadow: 2px 2px 0px #000000;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
 }
 
 #custom-ws1.hidden, #custom-ws2.hidden, #custom-ws3.hidden, #custom-ws4.hidden, #custom-ws5.hidden, #custom-ws6.hidden, #custom-ws7.hidden, #custom-ws8.hidden, #custom-ws9.hidden {
@@ -46,82 +51,68 @@ window#waybar {
     min-width: 0;
 }
 
-/* Center Clock (Cyber Cyan Badge) */
 #clock {
     background: #00f5d4;
     color: #000000;
-    padding: 2px 14px;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 3px 3px 0px #000000;
-    font-weight: 900;
+    padding: 4px 18px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
 }
 
 #clock:hover {
-    background: #ff006e;
-    color: #ffffff;
+    background: #ffbe0b;
 }
 
-/* Right Modules (Hot Pink & Yellow Block Badges) */
 #custom-clipboard {
-    background: #ff006e;
-    color: #ffffff;
-    padding: 2px 10px;
-    margin-right: 4px;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 2px 2px 0px #000000;
-}
-
-#custom-clipboard:hover {
     background: #ffbe0b;
     color: #000000;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
 #pulseaudio {
     background: #8338ec;
     color: #ffffff;
-    padding: 2px 10px;
-    margin-right: 4px;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 2px 2px 0px #000000;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
 #battery {
-    background: #ffbe0b;
-    color: #000000;
-    padding: 2px 10px;
-    margin-right: 4px;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 2px 2px 0px #000000;
-}
-
-#battery.warning {
-    background: #fb5607;
+    background: #3a86ff;
     color: #ffffff;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
-#battery.critical {
+#custom-power {
     background: #ff006e;
     color: #ffffff;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
 #tray {
     background: #ffffff;
-    padding: 2px 8px;
-    border: 2px solid #000000;
-    border-radius: 4px;
-    box-shadow: 2px 2px 0px #000000;
+    padding: 4px 10px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
 }
 
-/* Calendar Tooltip (Off-White Card with Thick 3px Black Border) */
 tooltip {
     background: #fffdf0;
-    border: 3px solid #000000;
-    border-radius: 4px;
-    box-shadow: 5px 5px 0px #000000;
+    border: 4px solid #000000;
+    border-radius: 6px;
+    box-shadow: 6px 6px 0px #000000;
     padding: 16px 20px;
 }
 
@@ -129,6 +120,5 @@ tooltip label {
     color: #000000;
     font-family: "JetBrainsMono Nerd Font", monospace;
     font-size: 15px;
-    font-weight: bold;
-    padding: 4px;
+    font-weight: 900;
 }
