@@ -19,31 +19,83 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
 from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
-DATA_PATH   = Path.home() / ".local" / "share" / ".note_data"
-CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
+import platform
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MACHINE-KEY CRYPTO — no password, no prompt
-# Key is derived from local machine entropy + app salt.
-# File is opaque binary; only this app on this machine can read it.
+# CROSS-PLATFORM STORAGE PATHS (Windows, Linux, macOS, Android/Termux)
+# ─────────────────────────────────────────────────────────────────────────────
+def get_app_data_dir() -> Path:
+    system = platform.system()
+    if system == "Windows":
+        app_data = os.environ.get("APPDATA")
+        base = Path(app_data) if app_data else Path.home() / "AppData" / "Roaming"
+        target = base / "Note"
+    elif system == "Darwin":
+        target = Path.home() / "Library" / "Application Support" / "Note"
+    else:  # Linux & Android (Termux)
+        target = Path.home() / ".local" / "share" / "note"
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+def get_app_config_dir() -> Path:
+    system = platform.system()
+    if system == "Windows":
+        app_data = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        base = Path(app_data) if app_data else Path.home() / "AppData" / "Local"
+        target = base / "Note"
+    elif system == "Darwin":
+        target = Path.home() / "Library" / "Preferences" / "Note"
+    else:  # Linux & Android (Termux)
+        target = Path.home() / ".config" / "note"
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+DATA_PATH   = get_app_data_dir() / ".note_data"
+CONFIG_PATH = get_app_config_dir() / "config.json"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CROSS-PLATFORM MACHINE CRYPTO — no password, zero friction
+# Derives stable 32-byte key from hardware GUID / machine-id on Windows, Linux, Mac, Android
 # ─────────────────────────────────────────────────────────────────────────────
 _APP_SALT = b"note-app::journal-vault::v1::auth-entropy-99x"
 
 def _machine_key() -> bytes:
-    """Derive a stable 32-byte key from local system identity + app salt. Instant & portable."""
+    """Derive a stable 32-byte key from hardware UUID/Machine-ID. Cross-platform."""
     machine_id = b""
-    for mid_path in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+    system = platform.system()
+    
+    if system == "Windows":
         try:
-            content = Path(mid_path).read_text().strip()
-            if content:
-                machine_id = content.encode()
-                break
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography") as key:
+                machine_id = winreg.QueryValueEx(key, "MachineGuid")[0].encode()
         except Exception:
             pass
+    elif system == "Darwin":
+        try:
+            import subprocess
+            out = subprocess.check_output(["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"]).decode()
+            for line in out.splitlines():
+                if "IOPlatformUUID" in line:
+                    machine_id = line.split('"')[-2].encode()
+                    break
+        except Exception:
+            pass
+    else:  # Linux & Android
+        for mid_path in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+            try:
+                content = Path(mid_path).read_text().strip()
+                if content:
+                    machine_id = content.encode()
+                    break
+            except Exception:
+                pass
+                
     if not machine_id:
-        # Fallback for systems without machine-id (BSD, containers, custom setups)
-        import getpass, socket
-        machine_id = f"{getpass.getuser()}@{socket.gethostname()}".encode()
+        # Universal fallback using node identity + username
+        import getpass, socket, uuid
+        machine_id = f"{getpass.getuser()}@{socket.gethostname()}::{uuid.getnode()}".encode()
+        
     return hashlib.sha256(_APP_SALT + machine_id).digest()
 
 def _keystream(key: bytes, length: int) -> bytes:
@@ -238,7 +290,7 @@ def generate_stylesheet(name: str) -> str:
     m = THEME_META.get(name, THEME_META["Void (Dark)"])
     return f"""
         QMainWindow {{ background-color: {m['bg']}; }}
-        QWidget {{ background-color: {m['bg']}; color: {m['fg']}; font-family: 'JetBrainsMono Nerd Font', 'Inter', monospace; }}
+        QWidget {{ background-color: {m['bg']}; color: {m['fg']}; font-family: 'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Segoe UI', 'Inter', 'SF Pro Text', 'Roboto', 'Ubuntu', sans-serif, monospace; }}
         QWidget#Sidebar {{ background-color: {m['sidebar']}; border-right: 1px solid {m['border']}; }}
         QWidget#EditorArea {{ background-color: {m['bg']}; }}
         
