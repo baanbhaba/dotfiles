@@ -44,6 +44,11 @@ set_theme() {
         ln -sf "$HOME/.config/rofi/themes/$theme.rasi" "$HOME/.config/rofi/config.rasi"
     fi
     
+    # Fastfetch Theme Sync
+    if [ -f "$HOME/.config/fastfetch/themes/$theme.jsonc" ]; then
+        ln -sf "$HOME/.config/fastfetch/themes/$theme.jsonc" "$HOME/.config/fastfetch/config.jsonc"
+    fi
+    
     reload_all
     # Restart btop
     pkill btop 2>/dev/null || true
