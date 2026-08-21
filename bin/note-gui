@@ -466,10 +466,10 @@ class NoteApp(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        # Debounced autosave — only writes to disk 1.5s after last keystroke
+        # Debounced autosave — writes to disk 800ms after last keystroke
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
-        self._save_timer.setInterval(1500)
+        self._save_timer.setInterval(800)
         self._save_timer.timeout.connect(self.save_vault)
 
         self.init_main_workspace()   # index 0
@@ -818,6 +818,13 @@ class NoteApp(QMainWindow):
             self.tags_edit.blockSignals(False)
             self.content_edit.blockSignals(False)
 
+            # Sync active selection in the sidebar list
+            for i in range(self.entry_list.count()):
+                it = self.entry_list.item(i)
+                if it.data(Qt.UserRole) == entry_id:
+                    self.entry_list.setCurrentItem(it)
+                    break
+
     def on_content_modified(self):
         if not self.active_id:
             return
@@ -827,7 +834,14 @@ class NoteApp(QMainWindow):
             entry["tags"]    = self.tags_edit.text()
             entry["content"] = self.content_edit.toPlainText()
             self.update_word_count(entry["content"])
-            # Debounce: reset the 1.5s timer on every keystroke
+            
+            # Live update sidebar entry item label if active
+            current_item = self.entry_list.currentItem()
+            if current_item and current_item.data(Qt.UserRole) == self.active_id:
+                preview_title = entry.get('title') or 'Untitled Thought'
+                current_item.setText(f"󱞪 {preview_title}\n󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
+            
+            # Debounce: reset timer on keystroke
             self._save_timer.start()
 
     def update_word_count(self, text):
@@ -835,7 +849,12 @@ class NoteApp(QMainWindow):
         read_time = max(1, round(words / 200)) if words > 0 else 0
         self.word_lbl.setText(f"{words} words · {read_time} min read")
 
-
+    def closeEvent(self, event):
+        """Ensure all edits are immediately flushed to disk before closing."""
+        if self._save_timer.isActive():
+            self._save_timer.stop()
+            self.save_vault()
+        event.accept()
 
     def toggle_zen(self):
         self.is_zen = not self.is_zen
