@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
-    QSizePolicy, QGridLayout, QFileDialog
+    QSizePolicy, QGridLayout
 )
 from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
 from PyQt5.QtCore import Qt, QDate, QTimer
@@ -583,10 +583,6 @@ class NoteApp(QMainWindow):
         self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
         ed_bar.addWidget(self.word_lbl)
 
-        export_btn = QPushButton("󰈔 Export")
-        export_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        export_btn.clicked.connect(self.export_entry_markdown)
-        ed_bar.addWidget(export_btn)
 
         self.zen_btn = QPushButton("󰈈 Zen Focus")
         self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -839,18 +835,6 @@ class NoteApp(QMainWindow):
         read_time = max(1, round(words / 200)) if words > 0 else 0
         self.word_lbl.setText(f"{words} words · {read_time} min read")
 
-    def export_entry_markdown(self):
-        if not self.active_id:
-            return
-        entry = next((e for e in self.entries if e["id"] == self.active_id), None)
-        if entry:
-            default_name = f"note_{entry.get('date')}_{entry.get('id')[:6]}.md"
-            path, _ = QFileDialog.getSaveFileName(self, "Export Note as Markdown", default_name, "Markdown Files (*.md)")
-            if path:
-                with open(path, "w") as f:
-                    f.write(f"# {entry.get('title', 'Untitled')}\n")
-                    f.write(f"*Date: {entry.get('date')} {entry.get('time')} | Tags: {entry.get('tags', '')}*\n\n")
-                    f.write(entry.get("content", ""))
 
 
     def toggle_zen(self):
