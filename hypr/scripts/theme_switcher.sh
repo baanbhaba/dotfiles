@@ -39,6 +39,11 @@ set_theme() {
     # Btop - use theme name, not path
     sed -i "s|color_theme = .*|color_theme = \"$theme\"|" "$HOME/.config/btop/btop.conf"
     
+    # Rofi Theme Sync
+    if [ -f "$HOME/.config/rofi/themes/$theme.rasi" ]; then
+        ln -sf "$HOME/.config/rofi/themes/$theme.rasi" "$HOME/.config/rofi/config.rasi"
+    fi
+    
     reload_all
     # Restart btop
     pkill btop 2>/dev/null || true

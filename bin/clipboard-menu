@@ -3,10 +3,22 @@
 # Path fallback
 export PATH="$HOME/.local/bin:$PATH"
 
-selected=$(cliphist list | rofi -dmenu -i -p "📋 Clipboard" -lines 10)
+# Dynamic theme detection from Hyprland
+CURRENT_THEME_FILE="$HOME/.config/hypr/.theme_current"
+if [ -f "$CURRENT_THEME_FILE" ]; then
+    CURRENT_THEME=$(cat "$CURRENT_THEME_FILE")
+else
+    CURRENT_THEME="charcoal"
+fi
+
+ROFI_THEME="$HOME/.config/rofi/themes/${CURRENT_THEME}.rasi"
+if [ ! -f "$ROFI_THEME" ]; then
+    ROFI_THEME="$HOME/.config/rofi/themes/charcoal.rasi"
+fi
+
+selected=$(cliphist list | rofi -dmenu -i -p "📋 Clipboard" -lines 7 -theme "$ROFI_THEME")
 
 if [[ -n "$selected" ]]; then
     echo "$selected" | cliphist decode | wl-copy
-    # Optional notification
     command -v notify-send >/dev/null 2>&1 && notify-send -t 1500 "Clipboard" "Copied to clipboard!"
 fi

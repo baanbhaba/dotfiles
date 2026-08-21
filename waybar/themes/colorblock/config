@@ -34,7 +34,7 @@
 
     "custom/clipboard": {
         "format": "clipboard",
-        "on-click": "cliphist list | rofi -dmenu -theme ~/.config/rofi/config.rasi | cliphist decode | wl-copy",
+        "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
 
