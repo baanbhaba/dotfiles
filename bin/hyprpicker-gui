@@ -50,14 +50,13 @@ class FastColorWheel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(220, 220)
-        self.hue = 0.0        # 0.0 - 360.0
-        self.sat = 1.0        # 0.0 - 1.0
-        self.val = 1.0        # 0.0 - 1.0
+        self.hue = 0.0
+        self.sat = 1.0
+        self.val = 1.0
         self.base_pixmap = None
         self._generate_base_wheel()
 
     def _generate_base_wheel(self):
-        # Generate base hue+saturation wheel using GPU/Qt gradient primitives (instant)
         size = self.width()
         pixmap = QPixmap(size, size)
         pixmap.fill(Qt.transparent)
@@ -68,7 +67,6 @@ class FastColorWheel(QWidget):
         center = size / 2.0
         radius = center - 6.0
 
-        # Conical gradient for 360-degree hues
         conical = QConicalGradient(center, center, 0)
         for i in range(361):
             conical.setColorAt(i / 360.0, QColor.fromHsvF(i / 360.0, 1.0, 1.0))
@@ -77,7 +75,6 @@ class FastColorWheel(QWidget):
         painter.setBrush(QBrush(conical))
         painter.drawEllipse(QPointF(center, center), radius, radius)
 
-        # Radial gradient from center (white / saturation 0) to outer edge (transparent / saturation 1)
         radial = QRadialGradient(center, center, radius)
         radial.setColorAt(0.0, QColor(255, 255, 255, 255))
         radial.setColorAt(1.0, QColor(255, 255, 255, 0))
@@ -112,32 +109,28 @@ class FastColorWheel(QWidget):
         center = self.width() / 2.0
         radius = center - 6.0
 
-        # 1. Draw base wheel
         if self.base_pixmap:
             painter.drawPixmap(0, 0, self.base_pixmap)
 
-        # 2. Apply brightness overlay with pure alpha black (instant GPU compositing)
         if self.val < 1.0:
             dark_alpha = int((1.0 - self.val) * 255)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QColor(0, 0, 0, dark_alpha))
             painter.drawEllipse(QPointF(center, center), radius, radius)
 
-        # 3. Outer border ring
-        painter.setPen(QPen(QColor(255, 255, 255, 40), 2))
+        painter.setPen(QPen(QColor(255, 176, 0, 60), 2))
         painter.setBrush(Qt.NoBrush)
         painter.drawEllipse(QPointF(center, center), radius, radius)
 
-        # 4. Handle indicator
         rad = math.radians(self.hue)
         hx = center + radius * self.sat * math.cos(rad)
         hy = center + radius * self.sat * math.sin(rad)
 
-        painter.setPen(QPen(QColor(0, 0, 0, 180), 2.5))
+        painter.setPen(QPen(QColor(0, 0, 0, 200), 2.5))
         painter.setBrush(QBrush(self.get_color()))
         painter.drawEllipse(QPointF(hx, hy), 7.5, 7.5)
 
-        painter.setPen(QPen(QColor(255, 255, 255, 230), 1.5))
+        painter.setPen(QPen(QColor(255, 176, 0, 230), 1.5))
         painter.setBrush(Qt.NoBrush)
         painter.drawEllipse(QPointF(hx, hy), 9, 9)
 
@@ -165,7 +158,7 @@ class FastColorWheel(QWidget):
         self.colorChanged.emit(self.get_color())
 
 class ColorBadge(QWidget):
-    def __init__(self, color_hex="#89b4fa", parent=None):
+    def __init__(self, color_hex="#ffb000", parent=None):
         super().__init__(parent)
         self.color_hex = color_hex
         self.setFixedSize(64, 64)
@@ -177,9 +170,9 @@ class ColorBadge(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.setPen(QPen(QColor(255, 255, 255, 45), 2))
+        painter.setPen(QPen(QColor(255, 176, 0, 100), 1.5))
         painter.setBrush(QBrush(QColor(self.color_hex)))
-        painter.drawRoundedRect(2, 2, self.width() - 4, self.height() - 4, 12, 12)
+        painter.drawRoundedRect(2, 2, self.width() - 4, self.height() - 4, 8, 8)
 
 class FormatRow(QFrame):
     def __init__(self, label_text, on_copy, parent=None):
@@ -190,14 +183,14 @@ class FormatRow(QFrame):
 
         self.setStyleSheet("""
             QFrame {
-                background: #181926;
-                border: 1px solid #282a36;
-                border-radius: 8px;
+                background: #101010;
+                border: 1px solid #222222;
+                border-radius: 6px;
                 padding: 2px;
             }
             QFrame:hover {
-                border: 1px solid #45475a;
-                background: #1e1e2e;
+                border: 1px solid #ffb000;
+                background: #151515;
             }
         """)
 
@@ -207,29 +200,29 @@ class FormatRow(QFrame):
 
         self.tag_lbl = QLabel(label_text)
         self.tag_lbl.setFont(QFont("Inter, Sans-serif", 9, QFont.Bold))
-        self.tag_lbl.setStyleSheet("color: #89b4fa; background: transparent; border: none; min-width: 40px;")
+        self.tag_lbl.setStyleSheet("color: #ffb000; background: transparent; border: none; min-width: 40px;")
 
         self.val_lbl = QLabel("—")
         self.val_lbl.setFont(QFont("JetBrains Mono, Monospace", 10))
-        self.val_lbl.setStyleSheet("color: #cdd6f4; background: transparent; border: none;")
+        self.val_lbl.setStyleSheet("color: #e0e0e0; background: transparent; border: none;")
 
         self.copy_btn = QPushButton("Copy")
         self.copy_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.copy_btn.setFont(QFont("Inter, Sans-serif", 8, QFont.Bold))
         self.copy_btn.setStyleSheet("""
             QPushButton {
-                background: #313244;
-                color: #cdd6f4;
+                background: #202020;
+                color: #ffb000;
                 border-radius: 4px;
                 padding: 3px 8px;
-                border: none;
+                border: 1px solid #333333;
             }
             QPushButton:hover {
-                background: #89b4fa;
-                color: #11111b;
+                background: #ffb000;
+                color: #080808;
             }
             QPushButton:pressed {
-                background: #b4befe;
+                background: #ffd166;
             }
         """)
         self.copy_btn.clicked.connect(self._handle_copy)
@@ -252,8 +245,8 @@ class HyprpickerGUI(QMainWindow):
         self.setWindowTitle("Colour Picker")
         self.setFixedSize(480, 710)
         self.history = self.load_history()
-        first_item = self.history[0] if self.history else "#89b4fa"
-        self.current_color = first_item.get("hex", "#89b4fa") if isinstance(first_item, dict) else str(first_item)
+        first_item = self.history[0] if self.history else "#ffb000"
+        self.current_color = first_item.get("hex", "#ffb000") if isinstance(first_item, dict) else str(first_item)
 
         self.init_ui()
         self.update_display(self.current_color, update_wheel=True)
@@ -261,59 +254,61 @@ class HyprpickerGUI(QMainWindow):
     def init_ui(self):
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #11111b;
+                background-color: #080808;
             }
             QLabel {
-                color: #cdd6f4;
+                color: #e0e0e0;
             }
             QTabWidget::pane {
-                border: 1px solid #313244;
-                border-radius: 10px;
-                background-color: #181825;
+                border: 1px solid #ffb000;
+                border-radius: 6px;
+                background-color: #101010;
                 top: -1px;
             }
             QTabBar::tab {
-                background: #181926;
-                color: #a6adc8;
+                background: #141414;
+                color: #8c9b32;
                 padding: 7px 18px;
                 margin-right: 4px;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
                 font-weight: bold;
                 font-size: 11px;
             }
             QTabBar::tab:selected {
-                background: #181825;
-                color: #89b4fa;
-                border-bottom: 2px solid #89b4fa;
+                background: #101010;
+                color: #ffb000;
+                border-bottom: 2px solid #ffb000;
             }
             QListWidget {
                 background-color: transparent;
                 border: none;
-                color: #cdd6f4;
+                color: #e0e0e0;
                 outline: 0;
             }
             QListWidget::item {
-                border-radius: 6px;
+                border-radius: 4px;
                 padding: 6px 8px;
-                margin-bottom: 2px;
-                background: #1e1e2e;
+                margin-bottom: 3px;
+                background: #161616;
+                border: 1px solid #222222;
             }
             QListWidget::item:hover {
-                background-color: #313244;
+                border-color: #ffb000;
+                background-color: #202020;
             }
             QListWidget::item:selected {
-                background-color: #45475a;
-                color: #89b4fa;
+                background-color: #ffb000;
+                color: #080808;
             }
             QScrollBar:vertical {
                 border: none;
-                background: #11111b;
+                background: #080808;
                 width: 7px;
                 border-radius: 3px;
             }
             QScrollBar::handle:vertical {
-                background: #45475a;
+                background: #ffb000;
                 border-radius: 3px;
                 min-height: 20px;
             }
@@ -324,16 +319,16 @@ class HyprpickerGUI(QMainWindow):
             QSlider::groove:horizontal {
                 border: none;
                 height: 8px;
-                background: #313244;
+                background: #202020;
                 border-radius: 4px;
             }
             QSlider::sub-page:horizontal {
-                background: #89b4fa;
+                background: #ffb000;
                 border-radius: 4px;
             }
             QSlider::handle:horizontal {
-                background: #ffffff;
-                border: 1px solid #6c7086;
+                background: #ffb000;
+                border: 1px solid #080808;
                 width: 16px;
                 margin-top: -4px;
                 margin-bottom: -4px;
@@ -352,9 +347,10 @@ class HyprpickerGUI(QMainWindow):
         title_box = QVBoxLayout()
         title = QLabel("Colour Picker")
         title.setFont(QFont("Inter, Sans-serif", 15, QFont.Bold))
-        subtitle = QLabel("Screen Dropper & Color Wheel")
+        title.setStyleSheet("color: #ffb000;")
+        subtitle = QLabel("Screen Dropper & Amber Palette")
         subtitle.setFont(QFont("Inter, Sans-serif", 9))
-        subtitle.setStyleSheet("color: #a6adc8;")
+        subtitle.setStyleSheet("color: #8c9b32;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
         header_box.addLayout(title_box)
@@ -365,18 +361,18 @@ class HyprpickerGUI(QMainWindow):
         self.pick_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.pick_btn.setStyleSheet("""
             QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #89b4fa, stop:1 #cba6f7);
-                color: #11111b;
-                border-radius: 8px;
+                background: #ffb000;
+                color: #080808;
+                border-radius: 6px;
                 padding: 7px 15px;
                 font-weight: bold;
                 border: none;
             }
             QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4befe, stop:1 #f5c2e7);
+                background: #ffd166;
             }
             QPushButton:pressed {
-                background: #74c7ec;
+                background: #d4a847;
             }
         """)
         self.pick_btn.clicked.connect(self.trigger_hyprpicker)
@@ -387,9 +383,9 @@ class HyprpickerGUI(QMainWindow):
         card = QFrame()
         card.setStyleSheet("""
             QFrame {
-                background: #181825;
-                border: 1px solid #313244;
-                border-radius: 10px;
+                background: #101010;
+                border: 1px solid #ffb000;
+                border-radius: 8px;
                 padding: 6px;
             }
         """)
@@ -433,7 +429,7 @@ class HyprpickerGUI(QMainWindow):
         slider_box = QHBoxLayout()
         slider_lbl = QLabel("Brightness")
         slider_lbl.setFont(QFont("Inter, Sans-serif", 9, QFont.Bold))
-        slider_lbl.setStyleSheet("color: #a6adc8; min-width: 70px;")
+        slider_lbl.setStyleSheet("color: #ffb000; min-width: 70px;")
         
         self.val_slider = QSlider(Qt.Horizontal)
         self.val_slider.setRange(0, 100)
@@ -453,15 +449,15 @@ class HyprpickerGUI(QMainWindow):
         save_btn.setCursor(QCursor(Qt.PointingHandCursor))
         save_btn.setStyleSheet("""
             QPushButton {
-                background: #313244;
-                color: #cdd6f4;
+                background: #202020;
+                color: #ffb000;
                 border-radius: 6px;
                 padding: 6px;
-                border: 1px solid #45475a;
+                border: 1px solid #ffb000;
             }
             QPushButton:hover {
-                background: #45475a;
-                color: #89b4fa;
+                background: #ffb000;
+                color: #080808;
             }
         """)
         save_btn.clicked.connect(lambda: self.add_to_history(self.current_color, toast="Saved to history!"))
@@ -471,15 +467,15 @@ class HyprpickerGUI(QMainWindow):
         save_named_btn.setCursor(QCursor(Qt.PointingHandCursor))
         save_named_btn.setStyleSheet("""
             QPushButton {
-                background: #313244;
-                color: #cdd6f4;
+                background: #ffb000;
+                color: #080808;
                 border-radius: 6px;
                 padding: 6px;
-                border: 1px solid #45475a;
+                font-weight: bold;
+                border: none;
             }
             QPushButton:hover {
-                background: #45475a;
-                color: #a6e3a1;
+                background: #ffd166;
             }
         """)
         save_named_btn.clicked.connect(self.save_with_name_prompt)
@@ -499,14 +495,14 @@ class HyprpickerGUI(QMainWindow):
         hist_top = QHBoxLayout()
         hist_sub = QLabel("Click color to select and copy")
         hist_sub.setFont(QFont("Inter, Sans-serif", 8))
-        hist_sub.setStyleSheet("color: #6c7086;")
+        hist_sub.setStyleSheet("color: #8c9b32;")
         hist_top.addWidget(hist_sub)
         hist_top.addStretch()
 
         clear_btn = QPushButton("Clear")
         clear_btn.setFont(QFont("Inter, Sans-serif", 8))
         clear_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        clear_btn.setStyleSheet("background: transparent; color: #6c7086; border: none; text-decoration: underline;")
+        clear_btn.setStyleSheet("background: transparent; color: #ffb000; border: none; text-decoration: underline;")
         clear_btn.clicked.connect(self.clear_history)
         hist_top.addWidget(clear_btn)
         hist_layout.addLayout(hist_top)
@@ -522,7 +518,7 @@ class HyprpickerGUI(QMainWindow):
         self.status_lbl = QLabel("")
         self.status_lbl.setAlignment(Qt.AlignCenter)
         self.status_lbl.setFont(QFont("Inter, Sans-serif", 9))
-        self.status_lbl.setStyleSheet("color: #a6e3a1; min-height: 16px;")
+        self.status_lbl.setStyleSheet("color: #ffb000; min-height: 16px;")
         main_layout.addWidget(self.status_lbl)
 
         self.populate_history_widget()
@@ -604,7 +600,6 @@ class HyprpickerGUI(QMainWindow):
             self.status_lbl.setText(f"Error: {e}")
 
     def add_to_history(self, hex_val, name="", toast=None):
-        # Remove existing if hex matches
         self.history = [item for item in self.history if item.get("hex") != hex_val]
         self.history.insert(0, {"hex": hex_val, "name": name})
         self.history = self.history[:MAX_HISTORY]
@@ -659,7 +654,7 @@ class HyprpickerGUI(QMainWindow):
                             return cleaned
             except Exception:
                 pass
-        return [{"hex": col, "name": ""} for col in ["#89b4fa", "#f38ba8", "#a6e3a1", "#f9e2af", "#cba6f7", "#fab387", "#94e2d5"]]
+        return [{"hex": col, "name": ""} for col in ["#ffb000", "#ffd166", "#8c9b32", "#d4a847", "#ffffff"]]
 
     def save_history(self):
         try:
