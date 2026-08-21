@@ -61,37 +61,119 @@ def decrypt_string(payload: dict, pin: str) -> str:
         decrypted.append(b ^ k)
     return decrypted.decode('utf-8')
 
-# THEMES & DUAL-MODE DATA
-THEME_PREVIEWS = [
-    ("Charcoal Amber (Dark)", "#080808", "#ffb000", "Phosphor Amber CRT Terminal aesthetic."),
-    ("Charcoal Amber (Light)", "#fffbf0", "#d97706", "Warm parchment with amber-gold ink."),
-    ("Neo-Brutalism (Light)", "#fffdf0", "#ff006e", "Bold pop yellow, hot pink, and heavy 3px borders."),
-    ("Neo-Brutalism (Dark)", "#121014", "#00f5d4", "Dark cyber magenta & neon cyan 3px borders."),
-    ("Midnight Purple (Dark)", "#0d0614", "#c084fc", "Deep violet with royal lavender highlights."),
-    ("Cybercore (Dark)", "#02020a", "#00f0ff", "Electric cyan & neon magenta cyber glow."),
-    ("Cybercore (Light)", "#f0fdff", "#0891b2", "High-tech clean cyan data terminal."),
-    ("Glassmorphism (Dark)", "#12151f", "#63b3ed", "Deep frosted acrylic navy with soft blue."),
-    ("Glassmorphism (Light)", "#e6eef8", "#3182ce", "Frosted daylight ice-blue cards."),
-    ("Y2K Aesthetic (Dark)", "#180928", "#00ffc8", "Millennium rave purple & neon turquoise."),
-    ("Y2K Aesthetic (Light)", "#fdf2f8", "#ec4899", "Bubblegum millennium pink & cyber cyan."),
-    ("Pixel Art (Dark)", "#1a1c23", "#50fa7b", "8-Bit Dracula retro palette with dashed borders."),
-    ("Pixel Art (Light)", "#f0f4f8", "#005cc5", "Classic retro GameBoy light pixel aesthetic."),
-    ("Brutalism (Dark)", "#121212", "#ffffff", "Monochrome raw cement with sharp white borders."),
-    ("Brutalism (Light)", "#e5e5e5", "#000000", "Stark black on raw concrete light mode."),
-    ("Neo-Classical (Dark)", "#1c1714", "#c5a059", "Baroque library terracotta & burnished gold."),
-    ("Neo-Classical (Light)", "#fcf8f2", "#b38b4d", "Royal parchment & antique gold trim."),
-    ("Neumorphism (Dark)", "#23272f", "#61dafb", "Soft extruded slate with inset shadows."),
-    ("Neumorphism (Light)", "#e0e5ec", "#3182ce", "Soft embossed paper with soft shadow bevels."),
-    ("Scrapbook (Dark)", "#241d17", "#d4a373", "Vintage leather-bound journal with tape."),
-    ("Scrapbook (Light)", "#f7f1e5", "#8b5a2b", "Kraft cardboard notebook with dashed lines."),
-    ("Conceptual Sketchbook (Dark)", "#2b2b2b", "#ffffff", "Matte chalkboard draftsman board."),
-    ("Conceptual Sketchbook (Light)", "#f5f5f5", "#222222", "Architectural drafting sketch paper."),
-    ("Anthropomorphic (Dark)", "#241e1c", "#ff7043", "Earthy clay, warm terracotta & espresso."),
-    ("Anthropomorphic (Light)", "#fff7ed", "#ea580c", "Warm sunrise terracotta & peach linen."),
-    ("Graffiti Urban (Dark)", "#141414", "#e2f952", "High-contrast asphalt spray with neon volt."),
-    ("Graffiti Urban (Light)", "#f4f4f5", "#db2777", "Street art vibrant neon magenta & lime.")
-]
+# THEMES METADATA & LOCK SCREEN STYLING PALETTES
+THEME_META = {
+    "Charcoal Amber (Dark)": {
+        "bg": "#080808", "fg": "#d6d6d6", "acc": "#ffb000", "sub": "#888888", "desc": "Phosphor Amber CRT Terminal aesthetic.",
+        "input_bg": "rgba(255, 176, 0, 0.05)", "input_border": "#332500", "input_focus": "#ffb000", "input_fg": "#ffb000", "pill_radius": "18px"
+    },
+    "Charcoal Amber (Light)": {
+        "bg": "#fffbf0", "fg": "#2d2416", "acc": "#d97706", "sub": "#92400e", "desc": "Warm parchment with amber-gold ink.",
+        "input_bg": "rgba(217, 119, 6, 0.08)", "input_border": "#e0c896", "input_focus": "#d97706", "input_fg": "#b45309", "pill_radius": "18px"
+    },
+    "Neo-Brutalism (Light)": {
+        "bg": "#fffdf0", "fg": "#000000", "acc": "#ff006e", "sub": "#555555", "desc": "Bold pop yellow, hot pink, and heavy 3px borders.",
+        "input_bg": "#ffffff", "input_border": "#000000", "input_focus": "#ff006e", "input_fg": "#000000", "pill_radius": "8px"
+    },
+    "Neo-Brutalism (Dark)": {
+        "bg": "#121014", "fg": "#ffffff", "acc": "#00f5d4", "sub": "#aaaaaa", "desc": "Dark cyber magenta & neon cyan 3px borders.",
+        "input_bg": "#1c1822", "input_border": "#ff006e", "input_focus": "#00f5d4", "input_fg": "#ffbe0b", "pill_radius": "8px"
+    },
+    "Midnight Purple (Dark)": {
+        "bg": "#0d0614", "fg": "#e2d4f0", "acc": "#c084fc", "sub": "#a855f7", "desc": "Deep violet with royal lavender highlights.",
+        "input_bg": "rgba(192, 132, 252, 0.08)", "input_border": "#3d1b5c", "input_focus": "#c084fc", "input_fg": "#e2d4f0", "pill_radius": "18px"
+    },
+    "Cybercore (Dark)": {
+        "bg": "#02020a", "fg": "#00f0ff", "acc": "#00f0ff", "sub": "#ff007f", "desc": "Electric cyan & neon magenta cyber glow.",
+        "input_bg": "rgba(0, 240, 255, 0.06)", "input_border": "#ff007f", "input_focus": "#00f0ff", "input_fg": "#00f0ff", "pill_radius": "6px"
+    },
+    "Cybercore (Light)": {
+        "bg": "#f0fdff", "fg": "#0e7490", "acc": "#0891b2", "sub": "#06b6d4", "desc": "High-tech clean cyan data terminal.",
+        "input_bg": "#ffffff", "input_border": "#06b6d4", "input_focus": "#ec4899", "input_fg": "#0e7490", "pill_radius": "6px"
+    },
+    "Glassmorphism (Dark)": {
+        "bg": "#12151f", "fg": "#e2e8f0", "acc": "#63b3ed", "sub": "#718096", "desc": "Deep frosted acrylic navy with soft blue.",
+        "input_bg": "rgba(255, 255, 255, 0.06)", "input_border": "#2d3748", "input_focus": "#63b3ed", "input_fg": "#e2e8f0", "pill_radius": "16px"
+    },
+    "Glassmorphism (Light)": {
+        "bg": "#e6eef8", "fg": "#2d3748", "acc": "#3182ce", "sub": "#718096", "desc": "Frosted daylight ice-blue cards.",
+        "input_bg": "#ffffff", "input_border": "#cbd5e1", "input_focus": "#3182ce", "input_fg": "#2d3748", "pill_radius": "16px"
+    },
+    "Y2K Aesthetic (Dark)": {
+        "bg": "#180928", "fg": "#ff8dfd", "acc": "#00ffc8", "sub": "#b845ff", "desc": "Millennium rave purple & neon turquoise.",
+        "input_bg": "#25103a", "input_border": "#b845ff", "input_focus": "#00ffc8", "input_fg": "#00ffc8", "pill_radius": "12px"
+    },
+    "Y2K Aesthetic (Light)": {
+        "bg": "#fdf2f8", "fg": "#86198f", "acc": "#ec4899", "sub": "#c026d3", "desc": "Bubblegum millennium pink & cyber cyan.",
+        "input_bg": "#ffffff", "input_border": "#ec4899", "input_focus": "#06b6d4", "input_fg": "#86198f", "pill_radius": "12px"
+    },
+    "Pixel Art (Dark)": {
+        "bg": "#1a1c23", "fg": "#8be9fd", "acc": "#50fa7b", "sub": "#ff79c6", "desc": "8-Bit Dracula retro palette with dashed borders.",
+        "input_bg": "#282a36", "input_border": "#6272a4", "input_focus": "#50fa7b", "input_fg": "#f1fa8c", "pill_radius": "2px"
+    },
+    "Pixel Art (Light)": {
+        "bg": "#f0f4f8", "fg": "#24292e", "acc": "#005cc5", "sub": "#586069", "desc": "Classic retro GameBoy light pixel aesthetic.",
+        "input_bg": "#ffffff", "input_border": "#d1d5da", "input_focus": "#28a745", "input_fg": "#005cc5", "pill_radius": "2px"
+    },
+    "Brutalism (Dark)": {
+        "bg": "#121212", "fg": "#ffffff", "acc": "#ffffff", "sub": "#777777", "desc": "Monochrome raw cement with sharp white borders.",
+        "input_bg": "#181818", "input_border": "#ffffff", "input_focus": "#ff3333", "input_fg": "#ffffff", "pill_radius": "0px"
+    },
+    "Brutalism (Light)": {
+        "bg": "#e5e5e5", "fg": "#000000", "acc": "#000000", "sub": "#555555", "desc": "Stark black on raw concrete light mode.",
+        "input_bg": "#ffffff", "input_border": "#000000", "input_focus": "#000000", "input_fg": "#000000", "pill_radius": "0px"
+    },
+    "Neo-Classical (Dark)": {
+        "bg": "#1c1714", "fg": "#ebdccb", "acc": "#c5a059", "sub": "#8b6b4e", "desc": "Baroque library terracotta & burnished gold.",
+        "input_bg": "#261f1b", "input_border": "#634b35", "input_focus": "#c5a059", "input_fg": "#dfcaa7", "pill_radius": "8px"
+    },
+    "Neo-Classical (Light)": {
+        "bg": "#fcf8f2", "fg": "#3e3228", "acc": "#b38b4d", "sub": "#8c6832", "desc": "Royal parchment & antique gold trim.",
+        "input_bg": "#ffffff", "input_border": "#b38b4d", "input_focus": "#8c6832", "input_fg": "#4a392b", "pill_radius": "8px"
+    },
+    "Neumorphism (Dark)": {
+        "bg": "#23272f", "fg": "#bac3cf", "acc": "#61dafb", "sub": "#718096", "desc": "Soft extruded slate with inset shadows.",
+        "input_bg": "#1e2228", "input_border": "#1a1d22", "input_focus": "#61dafb", "input_fg": "#61dafb", "pill_radius": "14px"
+    },
+    "Neumorphism (Light)": {
+        "bg": "#e0e5ec", "fg": "#4a5568", "acc": "#3182ce", "sub": "#718096", "desc": "Soft embossed paper with soft shadow bevels.",
+        "input_bg": "#e0e5ec", "input_border": "#ffffff", "input_focus": "#3182ce", "input_fg": "#2b6cb0", "pill_radius": "14px"
+    },
+    "Scrapbook (Dark)": {
+        "bg": "#241d17", "fg": "#ede2cf", "acc": "#d4a373", "sub": "#8b6b4e", "desc": "Vintage leather-bound journal with tape.",
+        "input_bg": "#1d1611", "input_border": "#8b6b4e", "input_focus": "#d4a373", "input_fg": "#f7f1e5", "pill_radius": "6px"
+    },
+    "Scrapbook (Light)": {
+        "bg": "#f7f1e5", "fg": "#3d352e", "acc": "#8b5a2b", "sub": "#a08264", "desc": "Kraft cardboard notebook with dashed lines.",
+        "input_bg": "#fffaf0", "input_border": "#c4ab8e", "input_focus": "#8b5a2b", "input_fg": "#2e261f", "pill_radius": "6px"
+    },
+    "Conceptual Sketchbook (Dark)": {
+        "bg": "#2b2b2b", "fg": "#dcdcdc", "acc": "#ffffff", "sub": "#888888", "desc": "Matte chalkboard draftsman board.",
+        "input_bg": "#363636", "input_border": "#555555", "input_focus": "#ffffff", "input_fg": "#e6e6e6", "pill_radius": "4px"
+    },
+    "Conceptual Sketchbook (Light)": {
+        "bg": "#f5f5f5", "fg": "#333333", "acc": "#000000", "sub": "#888888", "desc": "Architectural drafting sketch paper.",
+        "input_bg": "#ffffff", "input_border": "#bbbbbb", "input_focus": "#000000", "input_fg": "#222222", "pill_radius": "4px"
+    },
+    "Anthropomorphic (Dark)": {
+        "bg": "#241e1c", "fg": "#f0e6df", "acc": "#ff7043", "sub": "#887068", "desc": "Earthy clay, warm terracotta & espresso.",
+        "input_bg": "#2d2522", "input_border": "#57443e", "input_focus": "#ff7043", "input_fg": "#ffab91", "pill_radius": "10px"
+    },
+    "Anthropomorphic (Light)": {
+        "bg": "#fff7ed", "fg": "#7c2d12", "acc": "#ea580c", "sub": "#9a3412", "desc": "Warm sunrise terracotta & peach linen.",
+        "input_bg": "#ffffff", "input_border": "#fdba74", "input_focus": "#ea580c", "input_fg": "#c2410c", "pill_radius": "10px"
+    },
+    "Graffiti Urban (Dark)": {
+        "bg": "#141414", "fg": "#e2f952", "acc": "#e2f952", "sub": "#ff0055", "desc": "High-contrast asphalt spray with neon volt.",
+        "input_bg": "#1a1a1a", "input_border": "#e2f952", "input_focus": "#ff0055", "input_fg": "#00ffff", "pill_radius": "4px"
+    },
+    "Graffiti Urban (Light)": {
+        "bg": "#f4f4f5", "fg": "#18181b", "acc": "#db2777", "sub": "#65a30d", "desc": "Street art vibrant neon magenta & lime.",
+        "input_bg": "#ffffff", "input_border": "#65a30d", "input_focus": "#db2777", "input_fg": "#0284c7", "pill_radius": "4px"
+    }
+}
 
+# CSS STYLESHEETS FOR WORKSPACE
 THEMES = {
     "Charcoal Amber (Dark)": """
         QMainWindow { background-color: #080808; }
@@ -237,7 +319,7 @@ THEMES = {
         QWidget { background-color: #e6eef8; color: #2d3748; font-family: 'JetBrainsMono Nerd Font', sans-serif; }
         QLineEdit, QTextEdit { background-color: #ffffff; color: #3182ce; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; }
         QLineEdit:focus, QTextEdit:focus { border: 1px solid #3182ce; background-color: #f7fafc; }
-        QTextEdit { background-color: #ffffff; color: #2d3748; font-size: 14px; }
+        QTextEdit { background-color: #ffffff; color: #2d2416; font-size: 14px; }
         QPushButton { background-color: #edf2f7; color: #3182ce; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 14px; font-weight: bold; }
         QPushButton:hover { background-color: #3182ce; color: #ffffff; }
         QListWidget { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; }
@@ -569,7 +651,7 @@ class NoteApp(QMainWindow):
         self.is_zen = False
         self.active_date_str = date.today().isoformat()
         
-        # Load persisted config
+        # Load persisted theme
         self.config = load_config()
         self.current_theme = self.config.get("theme", "Charcoal Amber (Dark)")
         if self.current_theme not in THEMES:
@@ -591,6 +673,7 @@ class NoteApp(QMainWindow):
             self.config["theme"] = theme_name
             save_config(self.config)
             self.setStyleSheet(THEMES[theme_name])
+            self.sync_lock_screen_theme(theme_name)
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
                     is_active = (name == theme_name)
@@ -598,9 +681,28 @@ class NoteApp(QMainWindow):
                     card.style().unpolish(card)
                     card.style().polish(card)
 
+    def sync_lock_screen_theme(self, theme_name):
+        meta = THEME_META.get(theme_name, THEME_META["Charcoal Amber (Dark)"])
+        self.lock_widget.setStyleSheet(f"background-color: {meta['bg']};")
+        self.time_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent; letter-spacing: -2px;")
+        self.date_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; margin-top: -18px;")
+        self.pin_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {meta['input_bg']};
+                color: {meta['input_fg']};
+                border: 2px solid {meta['input_border']};
+                border-radius: {meta['pill_radius']};
+                padding: 8px 16px;
+                letter-spacing: 8px;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid {meta['input_focus']};
+            }}
+        """)
+        self.auth_msg.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
+
     def init_lock_screen(self):
         self.lock_widget = QWidget()
-        self.lock_widget.setStyleSheet("background-color: #080808;")
         layout = QVBoxLayout(self.lock_widget)
         layout.setAlignment(Qt.AlignCenter)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -609,14 +711,12 @@ class NoteApp(QMainWindow):
         # 1. Giant Hyprlock Digital Time
         self.time_lbl = QLabel("")
         self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 68, QFont.Bold))
-        self.time_lbl.setStyleSheet("color: #ffffff; border: none; background: transparent; letter-spacing: -2px;")
         self.time_lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.time_lbl)
 
         # Date Label
         self.date_lbl = QLabel("")
         self.date_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13))
-        self.date_lbl.setStyleSheet("color: #777777; border: none; background: transparent; margin-top: -18px;")
         self.date_lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.date_lbl)
 
@@ -634,26 +734,11 @@ class NoteApp(QMainWindow):
         self.pin_input.setAlignment(Qt.AlignCenter)
         self.pin_input.setFixedSize(320, 56)
         self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
-        self.pin_input.setStyleSheet("""
-            QLineEdit {
-                background-color: rgba(255, 255, 255, 0.05);
-                color: #ffffff;
-                border: 2px solid rgba(255, 255, 255, 0.4);
-                border-radius: 18px;
-                padding: 8px 16px;
-                letter-spacing: 8px;
-            }
-            QLineEdit:focus {
-                border: 2px solid #ffffff;
-                background-color: rgba(255, 255, 255, 0.1);
-            }
-        """)
         self.pin_input.returnPressed.connect(self.handle_auth)
         layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
 
         self.auth_msg = QLabel("Press Enter to Unlock" if not is_setup else "Press Enter to Initialize Vault")
         self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
-        self.auth_msg.setStyleSheet("color: #555555; border: none; background: transparent;")
         self.auth_msg.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
 
@@ -677,7 +762,7 @@ class NoteApp(QMainWindow):
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Your selected theme persists across all sessions.\n- Toggle Zen Focus for pure distraction-free flow.",
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Your selected theme is synced across both the workspace and lock screen.\n- Toggle Zen Focus for pure distraction-free flow.",
                 "tags": "welcome, journal",
                 "mood": "zen"
             }
@@ -892,21 +977,21 @@ class NoteApp(QMainWindow):
 
         self.theme_cards = {}
 
-        for idx, (t_name, bg_col, acc_col, desc) in enumerate(THEME_PREVIEWS):
+        for idx, (t_name, meta) in enumerate(THEME_META.items()):
             card = QFrame()
             card.setCursor(QCursor(Qt.PointingHandCursor))
             card.setStyleSheet(f"""
                 QFrame {{
-                    background-color: {bg_col};
+                    background-color: {meta['bg']};
                     border: 2px solid #333333;
                     border-radius: 10px;
                     padding: 12px;
                 }}
                 QFrame:hover {{
-                    border: 2px solid {acc_col};
+                    border: 2px solid {meta['acc']};
                 }}
                 QFrame[active="true"] {{
-                    border: 3px solid {acc_col};
+                    border: 3px solid {meta['acc']};
                 }}
             """)
             card_layout = QVBoxLayout(card)
@@ -914,10 +999,10 @@ class NoteApp(QMainWindow):
 
             card_title = QLabel(f"● {t_name}")
             card_title.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-            card_title.setStyleSheet(f"color: {acc_col}; border: none; background: transparent;")
+            card_title.setStyleSheet(f"color: {meta['acc']}; border: none; background: transparent;")
             card_layout.addWidget(card_title)
 
-            card_desc = QLabel(desc)
+            card_desc = QLabel(meta["desc"])
             card_desc.setWordWrap(True)
             card_desc.setFont(QFont("JetBrainsMono Nerd Font", 8))
             card_desc.setStyleSheet("color: #888888; border: none; background: transparent;")
@@ -1090,7 +1175,7 @@ class NoteApp(QMainWindow):
         self.pin = ""
         self.pin_input.clear()
         self.auth_msg.setText("Press Enter to Unlock")
-        self.auth_msg.setStyleSheet("color: #555555; border: none; background: transparent;")
+        self.sync_lock_screen_theme(self.current_theme)
         self.stack.setCurrentIndex(0)
         self.pin_input.setFocus()
 
