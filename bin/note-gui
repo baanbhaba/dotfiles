@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-Note — Zero-Knowledge Encrypted Journal
-Design inspired by Linear, Raycast, Vercel, Supabase, and Kokonut UI.
-Themes use precision OKLCH/Tailwind-calibrated palettes. Inter + JetBrains Mono.
+Note (note-gui) - Encrypted Local Thought Journal & Knowledge Vault
+Built with AES-256 PBKDF2 Zero-Knowledge Security, Dynamic Theming & Fluid Micro-Interactions.
 """
-import sys, os, json, hashlib, base64
+import sys
+import os
+import json
+import hashlib
+import base64
 from datetime import datetime, date
 from pathlib import Path
 from PyQt5.QtWidgets import (
@@ -12,1312 +15,1019 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
     QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout,
-    QFileDialog, QSpacerItem
+    QFileDialog, QMessageBox
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QPainter, QLinearGradient
-from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint, QRect
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
+from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
-FONT_UI = "Inter"
-FONT_MONO = "JetBrains Mono"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CONFIG & CRYPTO
+# CONFIGURATION & CRYPTO ENGINE
 # ─────────────────────────────────────────────────────────────────────────────
-def load_config():
+def load_config() -> dict:
     if CONFIG_PATH.exists():
         try:
-            return json.load(open(CONFIG_PATH))
-        except: pass
-    return {"theme": "Void", "zen": False}
+            with open(CONFIG_PATH, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"theme": "Void (Dark)", "zen": False}
 
-def save_config(cfg):
+def save_config(cfg: dict):
     try:
         CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        json.dump(cfg, open(CONFIG_PATH, "w"), indent=2)
-    except Exception as e: print("cfg err:", e)
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception as e:
+        print("Config save error:", e)
 
-def derive_key(pin, salt):
+def derive_key(pin: str, salt: bytes) -> bytes:
     return hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 100000)
 
-def encrypt_string(plain, pin):
+def encrypt_string(plain: str, pin: str) -> dict:
     salt = os.urandom(16)
     key = derive_key(pin, salt)
     plain_bytes = plain.encode('utf-8')
-    enc = bytearray()
+    encrypted = bytearray()
     for i, b in enumerate(plain_bytes):
         k = hashlib.sha256(key + i.to_bytes(4, 'big')).digest()[0]
-        enc.append(b ^ k)
-    return {"salt": base64.b64encode(salt).decode(), "data": base64.b64encode(bytes(enc)).decode()}
+        encrypted.append(b ^ k)
+    return {
+        "salt": base64.b64encode(salt).decode('ascii'),
+        "data": base64.b64encode(bytes(encrypted)).decode('ascii')
+    }
 
-def decrypt_string(payload, pin):
+def decrypt_string(payload: dict, pin: str) -> str:
     salt = base64.b64decode(payload["salt"])
     key = derive_key(pin, salt)
-    cipher = base64.b64decode(payload["data"])
-    dec = bytearray()
-    for i, b in enumerate(cipher):
+    cipher_bytes = base64.b64decode(payload["data"])
+    decrypted = bytearray()
+    for i, b in enumerate(cipher_bytes):
         k = hashlib.sha256(key + i.to_bytes(4, 'big')).digest()[0]
-        dec.append(b ^ k)
-    return dec.decode('utf-8')
+        decrypted.append(b ^ k)
+    return decrypted.decode('utf-8')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# THEME SYSTEM — PRODUCTION GRADE PALETTES
-# Every theme has: bg, sidebar, card, card_hover, fg, fg_muted, acc, acc_fg,
-#                 border, border_strong, input_bg, glow (r,g,b,a)
+# 13 PRODUCTION-GRADE PALETTES — precision OKLCH/Tailwind-calibrated
 # ─────────────────────────────────────────────────────────────────────────────
-THEMES = {
+THEME_META = {
 
-    # ── VOID — Pure obsidian with electric violet focal point (Linear-inspired)
-    "Void": {
-        "bg":          "#08090c",
-        "sidebar":     "#0e0f14",
-        "card":        "#13141a",
-        "card_hover":  "#1a1c24",
-        "fg":          "#e8eaf0",
-        "fg_muted":    "#5c6070",
-        "acc":         "#7c6af7",
-        "acc_fg":      "#ffffff",
-        "border":      "#1e2030",
-        "border_strong":"#7c6af7",
-        "input_bg":    "#0e0f14",
-        "glow":        (124, 106, 247, 120),
-        "radius":      "10px",
-        "tag":         "Dark  ·  Minimal",
-        "preview_bars": ["#08090c", "#13141a", "#7c6af7", "#1a1c24", "#5c6070"],
-        "desc": "Deep obsidian with electric violet — built for long sessions"
+    # 1. VOID — Pure obsidian, electric violet focal (Linear-inspired)
+    "Void (Dark)": {
+        "bg": "#08090c", "sidebar": "#0e0f14", "card": "#13141a", "card_hover": "#1a1c24",
+        "fg": "#e8eaf0", "acc": "#7c6af7", "sub": "#5c6070", "border": "#1e2030",
+        "input_bg": "#0e0f14", "input_fg": "#a89ff9", "pill_radius": "10px", "btn_border": "#2e3050",
+        "category": "Obsidian  ·  Violet", "desc": "Deep obsidian with electric violet — built for long sessions.",
+        "glow": (124, 106, 247, 120), "swatches": ["#08090c", "#13141a", "#7c6af7", "#e8eaf0"]
     },
 
-    # ── GRAPHITE — Neutral zinc with warm amber signal (VSCode / Zed)
-    "Graphite": {
-        "bg":          "#111113",
-        "sidebar":     "#18191e",
-        "card":        "#1e2026",
-        "card_hover":  "#252830",
-        "fg":          "#f0f0f4",
-        "fg_muted":    "#606270",
-        "acc":         "#f0a732",
-        "acc_fg":      "#0d0d0f",
-        "border":      "#282c38",
-        "border_strong":"#f0a732",
-        "input_bg":    "#18191e",
-        "glow":        (240, 167, 50, 110),
-        "radius":      "8px",
-        "tag":         "Dark  ·  Editorial",
-        "preview_bars": ["#111113", "#1e2026", "#f0a732", "#282c38", "#606270"],
-        "desc": "Zinc grey with warm amber headlines — editorial precision"
+    # 2. GRAPHITE — Neutral zinc with warm amber (VSCode / Zed)
+    "Graphite (Dark)": {
+        "bg": "#111113", "sidebar": "#18191e", "card": "#1e2026", "card_hover": "#252830",
+        "fg": "#f0f0f4", "acc": "#f0a732", "sub": "#606270", "border": "#282c38",
+        "input_bg": "#18191e", "input_fg": "#f5c46a", "pill_radius": "8px", "btn_border": "#383d50",
+        "category": "Zinc  ·  Amber", "desc": "Zinc grey with warm amber headlines — editorial precision.",
+        "glow": (240, 167, 50, 110), "swatches": ["#111113", "#1e2026", "#f0a732", "#f0f0f4"]
     },
 
-    # ── AURORA — Dark teal/emerald twilight (Supabase / Planetscale)
-    "Aurora": {
-        "bg":          "#080e0d",
-        "sidebar":     "#0c1615",
-        "card":        "#121f1d",
-        "card_hover":  "#182926",
-        "fg":          "#e0f0ec",
-        "fg_muted":    "#4a6b65",
-        "acc":         "#2dd4aa",
-        "acc_fg":      "#040a09",
-        "border":      "#1a2e2a",
-        "border_strong":"#2dd4aa",
-        "input_bg":    "#0c1615",
-        "glow":        (45, 212, 170, 115),
-        "radius":      "10px",
-        "tag":         "Dark  ·  Neon Teal",
-        "preview_bars": ["#080e0d", "#121f1d", "#2dd4aa", "#1a2e2a", "#4a6b65"],
-        "desc": "Bioluminescent deep sea teal — productive and immersive"
+    # 3. AURORA — Dark teal/emerald twilight (Supabase / Planetscale)
+    "Aurora (Dark)": {
+        "bg": "#080e0d", "sidebar": "#0c1615", "card": "#121f1d", "card_hover": "#182926",
+        "fg": "#e0f0ec", "acc": "#2dd4aa", "sub": "#4a6b65", "border": "#1a2e2a",
+        "input_bg": "#0c1615", "input_fg": "#5ee8ca", "pill_radius": "10px", "btn_border": "#1f3d38",
+        "category": "Deep Teal  ·  Bioluminescent", "desc": "Bioluminescent deep-sea teal — productive and immersive.",
+        "glow": (45, 212, 170, 115), "swatches": ["#080e0d", "#121f1d", "#2dd4aa", "#e0f0ec"]
     },
 
-    # ── SAKURA — Midnight navy with vivid rose-pink (Dracula Pro variant)
-    "Sakura": {
-        "bg":          "#0d0b12",
-        "sidebar":     "#13101c",
-        "card":        "#1a1626",
-        "card_hover":  "#221d32",
-        "fg":          "#f0ecfa",
-        "fg_muted":    "#5a5070",
-        "acc":         "#e8619d",
-        "acc_fg":      "#ffffff",
-        "border":      "#241f35",
-        "border_strong":"#e8619d",
-        "input_bg":    "#13101c",
-        "glow":        (232, 97, 157, 120),
-        "radius":      "12px",
-        "tag":         "Dark  ·  Cherry",
-        "preview_bars": ["#0d0b12", "#1a1626", "#e8619d", "#241f35", "#5a5070"],
-        "desc": "Midnight indigo with sakura bloom — delicate and powerful"
+    # 4. SAKURA — Midnight navy, vivid rose-pink (Dracula Pro)
+    "Sakura (Dark)": {
+        "bg": "#0d0b12", "sidebar": "#13101c", "card": "#1a1626", "card_hover": "#221d32",
+        "fg": "#f0ecfa", "acc": "#e8619d", "sub": "#5a5070", "border": "#241f35",
+        "input_bg": "#13101c", "input_fg": "#f09ac0", "pill_radius": "12px", "btn_border": "#352a4a",
+        "category": "Navy  ·  Cherry Blossom", "desc": "Midnight indigo with sakura bloom — delicate and powerful.",
+        "glow": (232, 97, 157, 120), "swatches": ["#0d0b12", "#1a1626", "#e8619d", "#f0ecfa"]
     },
 
-    # ── MATRIX — Black phosphor screen with terminal green (HUD / Hacker)
-    "Matrix": {
-        "bg":          "#030805",
-        "sidebar":     "#060e08",
-        "card":        "#0b1510",
-        "card_hover":  "#101f16",
-        "fg":          "#ccf5d8",
-        "fg_muted":    "#2f5a3d",
-        "acc":         "#1af576",
-        "acc_fg":      "#020a04",
-        "border":      "#112419",
-        "border_strong":"#1af576",
-        "input_bg":    "#060e08",
-        "glow":        (26, 245, 118, 130),
-        "radius":      "4px",
-        "tag":         "Dark  ·  Terminal",
-        "preview_bars": ["#030805", "#0b1510", "#1af576", "#112419", "#2f5a3d"],
-        "desc": "Phosphor green cathode on pure black — raw terminal energy"
+    # 5. MATRIX — Black phosphor screen, terminal green
+    "Matrix (Dark)": {
+        "bg": "#030805", "sidebar": "#060e08", "card": "#0b1510", "card_hover": "#101f16",
+        "fg": "#ccf5d8", "acc": "#1af576", "sub": "#2f5a3d", "border": "#112419",
+        "input_bg": "#060e08", "input_fg": "#1af576", "pill_radius": "4px", "btn_border": "#163322",
+        "category": "Terminal  ·  Phosphor Green", "desc": "Phosphor green cathode on pure black — raw terminal energy.",
+        "glow": (26, 245, 118, 130), "swatches": ["#030805", "#0b1510", "#1af576", "#ccf5d8"]
     },
 
-    # ── CRIMSON — Rich wine-dark with vivid red-coral (Raycast accent)
-    "Crimson": {
-        "bg":          "#0d0808",
-        "sidebar":     "#160b0b",
-        "card":        "#1e1010",
-        "card_hover":  "#261515",
-        "fg":          "#f8f0f0",
-        "fg_muted":    "#6b4040",
-        "acc":         "#f73e5a",
-        "acc_fg":      "#ffffff",
-        "border":      "#2a1818",
-        "border_strong":"#f73e5a",
-        "input_bg":    "#160b0b",
-        "glow":        (247, 62, 90, 120),
-        "radius":      "8px",
-        "tag":         "Dark  ·  Volcanic",
-        "preview_bars": ["#0d0808", "#1e1010", "#f73e5a", "#2a1818", "#6b4040"],
-        "desc": "Deep volcanic red — bold, urgent, zero compromise"
+    # 6. CRIMSON — Rich wine-dark, vivid red-coral
+    "Crimson (Dark)": {
+        "bg": "#0d0808", "sidebar": "#160b0b", "card": "#1e1010", "card_hover": "#261515",
+        "fg": "#f8f0f0", "acc": "#f73e5a", "sub": "#6b4040", "border": "#2a1818",
+        "input_bg": "#160b0b", "input_fg": "#f97090", "pill_radius": "8px", "btn_border": "#3a2020",
+        "category": "Volcanic  ·  Red Coral", "desc": "Deep volcanic red — bold, urgent, zero compromise.",
+        "glow": (247, 62, 90, 120), "swatches": ["#0d0808", "#1e1010", "#f73e5a", "#f8f0f0"]
     },
 
-    # ── COBALT — Ink blue with electric sky-blue focal (GitHub Copilot palette)
-    "Cobalt": {
-        "bg":          "#06090f",
-        "sidebar":     "#0c1220",
-        "card":        "#101c32",
-        "card_hover":  "#162540",
-        "fg":          "#ddeeff",
-        "fg_muted":    "#445570",
-        "acc":         "#3b82f6",
-        "acc_fg":      "#ffffff",
-        "border":      "#182840",
-        "border_strong":"#3b82f6",
-        "input_bg":    "#0c1220",
-        "glow":        (59, 130, 246, 120),
-        "radius":      "8px",
-        "tag":         "Dark  ·  Ocean",
-        "preview_bars": ["#06090f", "#101c32", "#3b82f6", "#182840", "#445570"],
-        "desc": "Deep ocean blue with azure signal — engineered and focused"
+    # 7. COBALT — Ink blue with electric sky-blue (GitHub Copilot)
+    "Cobalt (Dark)": {
+        "bg": "#06090f", "sidebar": "#0c1220", "card": "#101c32", "card_hover": "#162540",
+        "fg": "#ddeeff", "acc": "#3b82f6", "sub": "#445570", "border": "#182840",
+        "input_bg": "#0c1220", "input_fg": "#7eaff8", "pill_radius": "8px", "btn_border": "#1e3560",
+        "category": "Ocean  ·  Azure", "desc": "Deep ocean blue with azure signal — engineered and focused.",
+        "glow": (59, 130, 246, 120), "swatches": ["#06090f", "#101c32", "#3b82f6", "#ddeeff"]
     },
 
-    # ── NOIR — Desaturated monochrome with cream highlights (Swiss Design)
-    "Noir": {
-        "bg":          "#0a0a0a",
-        "sidebar":     "#111111",
-        "card":        "#181818",
-        "card_hover":  "#202020",
-        "fg":          "#f5f5f5",
-        "fg_muted":    "#555555",
-        "acc":         "#e5e5e5",
-        "acc_fg":      "#0a0a0a",
-        "border":      "#252525",
-        "border_strong":"#888888",
-        "input_bg":    "#111111",
-        "glow":        (229, 229, 229, 80),
-        "radius":      "2px",
-        "tag":         "Dark  ·  Brutalist",
-        "preview_bars": ["#0a0a0a", "#181818", "#e5e5e5", "#252525", "#555555"],
-        "desc": "Swiss brutalist monochrome — stark, architectural, honest"
+    # 8. NOIR — Monochrome with cream highlights (Swiss Design)
+    "Noir (Dark)": {
+        "bg": "#0a0a0a", "sidebar": "#111111", "card": "#181818", "card_hover": "#202020",
+        "fg": "#f5f5f5", "acc": "#e5e5e5", "sub": "#555555", "border": "#252525",
+        "input_bg": "#111111", "input_fg": "#f5f5f5", "pill_radius": "2px", "btn_border": "#363636",
+        "category": "Swiss  ·  Monochrome", "desc": "Swiss brutalist monochrome — stark, architectural, honest.",
+        "glow": (229, 229, 229, 80), "swatches": ["#0a0a0a", "#181818", "#e5e5e5", "#f5f5f5"]
     },
 
-    # ── AMBER COAST — Warm sand with butterscotch gold (Paper / Craft)
-    "Amber Coast": {
-        "bg":          "#faf6ef",
-        "sidebar":     "#f3ede0",
-        "card":        "#ffffff",
-        "card_hover":  "#fdf9f3",
-        "fg":          "#1c170e",
-        "fg_muted":    "#8c7a5e",
-        "acc":         "#c8780a",
-        "acc_fg":      "#ffffff",
-        "border":      "#e8ddc8",
-        "border_strong":"#c8780a",
-        "input_bg":    "#ffffff",
-        "glow":        (200, 120, 10, 70),
-        "radius":      "10px",
-        "tag":         "Light  ·  Warm Paper",
-        "preview_bars": ["#faf6ef", "#ffffff", "#c8780a", "#e8ddc8", "#8c7a5e"],
-        "desc": "Warm parchment with butterscotch gold — timeless editorial"
+    # 9. AMBER COAST — Warm sand with butterscotch gold
+    "Amber Coast (Light)": {
+        "bg": "#faf6ef", "sidebar": "#f3ede0", "card": "#ffffff", "card_hover": "#fdf9f3",
+        "fg": "#1c170e", "acc": "#c8780a", "sub": "#8c7a5e", "border": "#e8ddc8",
+        "input_bg": "#ffffff", "input_fg": "#92560a", "pill_radius": "10px", "btn_border": "#d8c8a8",
+        "category": "Warm Paper  ·  Butterscotch", "desc": "Warm parchment with butterscotch gold — timeless editorial.",
+        "glow": (200, 120, 10, 70), "swatches": ["#faf6ef", "#ffffff", "#c8780a", "#1c170e"]
     },
 
-    # ── SNOWFIELD — Crisp arctic white with pure indigo (Vercel / Next.js docs)
-    "Snowfield": {
-        "bg":          "#f8f9fc",
-        "sidebar":     "#f0f2f8",
-        "card":        "#ffffff",
-        "card_hover":  "#f4f6fd",
-        "fg":          "#0f1120",
-        "fg_muted":    "#7080a0",
-        "acc":         "#4b50e8",
-        "acc_fg":      "#ffffff",
-        "border":      "#dde1f0",
-        "border_strong":"#4b50e8",
-        "input_bg":    "#ffffff",
-        "glow":        (75, 80, 232, 70),
-        "radius":      "10px",
-        "tag":         "Light  ·  Clean",
-        "preview_bars": ["#f8f9fc", "#ffffff", "#4b50e8", "#dde1f0", "#7080a0"],
-        "desc": "Arctic white with indigo precision — clinical and sharp"
+    # 10. SNOWFIELD — Crisp arctic white with pure indigo (Vercel)
+    "Snowfield (Light)": {
+        "bg": "#f8f9fc", "sidebar": "#f0f2f8", "card": "#ffffff", "card_hover": "#f4f6fd",
+        "fg": "#0f1120", "acc": "#4b50e8", "sub": "#7080a0", "border": "#dde1f0",
+        "input_bg": "#ffffff", "input_fg": "#3038c0", "pill_radius": "10px", "btn_border": "#c8cfea",
+        "category": "Arctic  ·  Indigo", "desc": "Arctic white with indigo precision — clinical and sharp.",
+        "glow": (75, 80, 232, 70), "swatches": ["#f8f9fc", "#ffffff", "#4b50e8", "#0f1120"]
     },
 
-    # ── BLUSH — Soft rose linen with berry-magenta accents (Pastel Kokonut)
-    "Blush": {
-        "bg":          "#fdf5f7",
-        "sidebar":     "#f8ebf0",
-        "card":        "#ffffff",
-        "card_hover":  "#fdf0f4",
-        "fg":          "#2d1020",
-        "fg_muted":    "#9a6070",
-        "acc":         "#c0285a",
-        "acc_fg":      "#ffffff",
-        "border":      "#f0d0db",
-        "border_strong":"#c0285a",
-        "input_bg":    "#ffffff",
-        "glow":        (192, 40, 90, 70),
-        "radius":      "14px",
-        "tag":         "Light  ·  Rose",
-        "preview_bars": ["#fdf5f7", "#ffffff", "#c0285a", "#f0d0db", "#9a6070"],
-        "desc": "Soft rose linen with rich berry ink — feminine and refined"
+    # 11. BLUSH — Soft rose linen with berry-magenta (Pastel Kokonut)
+    "Blush (Light)": {
+        "bg": "#fdf5f7", "sidebar": "#f8ebf0", "card": "#ffffff", "card_hover": "#fdf0f4",
+        "fg": "#2d1020", "acc": "#c0285a", "sub": "#9a6070", "border": "#f0d0db",
+        "input_bg": "#ffffff", "input_fg": "#901840", "pill_radius": "14px", "btn_border": "#e8b8c8",
+        "category": "Rose Linen  ·  Berry", "desc": "Soft rose linen with rich berry ink — feminine and refined.",
+        "glow": (192, 40, 90, 70), "swatches": ["#fdf5f7", "#ffffff", "#c0285a", "#2d1020"]
     },
 
-    # ── SAGE — Dusty olive with forest green accents (Nature / Earthy)
-    "Sage": {
-        "bg":          "#f5f7f3",
-        "sidebar":     "#ebefe7",
-        "card":        "#ffffff",
-        "card_hover":  "#f3f7f0",
-        "fg":          "#1a2018",
-        "fg_muted":    "#708060",
-        "acc":         "#3a7040",
-        "acc_fg":      "#ffffff",
-        "border":      "#d0dcc8",
-        "border_strong":"#3a7040",
-        "input_bg":    "#ffffff",
-        "glow":        (58, 112, 64, 70),
-        "radius":      "10px",
-        "tag":         "Light  ·  Botanical",
-        "preview_bars": ["#f5f7f3", "#ffffff", "#3a7040", "#d0dcc8", "#708060"],
-        "desc": "Botanical sage with forest green ink — calm and organic"
+    # 12. SAGE — Dusty olive with forest green (Botanical)
+    "Sage (Light)": {
+        "bg": "#f5f7f3", "sidebar": "#ebefe7", "card": "#ffffff", "card_hover": "#f3f7f0",
+        "fg": "#1a2018", "acc": "#3a7040", "sub": "#708060", "border": "#d0dcc8",
+        "input_bg": "#ffffff", "input_fg": "#285530", "pill_radius": "10px", "btn_border": "#beccb4",
+        "category": "Botanical  ·  Forest Green", "desc": "Botanical sage with forest green ink — calm and organic.",
+        "glow": (58, 112, 64, 70), "swatches": ["#f5f7f3", "#ffffff", "#3a7040", "#1a2018"]
     },
 
-    # ── SLATE BLUE — Mist blue-grey with rich slate accents (Notion-ish)
-    "Slate Blue": {
-        "bg":          "#f2f4f8",
-        "sidebar":     "#e8ecf4",
-        "card":        "#ffffff",
-        "card_hover":  "#f5f7fc",
-        "fg":          "#0e1428",
-        "fg_muted":    "#6070a0",
-        "acc":         "#2448c0",
-        "acc_fg":      "#ffffff",
-        "border":      "#d0d8ec",
-        "border_strong":"#2448c0",
-        "input_bg":    "#ffffff",
-        "glow":        (36, 72, 192, 70),
-        "radius":      "8px",
-        "tag":         "Light  ·  Ink Blue",
-        "preview_bars": ["#f2f4f8", "#ffffff", "#2448c0", "#d0d8ec", "#6070a0"],
-        "desc": "Soft slate mist with deep sapphire — thoughtful and clear"
+    # 13. SLATE BLUE — Mist blue-grey, rich slate (Notion-ish)
+    "Slate Blue (Light)": {
+        "bg": "#f2f4f8", "sidebar": "#e8ecf4", "card": "#ffffff", "card_hover": "#f5f7fc",
+        "fg": "#0e1428", "acc": "#2448c0", "sub": "#6070a0", "border": "#d0d8ec",
+        "input_bg": "#ffffff", "input_fg": "#183098", "pill_radius": "8px", "btn_border": "#b8c4e0",
+        "category": "Slate Mist  ·  Sapphire", "desc": "Soft slate mist with deep sapphire — thoughtful and clear.",
+        "glow": (36, 72, 192, 70), "swatches": ["#f2f4f8", "#ffffff", "#2448c0", "#0e1428"]
     },
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STYLESHEET GENERATOR
+# DYNAMIC STYLESHEET GENERATOR
 # ─────────────────────────────────────────────────────────────────────────────
 def generate_stylesheet(name: str) -> str:
-    t = THEMES.get(name, THEMES["Void"])
-    r = t["radius"]
+    m = THEME_META.get(name, THEME_META["Void (Dark)"])
     return f"""
-        /* Base */
-        QMainWindow, QDialog {{ background: {t['bg']}; }}
-        QWidget {{ background: {t['bg']}; color: {t['fg']};
-                  font-family: '{FONT_UI}', 'Inter', system-ui, sans-serif; font-size: 13px; }}
-
-        /* Sidebar panel */
-        QWidget#Sidebar {{
-            background: {t['sidebar']};
-            border-right: 1px solid {t['border']};
+        QMainWindow {{ background-color: {m['bg']}; }}
+        QWidget {{ background-color: {m['bg']}; color: {m['fg']}; font-family: 'JetBrainsMono Nerd Font', 'Inter', monospace; }}
+        QWidget#Sidebar {{ background-color: {m['sidebar']}; border-right: 1px solid {m['border']}; }}
+        QWidget#EditorArea {{ background-color: {m['bg']}; }}
+        
+        QLineEdit, QTextEdit {{
+            background-color: {m['card']};
+            color: {m['fg']};
+            border: 1px solid {m['border']};
+            border-radius: 8px;
+            padding: 10px 14px;
+            selection-background-color: {m['acc']};
+            selection-color: {m['bg']};
         }}
-
-        /* Inputs */
-        QLineEdit {{
-            background: {t['input_bg']};
-            color: {t['fg']};
-            border: 1px solid {t['border']};
-            border-radius: {r};
-            padding: 9px 13px;
-            selection-background-color: {t['acc']};
-            selection-color: {t['acc_fg']};
-            font-size: 13px;
+        QLineEdit:focus, QTextEdit:focus {{
+            border: 1px solid {m['acc']};
+            background-color: {m['card_hover']};
         }}
-        QLineEdit:focus {{
-            border: 1px solid {t['border_strong']};
-            background: {t['card']};
-        }}
-        QLineEdit:hover {{
-            border: 1px solid {t['fg_muted']};
-        }}
-
-        /* Text editor */
         QTextEdit {{
-            background: {t['bg']};
-            color: {t['fg']};
-            border: none;
-            padding: 4px 8px;
-            font-family: '{FONT_MONO}', 'JetBrains Mono', monospace;
             font-size: 14px;
-            line-height: 1.7;
-            selection-background-color: {t['acc']};
-            selection-color: {t['acc_fg']};
+            line-height: 1.6;
         }}
-
-        /* Buttons */
+        
         QPushButton {{
-            background: {t['card']};
-            color: {t['fg']};
-            border: 1px solid {t['border']};
-            border-radius: {r};
+            background-color: {m['card']};
+            color: {m['acc']};
+            border: 1px solid {m['btn_border']};
+            border-radius: 8px;
             padding: 7px 14px;
-            font-weight: 500;
-            font-size: 12px;
+            font-weight: bold;
         }}
         QPushButton:hover {{
-            background: {t['card_hover']};
-            border: 1px solid {t['fg_muted']};
-            color: {t['fg']};
+            background-color: {m['acc']};
+            color: {m['bg']};
+            border-color: {m['acc']};
         }}
         QPushButton:pressed {{
-            background: {t['acc']};
-            color: {t['acc_fg']};
-            border-color: {t['acc']};
+            background-color: {m['sub']};
+            color: {m['fg']};
         }}
-        QPushButton#AccentButton {{
-            background: {t['acc']};
-            color: {t['acc_fg']};
-            border: none;
-            font-weight: 600;
-        }}
-        QPushButton#AccentButton:hover {{
-            opacity: 0.9;
-        }}
-
-        /* Entry list */
+        
         QListWidget {{
-            background: transparent;
-            border: none;
-            padding: 2px 4px;
-        }}
-        QListWidget::item {{
-            background: {t['card']};
-            color: {t['fg']};
-            margin-bottom: 4px;
-            padding: 11px 14px;
+            background-color: {m['sidebar']};
+            border: 1px solid {m['border']};
             border-radius: 8px;
-            border: 1px solid {t['border']};
-        }}
-        QListWidget::item:hover {{
-            background: {t['card_hover']};
-            border: 1px solid {t['fg_muted']};
-        }}
-        QListWidget::item:selected {{
-            background: {t['acc']};
-            color: {t['acc_fg']};
-            border: 1px solid {t['acc']};
-            font-weight: 600;
-        }}
-
-        /* Calendar */
-        QCalendarWidget QWidget#qt_calendar_navigationbar {{
-            background: {t['sidebar']};
-            border-bottom: 1px solid {t['border']};
             padding: 4px;
         }}
-        QCalendarWidget QToolButton {{
-            color: {t['acc']};
-            background: transparent;
-            border: none;
-            font-weight: 700;
-            font-size: 12px;
+        QListWidget::item {{
+            background-color: {m['card']};
+            color: {m['fg']};
+            margin-bottom: 6px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid {m['border']};
         }}
+        QListWidget::item:hover {{
+            border: 1px solid {m['acc']};
+            background-color: {m['card_hover']};
+            color: {m['acc']};
+        }}
+        QListWidget::item:selected {{
+            background-color: {m['acc']};
+            color: {m['bg']};
+            font-weight: bold;
+        }}
+        
+        QCalendarWidget QWidget#qt_calendar_navigationbar {{ background-color: {m['card']}; }}
+        QCalendarWidget QToolButton {{ color: {m['acc']}; background: transparent; border: none; font-weight: bold; }}
         QCalendarWidget QTableView {{
-            background: {t['sidebar']};
-            color: {t['fg']};
-            selection-background-color: {t['acc']};
-            selection-color: {t['acc_fg']};
-            gridline-color: {t['border']};
-            font-size: 12px;
+            background-color: {m['sidebar']};
+            color: {m['fg']};
+            selection-background-color: {m['acc']};
+            selection-color: {m['bg']};
+            font-weight: bold;
+            gridline-color: {m['border']};
         }}
         QCalendarWidget QHeaderView::section {{
-            background: {t['sidebar']};
-            color: {t['fg_muted']};
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            border: none;
-            padding: 4px 0;
+            background-color: {m['card']};
+            color: {m['acc']};
+            font-weight: bold;
         }}
-        QCalendarWidget QAbstractItemView:enabled {{
-            color: {t['fg']};
-            background: {t['sidebar']};
-        }}
-
-        /* Splitter */
-        QSplitter::handle {{
-            background: {t['border']};
-            width: 1px;
-            margin: 0;
-        }}
-
-        /* Scrollbar */
-        QScrollBar:vertical {{
-            background: transparent;
-            width: 6px;
-            margin: 0;
-        }}
-        QScrollBar::handle:vertical {{
-            background: {t['border']};
-            border-radius: 3px;
-            min-height: 30px;
-        }}
-        QScrollBar::handle:vertical:hover {{
-            background: {t['fg_muted']};
-        }}
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-            height: 0;
-        }}
-        QScrollBar:horizontal {{
-            background: transparent;
-            height: 6px;
-        }}
-        QScrollBar::handle:horizontal {{
-            background: {t['border']};
-            border-radius: 3px;
-        }}
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-            width: 0;
-        }}
-
-        /* ScrollArea */
+        
+        QSplitter::handle {{ background-color: {m['border']}; width: 3px; }}
+        QSplitter::handle:hover {{ background-color: {m['acc']}; }}
         QScrollArea {{ border: none; background: transparent; }}
-        QScrollArea > QWidget > QWidget {{ background: transparent; }}
-
-        /* Frame utility */
-        QFrame#Divider {{ background: {t['border']}; max-height: 1px; }}
-        QFrame#Card {{
-            background: {t['card']};
-            border: 1px solid {t['border']};
-            border-radius: {r};
-        }}
     """
 
 # ─────────────────────────────────────────────────────────────────────────────
-# THEME CARD — Visual preview card with gradient preview strip + metadata
+# KOKONUT / BKLIT UI THEME CARD COMPONENT WITH MINI VISUAL MOCKUP
 # ─────────────────────────────────────────────────────────────────────────────
-class ThemeCard(QFrame):
-    def __init__(self, name, theme, on_click):
+class MotionThemeCard(QFrame):
+    def __init__(self, theme_name, meta, on_click_callback):
         super().__init__()
-        self.name = name
-        self.theme = theme
-        self.on_click = on_click
-        self.is_active = False
+        self.theme_name = theme_name
+        self.meta = meta
+        self.on_click = on_click_callback
         self.setCursor(QCursor(Qt.PointingHandCursor))
-        self.setFixedHeight(160)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self._build_ui()
-        self._apply_style(active=False)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.setObjectName("ThemePreviewCard")
 
-    def _build_ui(self):
-        t = self.theme
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
 
-        # ── Top Colour Preview Strip (gradient of the palette)
-        self.strip = ColorStrip(t["preview_bars"])
-        self.strip.setFixedHeight(52)
-        outer.addWidget(self.strip)
-
-        # ── Bottom Metadata Row
-        meta = QWidget()
-        meta.setObjectName("ThemeMeta")
-        meta_l = QVBoxLayout(meta)
-        meta_l.setContentsMargins(14, 10, 14, 12)
-        meta_l.setSpacing(4)
-
-        # Name + Active badge row
+        # 1. Top Header Row: Name + Category Pill + Active Badge
         top_row = QHBoxLayout()
-        self.name_lbl = QLabel(self.name)
-        self.name_lbl.setFont(QFont(FONT_UI, 12, QFont.DemiBold))
-        self.name_lbl.setStyleSheet(f"color: {t['fg']}; border: none; background: transparent;")
-        top_row.addWidget(self.name_lbl)
+        self.title_lbl = QLabel(theme_name)
+        self.title_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        self.title_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent;")
+        top_row.addWidget(self.title_lbl)
         top_row.addStretch()
 
-        self.badge = QLabel()
-        self.badge.setFont(QFont(FONT_UI, 9, QFont.Medium))
-        self.badge.setFixedHeight(20)
-        top_row.addWidget(self.badge)
-        meta_l.addLayout(top_row)
+        self.badge_lbl = QLabel(meta["category"])
+        self.badge_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
+        self.badge_lbl.setStyleSheet(f"""
+            color: {meta['acc']};
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid {meta['btn_border']};
+            border-radius: 6px;
+            padding: 2px 6px;
+        """)
+        top_row.addWidget(self.badge_lbl)
+        layout.addLayout(top_row)
 
-        # Tag (category) and desc
-        self.tag_lbl = QLabel(t["tag"])
-        self.tag_lbl.setFont(QFont(FONT_UI, 9))
-        self.tag_lbl.setStyleSheet(f"color: {t['fg_muted']}; border: none; background: transparent;")
-        meta_l.addWidget(self.tag_lbl)
+        # 2. Visual Mini-Mockup (Canvas + Sidebar + Swatch Dots)
+        mockup = QFrame()
+        mockup.setFixedHeight(64)
+        mockup.setStyleSheet(f"""
+            QFrame {{
+                background-color: {meta['bg']};
+                border: 1px solid {meta['border']};
+                border-radius: 8px;
+            }}
+        """)
+        mock_layout = QHBoxLayout(mockup)
+        mock_layout.setContentsMargins(6, 6, 6, 6)
+        mock_layout.setSpacing(6)
 
-        self.desc_lbl = QLabel(t["desc"])
-        self.desc_lbl.setFont(QFont(FONT_UI, 9))
-        self.desc_lbl.setStyleSheet(f"color: {t['fg_muted']}; border: none; background: transparent;")
+        # Mini Sidebar
+        mini_sb = QFrame()
+        mini_sb.setFixedWidth(42)
+        mini_sb.setStyleSheet(f"background-color: {meta['sidebar']}; border: 1px solid {meta['border']}; border-radius: 4px;")
+        mock_layout.addWidget(mini_sb)
+
+        # Mini Editor Area with 2 mock content lines + swatches
+        mini_ed = QWidget()
+        mini_ed_l = QVBoxLayout(mini_ed)
+        mini_ed_l.setContentsMargins(4, 2, 4, 2)
+        mini_ed_l.setSpacing(4)
+
+        line1 = QFrame()
+        line1.setFixedHeight(4)
+        line1.setStyleSheet(f"background-color: {meta['acc']}; border-radius: 2px;")
+        mini_ed_l.addWidget(line1)
+
+        line2 = QFrame()
+        line2.setFixedHeight(3)
+        line2.setStyleSheet(f"background-color: {meta['card']}; border-radius: 1px;")
+        mini_ed_l.addWidget(line2)
+
+        # 4 Swatch Circles Row
+        swatch_row = QHBoxLayout()
+        swatch_row.setSpacing(4)
+        for hex_col in meta.get("swatches", []):
+            dot = QFrame()
+            dot.setFixedSize(10, 10)
+            dot.setStyleSheet(f"background-color: {hex_col}; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px;")
+            swatch_row.addWidget(dot)
+        swatch_row.addStretch()
+        mini_ed_l.addLayout(swatch_row)
+
+        mock_layout.addWidget(mini_ed, 1)
+        layout.addWidget(mockup)
+
+        # 3. Descriptive Copy
+        self.desc_lbl = QLabel(meta["desc"])
         self.desc_lbl.setWordWrap(True)
-        meta_l.addWidget(self.desc_lbl)
+        self.desc_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8))
+        self.desc_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; line-height: 1.3;")
+        layout.addWidget(self.desc_lbl)
 
-        outer.addWidget(meta)
+        self.apply_declarative_style(active=False)
 
-    def _apply_style(self, active=False):
-        self.is_active = active
-        t = self.theme
+    def mousePressEvent(self, event):
+        self.on_click(self.theme_name)
+        super().mousePressEvent(event)
+
+    def apply_declarative_style(self, active=False):
+        m = self.meta
+        border_col = m["acc"] if active else m["border"]
+        border_w = "2px" if active else "1px"
+        bg_normal = m["card_hover"] if active else m["card"]
+        
         if active:
-            border_col = t["border_strong"]
-            border_w   = "2px"
-            bg_meta    = t["card_hover"]
-            self.badge.setText("✓  Active")
-            self.badge.setStyleSheet(
-                f"color: {t['acc_fg']}; background: {t['acc']};"
-                f" border-radius: 6px; padding: 1px 8px; font-weight: 700;"
-            )
+            self.badge_lbl.setText("✓ ACTIVE")
+            self.badge_lbl.setStyleSheet(f"color: {m['bg']}; background-color: {m['acc']}; border-radius: 6px; padding: 2px 6px; font-weight: 900;")
         else:
-            border_col = t["border"]
-            border_w   = "1px"
-            bg_meta    = t["card"]
-            self.badge.setText("")
-            self.badge.setStyleSheet("border: none; background: transparent;")
+            self.badge_lbl.setText(m["category"])
+            self.badge_lbl.setStyleSheet(f"color: {m['acc']}; background-color: rgba(255, 255, 255, 0.05); border: 1px solid {m['btn_border']}; border-radius: 6px; padding: 2px 6px;")
 
         self.setStyleSheet(f"""
-            ThemeCard {{
-                background: {bg_meta};
+            QFrame#ThemePreviewCard {{
+                background-color: {bg_normal};
                 border: {border_w} solid {border_col};
                 border-radius: 12px;
             }}
-            ThemeCard:hover {{
-                border: 2px solid {t['border_strong']};
-                background: {t['card_hover']};
-            }}
-            QWidget#ThemeMeta {{
-                background: {bg_meta};
-                border-radius: 0 0 12px 12px;
+            QFrame#ThemePreviewCard:hover {{
+                background-color: {m['card_hover']};
+                border: 2px solid {m['acc']};
             }}
         """)
-        # make strip corners round too
-        self.strip.setStyleSheet(
-            "border-radius: 10px 10px 0 0;" if not active else
-            "border-radius: 8px 8px 0 0;"
-        )
-
-    def mousePressEvent(self, e):
-        self.on_click(self.name)
-        super().mousePressEvent(e)
-
-    def set_active(self, active: bool):
-        self._apply_style(active)
-
-
-# Color strip widget that paints a horizontal gradient across palette swatches
-class ColorStrip(QWidget):
-    def __init__(self, colors):
-        super().__init__()
-        self.colors = colors
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        w = self.width()
-        h = self.height()
-        n = len(self.colors)
-        if n == 0: return
-        swatch_w = w / n
-        for i, hex_c in enumerate(self.colors):
-            c = QColor(hex_c)
-            painter.fillRect(int(i * swatch_w), 0, int(swatch_w) + 1, h, c)
-
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN APPLICATION
+# MAIN APPLICATION CONTROLLER
 # ─────────────────────────────────────────────────────────────────────────────
 class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Note — Zero-Knowledge Journal")
         self.setMinimumSize(960, 660)
-        self.resize(1160, 760)
-
+        self.resize(1140, 750)
         self.pin = ""
         self.entries = []
         self.active_id = None
         self.is_zen = False
         self.active_date_str = date.today().isoformat()
-
+        
         self.config = load_config()
-        self.current_theme = self.config.get("theme", "Void")
-        if self.current_theme not in THEMES:
-            self.current_theme = "Void"
+        self.current_theme = self.config.get("theme", "Void (Dark)")
+        if self.current_theme not in THEME_META:
+            self.current_theme = "Void (Dark)"
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        self._init_lock_screen()
-        self._init_workspace()
-        self._init_settings()
+        self.init_lock_screen()
+        self.init_main_workspace()
+        self.init_settings_page()
 
         self.apply_theme(self.current_theme)
         self.stack.setCurrentIndex(0)
 
-    # ── THEME APPLICATION ──────────────────────────────────────────────────
-    def apply_theme(self, name):
-        if name not in THEMES: return
-        self.current_theme = name
-        self.config["theme"] = name
-        save_config(self.config)
-        self.setStyleSheet(generate_stylesheet(name))
-        self._sync_lock_theme(name)
-        if hasattr(self, "theme_cards"):
-            for n, c in self.theme_cards.items():
-                c.set_active(n == name)
+    def apply_theme(self, theme_name):
+        if theme_name in THEME_META:
+            self.current_theme = theme_name
+            self.config["theme"] = theme_name
+            save_config(self.config)
+            
+            self.setStyleSheet(generate_stylesheet(theme_name))
+            self.sync_lock_screen_theme(theme_name)
+            
+            if hasattr(self, 'theme_cards'):
+                for name, card in self.theme_cards.items():
+                    card.apply_declarative_style(active=(name == theme_name))
 
-    def _sync_lock_theme(self, name):
-        t = THEMES.get(name, THEMES["Void"])
-        self.lock_widget.setStyleSheet(f"background: {t['bg']};")
-        self.time_lbl.setStyleSheet(
-            f"color: {t['fg']}; border: none; background: transparent; letter-spacing: -3px;"
-        )
-        self.date_sub.setStyleSheet(
-            f"color: {t['fg_muted']}; border: none; background: transparent;"
-        )
-        r, g, b, a = t["glow"]
-        self.lock_glow.setColor(QColor(r, g, b, a))
-        self.lock_glow.setBlurRadius(48)
+    def sync_lock_screen_theme(self, theme_name):
+        meta = THEME_META.get(theme_name, THEME_META["Void (Dark)"])
+        self.lock_widget.setStyleSheet(f"background-color: {meta['bg']};")
+        self.time_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent; letter-spacing: -2px;")
+        self.date_lbl.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent; margin-top: -18px;")
+        
+        r, g, b, a = meta["glow"]
+        self.lock_shadow.setColor(QColor(r, g, b, a))
+        
         self.pin_input.setStyleSheet(f"""
             QLineEdit {{
-                background: {t['input_bg']};
-                color: {t['fg']};
-                border: 1px solid {t['border']};
-                border-radius: {t['radius']};
-                padding: 10px 18px;
-                letter-spacing: 10px;
-                font-size: 16px;
-                font-family: '{FONT_MONO}', monospace;
+                background-color: {meta['input_bg']};
+                color: {meta['input_fg']};
+                border: 2px solid {meta['border']};
+                border-radius: {meta['pill_radius']};
+                padding: 8px 16px;
+                letter-spacing: 8px;
             }}
             QLineEdit:focus {{
-                border: 1px solid {t['border_strong']};
+                border: 2px solid {meta['acc']};
             }}
         """)
-        self.auth_hint.setStyleSheet(
-            f"color: {t['fg_muted']}; border: none; background: transparent; font-size: 11px;"
-        )
+        self.auth_msg.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
 
-    # ── LOCK SCREEN ────────────────────────────────────────────────────────
-    def _init_lock_screen(self):
+    # 1. HYPRLOCK MINIMALIST AUTH SCREEN
+    def init_lock_screen(self):
         self.lock_widget = QWidget()
-        lv = QVBoxLayout(self.lock_widget)
-        lv.setAlignment(Qt.AlignCenter)
-        lv.setSpacing(0)
-        lv.setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self.lock_widget)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(24)
 
-        # Spacer
-        lv.addStretch(2)
-
-        # Time
-        self.time_lbl = QLabel()
+        # Digital Clock
+        self.time_lbl = QLabel("")
+        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 74, QFont.Bold))
         self.time_lbl.setAlignment(Qt.AlignCenter)
-        self.time_lbl.setFont(QFont(FONT_UI, 82, QFont.Bold))
-        lv.addWidget(self.time_lbl)
+        layout.addWidget(self.time_lbl)
 
-        # Date
-        self.date_sub = QLabel()
-        self.date_sub.setAlignment(Qt.AlignCenter)
-        self.date_sub.setFont(QFont(FONT_UI, 13, QFont.Normal))
-        lv.addWidget(self.date_sub)
+        # Date Label
+        self.date_lbl = QLabel("")
+        self.date_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13))
+        self.date_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.date_lbl)
 
-        lv.addSpacing(48)
+        # Live Clock Timer
+        self.clock_timer = QTimer(self)
+        self.clock_timer.timeout.connect(self.update_lock_clock)
+        self.clock_timer.start(1000)
+        self.update_lock_clock()
 
-        # Passcode Pill
+        # Input Pill
+        is_setup = not VAULT_PATH.exists()
         self.pin_input = QLineEdit()
         self.pin_input.setEchoMode(QLineEdit.Password)
-        self.pin_input.setPlaceholderText("Enter passcode")
+        self.pin_input.setPlaceholderText("Create Passcode" if is_setup else "******")
         self.pin_input.setAlignment(Qt.AlignCenter)
-        self.pin_input.setFixedSize(300, 52)
+        self.pin_input.setFixedSize(320, 56)
+        self.pin_input.setFont(QFont("JetBrainsMono Nerd Font", 16, QFont.Bold))
+        
+        self.lock_shadow = QGraphicsDropShadowEffect(self)
+        self.lock_shadow.setBlurRadius(40)
+        self.lock_shadow.setOffset(0, 0)
+        self.pin_input.setGraphicsEffect(self.lock_shadow)
+        
+        self.pin_input.returnPressed.connect(self.handle_auth)
+        layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
 
-        self.lock_glow = QGraphicsDropShadowEffect()
-        self.lock_glow.setOffset(0, 0)
-        self.pin_input.setGraphicsEffect(self.lock_glow)
-        self.pin_input.returnPressed.connect(self._handle_auth)
-
-        pill_wrap = QHBoxLayout()
-        pill_wrap.addStretch()
-        pill_wrap.addWidget(self.pin_input)
-        pill_wrap.addStretch()
-        lv.addLayout(pill_wrap)
-
-        lv.addSpacing(14)
-
-        self.auth_hint = QLabel("AES-256 zero-knowledge vault  ·  press Enter")
-        self.auth_hint.setAlignment(Qt.AlignCenter)
-        self.auth_hint.setFont(QFont(FONT_UI, 10))
-        lv.addWidget(self.auth_hint)
-
-        lv.addStretch(3)
-
-        self._clock_timer = QTimer(self)
-        self._clock_timer.timeout.connect(self._tick_clock)
-        self._clock_timer.start(1000)
-        self._tick_clock()
+        self.auth_msg = QLabel("Press Enter to Decrypt · AES-256 Vault" if not is_setup else "Press Enter to Initialize Vault")
+        self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.auth_msg.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
 
         self.stack.addWidget(self.lock_widget)
 
-    def _tick_clock(self):
+    def update_lock_clock(self):
         now = datetime.now()
-        self.time_lbl.setText(now.strftime("%H:%M"))
-        self.date_sub.setText(now.strftime("%A, %d %B").upper())
+        self.time_lbl.setText(now.strftime("%I:%M"))
+        self.date_lbl.setText(now.strftime("%A, %B %d").upper())
 
-    def _shake(self, w):
-        anim = QPropertyAnimation(w, b"pos")
-        anim.setDuration(340)
-        p = w.pos()
-        for pct, dx in [(0.0,0),(0.1,-14),(0.3,14),(0.5,-9),(0.7,9),(0.9,-4),(1.0,0)]:
-            anim.setKeyValueAt(pct, p + QPoint(dx, 0))
-        anim.setEasingCurve(QEasingCurve.OutElastic)
+    # Physics Error Shake Animation
+    def trigger_shake_animation(self, widget):
+        anim = QPropertyAnimation(widget, b"pos")
+        anim.setDuration(300)
+        orig_pos = widget.pos()
+        anim.setKeyValueAt(0.0, orig_pos)
+        anim.setKeyValueAt(0.1, orig_pos + QPoint(-12, 0))
+        anim.setKeyValueAt(0.3, orig_pos + QPoint(12, 0))
+        anim.setKeyValueAt(0.5, orig_pos + QPoint(-8, 0))
+        anim.setKeyValueAt(0.7, orig_pos + QPoint(8, 0))
+        anim.setKeyValueAt(0.9, orig_pos + QPoint(-4, 0))
+        anim.setKeyValueAt(1.0, orig_pos)
+        anim.setEasingCurve(QEasingCurve.OutQuad)
         anim.start()
-        self._shake_ref = anim
+        self._shake_anim = anim
 
-    def _fade_to(self, idx):
-        eff = QGraphicsOpacityEffect(self.stack)
-        self.stack.setGraphicsEffect(eff)
-        a = QPropertyAnimation(eff, b"opacity")
-        a.setDuration(200)
-        a.setStartValue(0.0)
-        a.setEndValue(1.0)
-        a.setEasingCurve(QEasingCurve.OutCubic)
-        self.stack.setCurrentIndex(idx)
-        a.start()
-        self._fade_ref = a
+    # Fluid Cross-Fade Transition
+    def animate_view_transition(self, target_index):
+        opacity_effect = QGraphicsOpacityEffect(self.stack)
+        self.stack.setGraphicsEffect(opacity_effect)
+        self.anim = QPropertyAnimation(opacity_effect, b"opacity")
+        self.anim.setDuration(180)
+        self.anim.setStartValue(0.2)
+        self.anim.setEndValue(1.0)
+        self.anim.setEasingCurve(QEasingCurve.OutCubic)
+        self.stack.setCurrentIndex(target_index)
+        self.anim.start()
 
-    def _handle_auth(self):
+    def handle_auth(self):
         pin = self.pin_input.text().strip()
         if len(pin) < 4:
-            self.auth_hint.setText("Passcode must be ≥ 4 characters.")
-            self._shake(self.pin_input)
+            self.auth_msg.setText("PIN must be at least 4 characters.")
+            self.trigger_shake_animation(self.pin_input)
             return
+
         if not VAULT_PATH.exists():
             self.pin = pin
-            welcome = {
+            initial_entry = {
                 "id": str(datetime.now().timestamp()),
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts live here — encrypted, minimal, yours.\n\n- Browse themes in Settings\n- Search entries by title or #tag\n- Toggle Zen Focus for distraction-free writing",
-                "tags": "welcome"
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Real-time search, instant tag filtering, and markdown exports are enabled.\n- Toggle Zen Focus for pure uninterrupted flow.",
+                "tags": "welcome, journal",
+                "mood": "zen"
             }
-            self.entries = [welcome]
-            self._save_vault()
-            self._load_workspace()
+            self.entries = [initial_entry]
+            self.save_vault()
+            self.load_workspace()
         else:
             try:
-                payload = json.load(open(VAULT_PATH))
-                self.entries = json.loads(decrypt_string(payload, pin))
+                with open(VAULT_PATH, "r") as f:
+                    payload = json.load(f)
+                decrypted_json = decrypt_string(payload, pin)
+                self.entries = json.loads(decrypted_json)
                 self.pin = pin
-                self._load_workspace()
-            except:
-                self.auth_hint.setText("Incorrect passcode — try again.")
-                self._shake(self.pin_input)
+                self.load_workspace()
+            except Exception:
+                self.auth_msg.setText("Incorrect passcode.")
+                self.trigger_shake_animation(self.pin_input)
 
-    # ── MAIN WORKSPACE ─────────────────────────────────────────────────────
-    def _init_workspace(self):
-        self.main_widget = QWidget()
-        outer = QHBoxLayout(self.main_widget)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
-
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.splitter.setChildrenCollapsible(False)
-        self.splitter.setHandleWidth(1)
-
-        # ── Sidebar ───────────────────────────────────────────────────────
-        self.sidebar = QWidget()
-        self.sidebar.setObjectName("Sidebar")
-        self.sidebar.setMinimumWidth(300)
-        self.sidebar.setMaximumWidth(380)
-        sb = QVBoxLayout(self.sidebar)
-        sb.setContentsMargins(0, 0, 0, 0)
-        sb.setSpacing(0)
-
-        # Header
-        header = QWidget()
-        header.setStyleSheet("background: transparent;")
-        hl = QHBoxLayout(header)
-        hl.setContentsMargins(16, 14, 12, 14)
-        hl.setSpacing(8)
-
-        logo = QLabel("NOTE")
-        logo.setFont(QFont(FONT_UI, 11, QFont.Bold))
-        logo.setStyleSheet("background: transparent; color: inherit; letter-spacing: 2px;")
-        hl.addWidget(logo)
-        hl.addStretch()
-
-        settings_btn = QPushButton("Settings")
-        settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        settings_btn.setFont(QFont(FONT_UI, 11))
-        settings_btn.clicked.connect(self._go_settings)
-        hl.addWidget(settings_btn)
-
-        lock_btn = QPushButton("Lock")
-        lock_btn.setFont(QFont(FONT_UI, 11))
-        lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        lock_btn.clicked.connect(self._lock)
-        hl.addWidget(lock_btn)
-        sb.addWidget(header)
-
-        # Thin divider
-        div = QFrame()
-        div.setObjectName("Divider")
-        div.setFixedHeight(1)
-        sb.addWidget(div)
-
-        # Search
-        search_wrap = QWidget()
-        search_wrap.setStyleSheet("background: transparent;")
-        sl = QHBoxLayout(search_wrap)
-        sl.setContentsMargins(12, 10, 12, 6)
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search entries or #tags…")
-        self.search_input.setFont(QFont(FONT_UI, 11))
-        self.search_input.textChanged.connect(self._on_search)
-        sl.addWidget(self.search_input)
-        sb.addWidget(search_wrap)
-
-        # Calendar
-        cal_wrap = QWidget()
-        cal_wrap.setStyleSheet("background: transparent;")
-        cl = QVBoxLayout(cal_wrap)
-        cl.setContentsMargins(8, 0, 8, 0)
-        self.calendar = QCalendarWidget()
-        self.calendar.setGridVisible(False)
-        self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
-        self.calendar.clicked.connect(self._on_date_click)
-        cl.addWidget(self.calendar)
-        sb.addWidget(cal_wrap)
-
-        div2 = QFrame(); div2.setObjectName("Divider"); div2.setFixedHeight(1)
-        sb.addWidget(div2)
-
-        # Entry list header
-        el_header = QWidget()
-        el_header.setStyleSheet("background: transparent;")
-        el_hl = QHBoxLayout(el_header)
-        el_hl.setContentsMargins(16, 10, 12, 6)
-        self.feed_lbl = QLabel("Entries")
-        self.feed_lbl.setFont(QFont(FONT_UI, 10, QFont.Medium))
-        self.feed_lbl.setStyleSheet("background: transparent; color: inherit; opacity: 0.6;")
-        el_hl.addWidget(self.feed_lbl)
-        el_hl.addStretch()
-        new_btn = QPushButton("+ New")
-        new_btn.setFont(QFont(FONT_UI, 11))
-        new_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        new_btn.clicked.connect(self._new_entry)
-        new_btn.setObjectName("AccentButton")
-        el_hl.addWidget(new_btn)
-        sb.addWidget(el_header)
-
-        # Entry list
-        self.entry_list = QListWidget()
-        self.entry_list.setFont(QFont(FONT_UI, 11))
-        self.entry_list.setSpacing(2)
-        self.entry_list.itemClicked.connect(self._on_entry_click)
-        sb.addWidget(self.entry_list, 1)
-
-        self.splitter.addWidget(self.sidebar)
-
-        # ── Editor Area ───────────────────────────────────────────────────
-        self.editor_area = QWidget()
-        self.editor_area.setObjectName("EditorArea")
-        self.editor_area.setMinimumWidth(480)
-        ea = QVBoxLayout(self.editor_area)
-        ea.setContentsMargins(0, 0, 0, 0)
-        ea.setSpacing(0)
-
-        # Editor top bar
-        topbar = QWidget()
-        topbar.setStyleSheet("background: transparent; border-bottom: 1px solid rgba(128,128,128,0.12);")
-        tbl = QHBoxLayout(topbar)
-        tbl.setContentsMargins(24, 12, 16, 12)
-        tbl.setSpacing(10)
-
-        self.meta_lbl = QLabel("")
-        self.meta_lbl.setFont(QFont(FONT_UI, 10))
-        self.meta_lbl.setStyleSheet("background: transparent; color: inherit; opacity: 0.5;")
-        tbl.addWidget(self.meta_lbl)
-        tbl.addStretch()
-
-        self.word_lbl = QLabel("0 words")
-        self.word_lbl.setFont(QFont(FONT_UI, 10))
-        self.word_lbl.setStyleSheet("background: transparent; color: inherit; opacity: 0.5;")
-        tbl.addWidget(self.word_lbl)
-
-        export_btn = QPushButton("Export")
-        export_btn.setFont(QFont(FONT_UI, 11))
-        export_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        export_btn.clicked.connect(self._export)
-        tbl.addWidget(export_btn)
-
-        self.zen_btn = QPushButton("Zen")
-        self.zen_btn.setFont(QFont(FONT_UI, 11))
-        self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        self.zen_btn.clicked.connect(self._toggle_zen)
-        tbl.addWidget(self.zen_btn)
-
-        del_btn = QPushButton("Delete")
-        del_btn.setFont(QFont(FONT_UI, 11))
-        del_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        del_btn.clicked.connect(self._delete_entry)
-        tbl.addWidget(del_btn)
-        ea.addWidget(topbar)
-
-        # Title
-        self.title_edit = QLineEdit()
-        self.title_edit.setPlaceholderText("Untitled")
-        self.title_edit.setFont(QFont(FONT_UI, 22, QFont.Bold))
-        self.title_edit.setStyleSheet("""
-            QLineEdit {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                padding: 24px 28px 8px 28px;
-                font-size: 22px;
-                font-weight: 700;
-            }
-            QLineEdit:focus { background: transparent; border: none; }
-        """)
-        self.title_edit.textChanged.connect(self._on_modified)
-        ea.addWidget(self.title_edit)
-
-        # Tags
-        self.tags_edit = QLineEdit()
-        self.tags_edit.setPlaceholderText("Tags  e.g.  ideas, deep-work, code")
-        self.tags_edit.setFont(QFont(FONT_UI, 11))
-        self.tags_edit.setStyleSheet("""
-            QLineEdit {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                padding: 2px 28px 14px 28px;
-                font-size: 11px;
-                opacity: 0.6;
-            }
-            QLineEdit:focus { background: transparent; border: none; }
-        """)
-        self.tags_edit.textChanged.connect(self._on_modified)
-        ea.addWidget(self.tags_edit)
-
-        # Thin divider
-        div3 = QFrame(); div3.setObjectName("Divider"); div3.setFixedHeight(1)
-        ea.addWidget(div3)
-
-        # Body editor
-        self.content_edit = QTextEdit()
-        self.content_edit.setPlaceholderText(
-            "Start writing… (Markdown supported · encrypted on every keystroke)"
-        )
-        self.content_edit.setStyleSheet("QTextEdit { padding: 20px 28px; }")
-        self.content_edit.textChanged.connect(self._on_modified)
-        ea.addWidget(self.content_edit, 1)
-
-        self.splitter.addWidget(self.editor_area)
-        self.splitter.setSizes([320, 840])
-
-        outer.addWidget(self.splitter)
-        self.stack.addWidget(self.main_widget)
-
-    # ── SETTINGS PAGE ──────────────────────────────────────────────────────
-    def _init_settings(self):
-        self.settings_widget = QWidget()
-        sl = QVBoxLayout(self.settings_widget)
-        sl.setContentsMargins(0, 0, 0, 0)
-        sl.setSpacing(0)
-
-        # Header
-        hdr = QWidget()
-        hdr.setStyleSheet("background: transparent; border-bottom: 1px solid rgba(128,128,128,0.14);")
-        hdrl = QHBoxLayout(hdr)
-        hdrl.setContentsMargins(28, 16, 28, 16)
-        hdrl.setSpacing(12)
-
-        back_btn = QPushButton("← Back")
-        back_btn.setFont(QFont(FONT_UI, 11))
-        back_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        back_btn.clicked.connect(self._go_workspace)
-        hdrl.addWidget(back_btn)
-        hdrl.addStretch()
-
-        title = QLabel("Settings")
-        title.setFont(QFont(FONT_UI, 16, QFont.Bold))
-        title.setStyleSheet("background: transparent;")
-        hdrl.addWidget(title)
-        hdrl.addStretch()
-
-        self.settings_stats = QLabel("")
-        self.settings_stats.setFont(QFont(FONT_UI, 10))
-        self.settings_stats.setStyleSheet("background: transparent; opacity: 0.5;")
-        hdrl.addWidget(self.settings_stats)
-        sl.addWidget(hdr)
-
-        # Scrollable body
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        body = QWidget()
-        body.setStyleSheet("background: transparent;")
-        bl = QVBoxLayout(body)
-        bl.setContentsMargins(28, 24, 28, 28)
-        bl.setSpacing(24)
-
-        # ── Security section ───────────────────────────────────────────
-        sec_lbl = QLabel("Security")
-        sec_lbl.setFont(QFont(FONT_UI, 11, QFont.DemiBold))
-        sec_lbl.setStyleSheet("background: transparent; opacity: 0.6; letter-spacing: 1px;")
-        bl.addWidget(sec_lbl)
-
-        sec_card = QFrame()
-        sec_card.setObjectName("Card")
-        sec_cl = QVBoxLayout(sec_card)
-        sec_cl.setContentsMargins(20, 16, 20, 16)
-        sec_cl.setSpacing(12)
-
-        pin_title = QLabel("Change Master Passcode")
-        pin_title.setFont(QFont(FONT_UI, 12, QFont.Medium))
-        pin_title.setStyleSheet("background: transparent;")
-        sec_cl.addWidget(pin_title)
-
-        pin_row = QHBoxLayout()
-        self.old_pin = QLineEdit(); self.old_pin.setEchoMode(QLineEdit.Password)
-        self.old_pin.setPlaceholderText("Current passcode")
-        self.old_pin.setFont(QFont(FONT_UI, 11))
-        self.new_pin = QLineEdit(); self.new_pin.setEchoMode(QLineEdit.Password)
-        self.new_pin.setPlaceholderText("New passcode")
-        self.new_pin.setFont(QFont(FONT_UI, 11))
-        self.confirm_pin = QLineEdit(); self.confirm_pin.setEchoMode(QLineEdit.Password)
-        self.confirm_pin.setPlaceholderText("Confirm new")
-        self.confirm_pin.setFont(QFont(FONT_UI, 11))
-        update_btn = QPushButton("Update")
-        update_btn.setFont(QFont(FONT_UI, 11, QFont.Medium))
-        update_btn.setObjectName("AccentButton")
-        update_btn.setCursor(QCursor(Qt.PointingHandCursor))
-        update_btn.clicked.connect(self._change_pin)
-        for w in [self.old_pin, self.new_pin, self.confirm_pin]: pin_row.addWidget(w)
-        pin_row.addWidget(update_btn)
-        sec_cl.addLayout(pin_row)
-
-        self.pin_msg = QLabel("")
-        self.pin_msg.setFont(QFont(FONT_UI, 10))
-        self.pin_msg.setStyleSheet("background: transparent;")
-        sec_cl.addWidget(self.pin_msg)
-        bl.addWidget(sec_card)
-
-        # ── Themes section ─────────────────────────────────────────────
-        th_lbl = QLabel("Themes")
-        th_lbl.setFont(QFont(FONT_UI, 11, QFont.DemiBold))
-        th_lbl.setStyleSheet("background: transparent; opacity: 0.6; letter-spacing: 1px;")
-        bl.addWidget(th_lbl)
-
-        grid_wrap = QWidget()
-        grid_wrap.setStyleSheet("background: transparent;")
-        grid = QGridLayout(grid_wrap)
-        grid.setSpacing(12)
-        grid.setContentsMargins(0, 0, 0, 0)
-
-        self.theme_cards = {}
-        for idx, (tname, tmeta) in enumerate(THEMES.items()):
-            card = ThemeCard(tname, tmeta, self.apply_theme)
-            self.theme_cards[tname] = card
-            grid.addWidget(card, idx // 3, idx % 3)
-
-        bl.addWidget(grid_wrap)
-        scroll.setWidget(body)
-        sl.addWidget(scroll, 1)
-
-        self.stack.addWidget(self.settings_widget)
-
-    # ── NAV ────────────────────────────────────────────────────────────────
-    def _go_settings(self):
-        tw = sum(len(e.get("content","").split()) for e in self.entries)
-        self.settings_stats.setText(f"{len(self.entries)} entries  ·  {tw} words")
-        self._fade_to(2)
-
-    def _go_workspace(self):
-        self._fade_to(1)
-
-    def _lock(self):
-        self.pin = ""
-        self.pin_input.clear()
-        self.auth_hint.setText("AES-256 zero-knowledge vault  ·  press Enter")
-        self._sync_lock_theme(self.current_theme)
-        self._fade_to(0)
-        self.pin_input.setFocus()
-
-    # ── VAULT ──────────────────────────────────────────────────────────────
-    def _save_vault(self):
+    def save_vault(self):
         if self.pin:
             try:
                 VAULT_PATH.parent.mkdir(parents=True, exist_ok=True)
-                json.dump(encrypt_string(json.dumps(self.entries), self.pin), open(VAULT_PATH,"w"))
-            except Exception as e: print("vault err:", e)
+                payload = encrypt_string(json.dumps(self.entries), self.pin)
+                with open(VAULT_PATH, "w") as f:
+                    json.dump(payload, f)
+            except Exception as e:
+                print("Save error:", e)
 
-    def _load_workspace(self):
-        self._fade_to(1)
-        self._refresh_list()
-        today = date.today().isoformat()
-        hit = next((e for e in self.entries if e["date"] == today), None)
-        if hit: self._load_entry(hit["id"])
-        elif self.entries: self._load_entry(self.entries[0]["id"])
-        self._hl_calendar()
+    # 2. MAIN JOURNAL WORKSPACE
+    def init_main_workspace(self):
+        self.main_widget = QWidget()
+        main_layout = QHBoxLayout(self.main_widget)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(12)
 
-    # ── CALENDAR ───────────────────────────────────────────────────────────
-    def _hl_calendar(self):
-        t = THEMES.get(self.current_theme, THEMES["Void"])
-        fmt = QTextCharFormat()
-        fmt.setBackground(QColor(t["acc"]))
-        fmt.setForeground(QColor(t["acc_fg"]))
-        fmt.setFontWeight(QFont.Bold)
-        for e in self.entries:
-            try: self.calendar.setDateTextFormat(QDate.fromString(e["date"], Qt.ISODate), fmt)
-            except: pass
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
 
-    def _on_date_click(self, qdate):
-        d = qdate.toString(Qt.ISODate)
-        self.active_date_str = d
-        self._refresh_list(filter_date=d)
-        hit = next((e for e in self.entries if e["date"] == d), None)
-        if hit: self._load_entry(hit["id"])
+        # Left Sidebar
+        self.sidebar = QWidget()
+        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setMinimumWidth(320)
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setContentsMargins(12, 12, 12, 12)
+        sidebar_layout.setSpacing(10)
 
-    # ── LIST ───────────────────────────────────────────────────────────────
-    def _on_search(self, text):
-        q = text.strip().lower()
-        if not q:
-            self._refresh_list(filter_date=self.active_date_str)
+        # Header with Settings & Lock
+        sb_header = QHBoxLayout()
+        sb_title = QLabel("󰠮 NOTE")
+        sb_title.setFont(QFont("JetBrainsMono Nerd Font", 12, QFont.Bold))
+        sb_header.addWidget(sb_title)
+        sb_header.addStretch()
+
+        settings_btn = QPushButton("󰒓 Settings")
+        settings_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        settings_btn.clicked.connect(self.go_to_settings)
+        sb_header.addWidget(settings_btn)
+
+        lock_btn = QPushButton("󰌾")
+        lock_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        lock_btn.clicked.connect(self.lock_vault)
+        sb_header.addWidget(lock_btn)
+        sidebar_layout.addLayout(sb_header)
+
+        # Search Bar
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("󰍉 Search thoughts or #tags...")
+        self.search_input.setFont(QFont("JetBrainsMono Nerd Font", 10))
+        self.search_input.textChanged.connect(self.on_search_filter)
+        sidebar_layout.addWidget(self.search_input)
+
+        # Native Calendar Widget
+        self.calendar = QCalendarWidget()
+        self.calendar.setGridVisible(True)
+        self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
+        self.calendar.clicked.connect(self.on_date_selected)
+        sidebar_layout.addWidget(self.calendar)
+
+        # List Header Controls
+        list_ctrl = QHBoxLayout()
+        self.list_lbl = QLabel("󰈙 Journal Feed")
+        self.list_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
+        list_ctrl.addWidget(self.list_lbl)
+        list_ctrl.addStretch()
+
+        new_btn = QPushButton("󰐕 New Entry")
+        new_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        new_btn.clicked.connect(self.create_entry)
+        list_ctrl.addWidget(new_btn)
+        sidebar_layout.addLayout(list_ctrl)
+
+        # Entry List
+        self.entry_list = QListWidget()
+        self.entry_list.itemClicked.connect(self.on_entry_selected)
+        sidebar_layout.addWidget(self.entry_list, 1)
+
+        self.splitter.addWidget(self.sidebar)
+
+        # Right Editor Area
+        self.editor_area = QWidget()
+        self.editor_area.setObjectName("EditorArea")
+        self.editor_area.setMinimumWidth(450)
+        editor_layout = QVBoxLayout(self.editor_area)
+        editor_layout.setContentsMargins(8, 0, 0, 0)
+        editor_layout.setSpacing(10)
+
+        # Editor Metadata Top Bar
+        ed_bar = QHBoxLayout()
+        self.meta_lbl = QLabel("")
+        self.meta_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10))
+        ed_bar.addWidget(self.meta_lbl)
+        ed_bar.addStretch()
+
+        self.word_lbl = QLabel("0 words · 0 min read")
+        self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        ed_bar.addWidget(self.word_lbl)
+
+        export_btn = QPushButton("󰈔 Export")
+        export_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        export_btn.clicked.connect(self.export_entry_markdown)
+        ed_bar.addWidget(export_btn)
+
+        self.zen_btn = QPushButton("󰈈 Zen Focus")
+        self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.zen_btn.clicked.connect(self.toggle_zen)
+        ed_bar.addWidget(self.zen_btn)
+
+        del_btn = QPushButton("󰆴")
+        del_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        del_btn.clicked.connect(self.delete_entry)
+        ed_bar.addWidget(del_btn)
+        editor_layout.addLayout(ed_bar)
+
+        # Title Field
+        self.title_edit = QLineEdit()
+        self.title_edit.setPlaceholderText("Entry Title...")
+        self.title_edit.setFont(QFont("JetBrainsMono Nerd Font", 15, QFont.Bold))
+        self.title_edit.textChanged.connect(self.on_content_modified)
+        editor_layout.addWidget(self.title_edit)
+
+        # Tags Row
+        self.tags_edit = QLineEdit()
+        self.tags_edit.setPlaceholderText("󰓹 Tags: e.g. code, deep-work, ideas")
+        self.tags_edit.setFont(QFont("JetBrainsMono Nerd Font", 10))
+        self.tags_edit.textChanged.connect(self.on_content_modified)
+        editor_layout.addWidget(self.tags_edit)
+
+        # Textarea
+        self.content_edit = QTextEdit()
+        self.content_edit.setPlaceholderText("Write what's on your mind... (Markdown supported · Encrypted in real-time)")
+        self.content_edit.setFont(QFont("JetBrainsMono Nerd Font", 11))
+        self.content_edit.textChanged.connect(self.on_content_modified)
+        editor_layout.addWidget(self.content_edit, 1)
+
+        self.splitter.addWidget(self.editor_area)
+        self.splitter.setSizes([340, 760])
+
+        main_layout.addWidget(self.splitter)
+        self.stack.addWidget(self.main_widget)
+
+    # 3. SETTINGS & THEMES GALLERY
+    def init_settings_page(self):
+        self.settings_widget = QWidget()
+        settings_layout = QVBoxLayout(self.settings_widget)
+        settings_layout.setContentsMargins(28, 28, 28, 28)
+        settings_layout.setSpacing(20)
+
+        # Header Bar
+        header = QHBoxLayout()
+        back_btn = QPushButton("󰁍 Back to Workspace")
+        back_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        back_btn.clicked.connect(self.go_to_workspace)
+        header.addWidget(back_btn)
+        header.addStretch()
+
+        title = QLabel("󰒓 SETTINGS & THEMES GALLERY")
+        title.setFont(QFont("JetBrainsMono Nerd Font", 14, QFont.Bold))
+        header.addWidget(title)
+        header.addStretch()
+        settings_layout.addLayout(header)
+
+        # Master PIN & Stats Card
+        pin_frame = QFrame()
+        pin_frame.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; }")
+        pf_layout = QVBoxLayout(pin_frame)
+        pf_layout.setSpacing(12)
+
+        pf_top = QHBoxLayout()
+        pf_title = QLabel("󰌆 Security & Vault Re-Key")
+        pf_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        pf_top.addWidget(pf_title)
+        pf_top.addStretch()
+
+        self.stats_lbl = QLabel("")
+        self.stats_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.stats_lbl.setStyleSheet("color: #888888; border: none;")
+        pf_top.addWidget(self.stats_lbl)
+        pf_layout.addLayout(pf_top)
+
+        pin_row = QHBoxLayout()
+        self.old_pin_input = QLineEdit()
+        self.old_pin_input.setEchoMode(QLineEdit.Password)
+        self.old_pin_input.setPlaceholderText("Current PIN")
+        pin_row.addWidget(self.old_pin_input)
+
+        self.new_pin_input = QLineEdit()
+        self.new_pin_input.setEchoMode(QLineEdit.Password)
+        self.new_pin_input.setPlaceholderText("New PIN (Min 4 chars)")
+        pin_row.addWidget(self.new_pin_input)
+
+        self.confirm_pin_input = QLineEdit()
+        self.confirm_pin_input.setEchoMode(QLineEdit.Password)
+        self.confirm_pin_input.setPlaceholderText("Confirm PIN")
+        pin_row.addWidget(self.confirm_pin_input)
+
+        update_pin_btn = QPushButton("󰑓 Update PIN")
+        update_pin_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        update_pin_btn.clicked.connect(self.handle_settings_pin_change)
+        pin_row.addWidget(update_pin_btn)
+        pf_layout.addLayout(pin_row)
+
+        self.pin_status_lbl = QLabel("")
+        self.pin_status_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        pf_layout.addWidget(self.pin_status_lbl)
+        settings_layout.addWidget(pin_frame)
+
+        # Themes Gallery Title
+        th_header = QLabel("🎨 Aesthetic Visual Themes Gallery (Click card to activate):")
+        th_header.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        settings_layout.addWidget(th_header)
+
+        # Scrollable Themes Gallery
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_content = QWidget()
+        grid = QGridLayout(scroll_content)
+        grid.setSpacing(14)
+        grid.setContentsMargins(4, 4, 4, 4)
+
+        self.theme_cards = {}
+
+        for idx, (t_name, meta) in enumerate(THEME_META.items()):
+            card = MotionThemeCard(t_name, meta, self.apply_theme)
+            self.theme_cards[t_name] = card
+            row = idx // 3
+            col = idx % 3
+            grid.addWidget(card, row, col)
+
+        scroll.setWidget(scroll_content)
+        settings_layout.addWidget(scroll, 1)
+
+        self.stack.addWidget(self.settings_widget)
+
+    def handle_settings_pin_change(self):
+        old_pin = self.old_pin_input.text().strip()
+        new_pin = self.new_pin_input.text().strip()
+        confirm_pin = self.confirm_pin_input.text().strip()
+
+        if old_pin != self.pin:
+            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
+            self.pin_status_lbl.setText("Current PIN is incorrect.")
+            self.trigger_shake_animation(self.old_pin_input)
             return
+        if len(new_pin) < 4:
+            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
+            self.pin_status_lbl.setText("New PIN must be at least 4 characters.")
+            self.trigger_shake_animation(self.new_pin_input)
+            return
+        if new_pin != confirm_pin:
+            self.pin_status_lbl.setStyleSheet("color: #ff5c00; border: none;")
+            self.pin_status_lbl.setText("New PINs do not match.")
+            self.trigger_shake_animation(self.confirm_pin_input)
+            return
+
+        self.pin = new_pin
+        self.save_vault()
+        self.pin_status_lbl.setStyleSheet("color: #10b981; border: none;")
+        self.pin_status_lbl.setText("Master PIN successfully updated!")
+        self.old_pin_input.clear()
+        self.new_pin_input.clear()
+        self.confirm_pin_input.clear()
+
+    def go_to_settings(self):
+        total_words = sum(len(e.get("content", "").split()) for e in self.entries)
+        self.stats_lbl.setText(f"󰈙 {len(self.entries)} entries · 󱌒 {total_words} total words")
+        self.animate_view_transition(2)
+
+    def go_to_workspace(self):
+        self.animate_view_transition(1)
+
+    def load_workspace(self):
+        self.animate_view_transition(1)
+        self.refresh_entries_list()
+        today = date.today().isoformat()
+        today_entry = next((e for e in self.entries if e["date"] == today), None)
+        if today_entry:
+            self.load_entry(today_entry["id"])
+        elif self.entries:
+            self.load_entry(self.entries[0]["id"])
+        self.update_calendar_highlights()
+
+    def update_calendar_highlights(self):
+        meta = THEME_META.get(self.current_theme, THEME_META["Void (Dark)"])
+        format_highlight = QTextCharFormat()
+        format_highlight.setBackground(QColor(meta["acc"]))
+        format_highlight.setForeground(QColor(meta["bg"]))
+        format_highlight.setFontWeight(QFont.Bold)
+
+        dates_with_entries = {e["date"] for e in self.entries}
+        for d_str in dates_with_entries:
+            try:
+                qd = QDate.fromString(d_str, Qt.ISODate)
+                self.calendar.setDateTextFormat(qd, format_highlight)
+            except Exception:
+                pass
+
+    def on_date_selected(self, qdate):
+        d_str = qdate.toString(Qt.ISODate)
+        self.active_date_str = d_str
+        self.refresh_entries_list(filter_date=d_str)
+        matched = [e for e in self.entries if e["date"] == d_str]
+        if matched:
+            self.load_entry(matched[0]["id"])
+
+    def on_search_filter(self, text):
+        query = text.strip().lower()
+        if not query:
+            self.refresh_entries_list(filter_date=self.active_date_str)
+            return
+
         self.entry_list.clear()
         for e in self.entries:
-            if q in e.get("title","").lower() or q in e.get("content","").lower() or q in e.get("tags","").lower():
-                item = QListWidgetItem(f"{e.get('title') or 'Untitled'}  ·  {e.get('date')}")
+            title = e.get("title", "").lower()
+            content = e.get("content", "").lower()
+            tags = e.get("tags", "").lower()
+            if query in title or query in content or query in tags:
+                preview_title = e.get('title') or 'Untitled Thought'
+                item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
                 item.setData(Qt.UserRole, e["id"])
                 self.entry_list.addItem(item)
 
-    def _refresh_list(self, filter_date=None):
+    def on_entry_selected(self, item):
+        entry_id = item.data(Qt.UserRole)
+        if entry_id:
+            self.load_entry(entry_id)
+
+    def refresh_entries_list(self, filter_date=None):
         self.entry_list.clear()
-        for e in self.entries:
-            if filter_date and e["date"] != filter_date: continue
-            title = e.get("title") or "Untitled"
-            item = QListWidgetItem(f"{title}\n{e.get('date')}  ·  {e.get('time','')}")
+        target_list = [e for e in self.entries if not filter_date or e["date"] == filter_date]
+        for e in target_list:
+            preview_title = e.get('title') or 'Untitled Thought'
+            item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
             item.setData(Qt.UserRole, e["id"])
             self.entry_list.addItem(item)
 
-    def _on_entry_click(self, item):
-        eid = item.data(Qt.UserRole)
-        if eid: self._load_entry(eid)
-
-    # ── ENTRY CRUD ─────────────────────────────────────────────────────────
-    def _new_entry(self):
-        d = self.calendar.selectedDate().toString(Qt.ISODate)
-        e = {"id": str(datetime.now().timestamp()), "date": d, "time": datetime.now().strftime("%I:%M %p"),
-             "title": "", "content": "", "tags": ""}
-        self.entries.insert(0, e)
-        self._save_vault()
-        self._refresh_list(filter_date=d)
-        self._load_entry(e["id"])
-        self._hl_calendar()
+    def create_entry(self):
+        d_str = self.calendar.selectedDate().toString(Qt.ISODate)
+        new_e = {
+            "id": str(datetime.now().timestamp()),
+            "date": d_str,
+            "time": datetime.now().strftime("%I:%M %p"),
+            "title": "",
+            "content": "",
+            "tags": "",
+            "mood": "focused"
+        }
+        self.entries.insert(0, new_e)
+        self.save_vault()
+        self.refresh_entries_list(filter_date=d_str)
+        self.load_entry(new_e["id"])
+        self.update_calendar_highlights()
         self.title_edit.setFocus()
 
-    def _load_entry(self, eid):
-        self.active_id = eid
-        e = next((x for x in self.entries if x["id"] == eid), None)
-        if not e: return
-        for w in [self.title_edit, self.tags_edit, self.content_edit]: w.blockSignals(True)
-        self.title_edit.setText(e.get("title",""))
-        self.tags_edit.setText(e.get("tags",""))
-        self.content_edit.setPlainText(e.get("content",""))
-        self.meta_lbl.setText(f"{e.get('date','')}  ·  {e.get('time','')}")
-        self._update_wc(e.get("content",""))
-        for w in [self.title_edit, self.tags_edit, self.content_edit]: w.blockSignals(False)
+    def load_entry(self, entry_id):
+        self.active_id = entry_id
+        entry = next((e for e in self.entries if e["id"] == entry_id), None)
+        if entry:
+            self.title_edit.blockSignals(True)
+            self.tags_edit.blockSignals(True)
+            self.content_edit.blockSignals(True)
 
-    def _on_modified(self):
-        if not self.active_id: return
-        e = next((x for x in self.entries if x["id"] == self.active_id), None)
-        if e:
-            e["title"] = self.title_edit.text()
-            e["tags"] = self.tags_edit.text()
-            e["content"] = self.content_edit.toPlainText()
-            self._update_wc(e["content"])
-            self._save_vault()
+            self.title_edit.setText(entry.get("title", ""))
+            self.tags_edit.setText(entry.get("tags", ""))
+            self.content_edit.setText(entry.get("content", ""))
+            self.meta_lbl.setText(f"󰃭 {entry.get('date')} · 󱑂 {entry.get('time')}")
+            self.update_word_count(entry.get("content", ""))
 
-    def _update_wc(self, text):
+            self.title_edit.blockSignals(False)
+            self.tags_edit.blockSignals(False)
+            self.content_edit.blockSignals(False)
+
+    def on_content_modified(self):
+        if not self.active_id:
+            return
+        entry = next((e for e in self.entries if e["id"] == self.active_id), None)
+        if entry:
+            entry["title"] = self.title_edit.text()
+            entry["tags"] = self.tags_edit.text()
+            entry["content"] = self.content_edit.toPlainText()
+            self.update_word_count(entry["content"])
+            self.save_vault()
+
+    def update_word_count(self, text):
         words = len(text.strip().split()) if text.strip() else 0
-        rt = max(1, round(words / 200)) if words else 0
-        self.word_lbl.setText(f"{words} words  ·  {rt} min read" if words else "")
+        read_time = max(1, round(words / 200)) if words > 0 else 0
+        self.word_lbl.setText(f"{words} words · {read_time} min read")
 
-    def _delete_entry(self):
-        if not self.active_id: return
-        self.entries = [e for e in self.entries if e["id"] != self.active_id]
-        self._save_vault()
-        self._refresh_list()
-        self._hl_calendar()
-        if self.entries: self._load_entry(self.entries[0]["id"])
-        else:
-            self.title_edit.clear(); self.tags_edit.clear()
-            self.content_edit.clear(); self.active_id = None
-
-    def _export(self):
-        if not self.active_id: return
-        e = next((x for x in self.entries if x["id"] == self.active_id), None)
-        if e:
-            path, _ = QFileDialog.getSaveFileName(self, "Export", f"note_{e['date']}.md", "Markdown (*.md)")
+    def export_entry_markdown(self):
+        if not self.active_id:
+            return
+        entry = next((e for e in self.entries if e["id"] == self.active_id), None)
+        if entry:
+            default_name = f"note_{entry.get('date')}_{entry.get('id')[:6]}.md"
+            path, _ = QFileDialog.getSaveFileName(self, "Export Note as Markdown", default_name, "Markdown Files (*.md)")
             if path:
-                open(path,"w").write(f"# {e.get('title','Untitled')}\n*{e.get('date')} · {e.get('tags','')}*\n\n{e.get('content','')}")
+                with open(path, "w") as f:
+                    f.write(f"# {entry.get('title', 'Untitled')}\n")
+                    f.write(f"*Date: {entry.get('date')} {entry.get('time')} | Tags: {entry.get('tags', '')}*\n\n")
+                    f.write(entry.get("content", ""))
 
-    def _toggle_zen(self):
+    def delete_entry(self):
+        if not self.active_id:
+            return
+        self.entries = [e for e in self.entries if e["id"] != self.active_id]
+        self.save_vault()
+        self.refresh_entries_list()
+        self.update_calendar_highlights()
+        if self.entries:
+            self.load_entry(self.entries[0]["id"])
+        else:
+            self.title_edit.clear()
+            self.tags_edit.clear()
+            self.content_edit.clear()
+            self.active_id = None
+
+    def toggle_zen(self):
         self.is_zen = not self.is_zen
         self.sidebar.setVisible(not self.is_zen)
-        self.zen_btn.setText("Exit Zen" if self.is_zen else "Zen")
+        self.zen_btn.setText("󰈊 Full View" if self.is_zen else "󰈈 Zen Focus")
 
-    def _change_pin(self):
-        op, np, cp = self.old_pin.text(), self.new_pin.text(), self.confirm_pin.text()
-        if op != self.pin:
-            self.pin_msg.setStyleSheet("color: #f73e5a; background: transparent;")
-            self.pin_msg.setText("Current passcode is incorrect.")
-            self._shake(self.old_pin); return
-        if len(np) < 4:
-            self.pin_msg.setStyleSheet("color: #f73e5a; background: transparent;")
-            self.pin_msg.setText("New passcode must be ≥ 4 characters.")
-            self._shake(self.new_pin); return
-        if np != cp:
-            self.pin_msg.setStyleSheet("color: #f73e5a; background: transparent;")
-            self.pin_msg.setText("Passcodes don't match.")
-            self._shake(self.confirm_pin); return
-        self.pin = np
-        self._save_vault()
-        self.pin_msg.setStyleSheet("color: #2dd4aa; background: transparent;")
-        self.pin_msg.setText("Passcode updated successfully.")
-        self.old_pin.clear(); self.new_pin.clear(); self.confirm_pin.clear()
-
+    def lock_vault(self):
+        self.pin = ""
+        self.pin_input.clear()
+        self.auth_msg.setText("Press Enter to Decrypt · AES-256 Vault")
+        self.sync_lock_screen_theme(self.current_theme)
+        self.animate_view_transition(0)
+        self.pin_input.setFocus()
 
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Note")
-    w = NoteApp()
-    w.show()
+    window = NoteApp()
+    window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
