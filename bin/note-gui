@@ -4,7 +4,6 @@ Note (note-gui) - Encrypted Local Thought Journal & Knowledge Vault
 Built with AES-256 PBKDF2 Zero-Knowledge Security, Dynamic Theming & Fluid Micro-Interactions.
 """
 import sys
-import random
 import os
 import json
 import hashlib
@@ -18,7 +17,7 @@ from PyQt5.QtWidgets import (
     QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout,
     QFileDialog, QMessageBox
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon, QPainter, QRadialGradient, QImage
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
 from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
@@ -192,13 +191,23 @@ THEME_META = {
         "glow": (36, 72, 192, 70), "swatches": ["#f2f4f8", "#ffffff", "#2448c0", "#0e1428"]
     },
 
-    # 14. VHS AMBER — Warm CRT phosphor, scanline static grain
+    # 14. VHS AMBER — Warm phosphor amber, broadcast monitor aesthetic
     "VHS Amber": {
-        "bg":          "#0e0900", "sidebar":  "#161000", "card":     "#1f1500", "card_hover": "#2a1d00",
-        "fg":          "#ffcc44", "acc":       "#ffaa00", "sub":      "#8a6a10", "border":    "#2e2000",
-        "input_bg":    "#161000", "input_fg":  "#ffcc44", "pill_radius": "4px", "btn_border": "#3d2c00",
-        "category": "CRT  ·  Phosphor Amber", "desc": "Warm VHS phosphor glow on pure black — tape static and scanlines.",
-        "glow": (255, 170, 0, 140), "swatches": ["#0e0900", "#1f1500", "#ffaa00", "#ffcc44"]
+        "bg":          "#080601",   # pure tape-black with warmth
+        "sidebar":     "#100e02",   # slightly lifted — like a dark bezel
+        "card":        "#1a1602",   # deep amber-tinted card
+        "card_hover":  "#252008",   # hovered card — warm lift
+        "fg":          "#f5c842",   # hot phosphor amber — the glow colour
+        "acc":         "#ff9500",   # pure broadcast orange-amber accent
+        "sub":         "#7a6118",   # muted burnt-amber for secondary text
+        "border":      "#2c2508",   # near-invisible warm border
+        "input_bg":    "#110e02",   # same dark tape-black for inputs
+        "input_fg":    "#f5c842",   # amber text in inputs
+        "pill_radius": "6px",
+        "btn_border":  "#3d3410",   # subtle warm border on buttons
+        "category": "Phosphor  ·  Broadcast Amber",
+        "desc": "Warm VHS broadcast monitor — phosphor amber on deep tape black.",
+        "glow": (255, 149, 0, 150), "swatches": ["#080601", "#1a1602", "#ff9500", "#f5c842"]
     },
 }
 
@@ -421,112 +430,6 @@ class MotionThemeCard(QFrame):
         """)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CRT OVERLAY — VHS / Phosphor Scanline + Static Noise + Vignette
-# Transparent mouse-passthrough widget that sits above all other widgets.
-# ─────────────────────────────────────────────────────────────────────────────
-class CRTOverlay(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self.setAttribute(Qt.WA_NoSystemBackground, True)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
-        self.setWindowFlags(Qt.FramelessWindowHint)
-
-        # Phosphor line that slowly drifts down the screen (rolling bar)
-        self._scan_y       = 0
-        # Static noise seed changes each tick
-        self._noise_seed   = 0
-        # Horizontal jitter amount (0-5px) simulating tape tracking error
-        self._jitter       = 0
-        self._jitter_count = 0
-
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start(60)   # ~16 fps — intentionally choppy like a real VHS
-
-    def _tick(self):
-        self._scan_y    = (self._scan_y + 3) % max(self.height(), 1)
-        self._noise_seed = random.randint(0, 0xFFFF)
-
-        # Random tracking glitch: every ~3 seconds spike a jitter burst
-        self._jitter_count += 1
-        if self._jitter_count > 50:
-            self._jitter_count = 0
-            self._jitter = random.randint(0, 5)
-        else:
-            self._jitter = max(0, self._jitter - 1)
-
-        self.update()
-
-    def paintEvent(self, event):
-        if not self.isVisible():
-            return
-        p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing, False)
-        w, h = self.width(), self.height()
-
-        # ── 1. SCANLINES — alternating 1px dark stripe every 2px ──────────
-        p.setPen(Qt.NoPen)
-        scanline_color = QColor(0, 0, 0, 55)          # subtle dark bands
-        p.setBrush(scanline_color)
-        y = 0
-        while y < h:
-            p.drawRect(0, y, w, 1)
-            y += 2
-
-        # ── 2. ROLLING PHOSPHOR BAR — bright horizontal band drifts down ──
-        # Like the white bar you see on a detuned VHS
-        bar_h = 12
-        for i in range(bar_h):
-            frac  = i / bar_h
-            # Fade in then fade out across the bar height
-            alpha = int(28 * (1 - abs(frac - 0.5) * 2))
-            bar_c = QColor(255, 200, 80, alpha)
-            p.setBrush(bar_c)
-            p.drawRect(0, (self._scan_y + i) % h, w, 1)
-
-        # ── 3. STATIC NOISE — sparse flickering grain ─────────────────────
-        random.seed(self._noise_seed)
-        p.setPen(Qt.NoPen)
-        num_pixels = (w * h) // 180        # ~0.5% density
-        for _ in range(num_pixels):
-            nx = random.randint(0, w - 1)
-            ny = random.randint(0, h - 1)
-            # Mix of amber-white, bright white, and faint green noise dots
-            kind = random.randint(0, 2)
-            if kind == 0:
-                nc = QColor(255, 210, 80,  random.randint(60, 150))
-            elif kind == 1:
-                nc = QColor(255, 255, 255, random.randint(30, 100))
-            else:
-                nc = QColor(180, 255, 130, random.randint(20, 80))
-            p.setBrush(nc)
-            p.drawRect(nx + self._jitter, ny, random.randint(1, 3), 1)
-
-        # ── 4. HORIZONTAL SMEAR / CHROMA BLEED — thin amber edge glow ─────
-        for i in range(3):
-            alpha = 18 - i * 5
-            smear = QColor(255, 160, 0, alpha)
-            p.setBrush(smear)
-            p.drawRect(0, 0, i + 1, h)           # left bleed
-            p.drawRect(w - i - 1, 0, i + 1, h)   # right bleed
-
-        # ── 5. VIGNETTE — dark radial gradient at all four corners ─────────
-        # PyQt5: paint 4 corner gradients manually
-        corner_size = min(w, h) // 2
-        corner_alpha = 160
-        for cx, cy in [(0, 0), (w, 0), (0, h), (w, h)]:
-            grad = QRadialGradient(cx, cy, corner_size)
-            grad.setColorAt(0.0, QColor(0, 0, 0, corner_alpha))
-            grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-            p.setBrush(grad)
-            p.drawRect(cx - corner_size, cy - corner_size,
-                       corner_size * 2, corner_size * 2)
-
-        p.end()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # MAIN APPLICATION CONTROLLER
 # ─────────────────────────────────────────────────────────────────────────────
 class NoteApp(QMainWindow):
@@ -553,10 +456,6 @@ class NoteApp(QMainWindow):
         self.init_main_workspace()
         self.init_settings_page()
 
-        # CRT Overlay — only visible when VHS Amber theme is active
-        self.crt_overlay = CRTOverlay(self)
-        self.crt_overlay.hide()
-
         self.apply_theme(self.current_theme)
         self.stack.setCurrentIndex(0)
 
@@ -569,23 +468,10 @@ class NoteApp(QMainWindow):
             self.setStyleSheet(generate_stylesheet(theme_name))
             self.sync_lock_screen_theme(theme_name)
 
-            # CRT overlay only for VHS Amber
-            if hasattr(self, 'crt_overlay'):
-                if theme_name == "VHS Amber":
-                    self.crt_overlay.resize(self.size())
-                    self.crt_overlay.show()
-                    self.crt_overlay.raise_()
-                else:
-                    self.crt_overlay.hide()
             
             if hasattr(self, 'theme_cards'):
                 for name, card in self.theme_cards.items():
                     card.apply_declarative_style(active=(name == theme_name))
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        if hasattr(self, 'crt_overlay') and self.crt_overlay.isVisible():
-            self.crt_overlay.resize(self.size())
 
     def sync_lock_screen_theme(self, theme_name):
         meta = THEME_META.get(theme_name, THEME_META["Void (Dark)"])
