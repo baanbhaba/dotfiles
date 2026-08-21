@@ -634,6 +634,8 @@ class NoteApp(QMainWindow):
                 for name, card in self.theme_cards.items():
                     card.apply_declarative_style(active=(name == theme_name))
 
+            self.style_vim_card()
+
 
     def save_vault(self):
         try:
@@ -805,35 +807,56 @@ class NoteApp(QMainWindow):
         header.addWidget(self.settings_stats_lbl)
         settings_layout.addLayout(header)
 
-        # 2. Editor & Workflow Card
-        pref_card = QFrame()
-        pref_card.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; }")
-        pref_layout = QHBoxLayout(pref_card)
-        pref_layout.setContentsMargins(16, 12, 16, 12)
+        # 2. Editor & Workflow Card (Kokonut / Linear-style interactive toggle)
+        self.pref_card = QFrame()
+        self.pref_card.setCursor(QCursor(Qt.PointingHandCursor))
+        pref_layout = QHBoxLayout(self.pref_card)
+        pref_layout.setContentsMargins(18, 14, 18, 14)
+        pref_layout.setSpacing(16)
 
-        vim_icon = QLabel("")
-        vim_icon.setFont(QFont("JetBrainsMono Nerd Font", 18))
-        pref_layout.addWidget(vim_icon)
+        # Vim Icon Badge
+        self.vim_badge = QFrame()
+        self.vim_badge.setFixedSize(42, 42)
+        badge_layout = QVBoxLayout(self.vim_badge)
+        badge_layout.setContentsMargins(0, 0, 0, 0)
+        badge_layout.setAlignment(Qt.AlignCenter)
+        self.vim_icon_lbl = QLabel("")
+        self.vim_icon_lbl.setFont(QFont("JetBrainsMono Nerd Font", 18, QFont.Bold))
+        self.vim_icon_lbl.setAlignment(Qt.AlignCenter)
+        badge_layout.addWidget(self.vim_icon_lbl)
+        pref_layout.addWidget(self.vim_badge)
 
+        # Text & Key Badges Info
         vim_info = QVBoxLayout()
-        vim_info.setSpacing(2)
-        vim_title = QLabel("Vim Keybindings")
-        vim_title.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-        vim_desc = QLabel("Modal editing (h/j/k/l motions, w/b words, i/a/o edit, dd delete, u undo, Esc normal mode)")
-        vim_desc.setFont(QFont("JetBrainsMono Nerd Font", 8))
-        vim_desc.setStyleSheet("color: #777777; border: none;")
-        vim_info.addWidget(vim_title)
-        vim_info.addWidget(vim_desc)
-        pref_layout.addLayout(vim_info)
-        pref_layout.addStretch()
+        vim_info.setSpacing(6)
+        
+        top_text_row = QHBoxLayout()
+        vim_title = QLabel("Modal Vim Keybindings")
+        vim_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
+        top_text_row.addWidget(vim_title)
+        top_text_row.addStretch()
+        vim_info.addLayout(top_text_row)
 
-        self.vim_checkbox = QCheckBox("Enable")
-        self.vim_checkbox.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
-        self.vim_checkbox.setCursor(QCursor(Qt.PointingHandCursor))
-        self.vim_checkbox.setChecked(self.config.get("vim_mode", False))
-        self.vim_checkbox.toggled.connect(self.toggle_vim_mode)
-        pref_layout.addWidget(self.vim_checkbox)
-        settings_layout.addWidget(pref_card)
+        # Keybinding visual badges
+        badge_row = QHBoxLayout()
+        badge_row.setSpacing(6)
+        for key_text, desc_text in [("h j k l", "navigate"), ("w / b", "words"), ("i / a / o", "insert"), ("dd", "delete"), ("u", "undo"), ("Esc", "normal")]:
+            pill = QLabel(f"<b>{key_text}</b> {desc_text}")
+            pill.setFont(QFont("JetBrainsMono Nerd Font", 8))
+            pill.setStyleSheet("color: #999999; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; padding: 2px 6px;")
+            badge_row.addWidget(pill)
+        badge_row.addStretch()
+        vim_info.addLayout(badge_row)
+        pref_layout.addLayout(vim_info, 1)
+
+        # Modern Switch Button
+        self.vim_toggle_btn = QPushButton()
+        self.vim_toggle_btn.setFont(QFont("JetBrainsMono Nerd Font", 9, QFont.Bold))
+        self.vim_toggle_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        self.vim_toggle_btn.clicked.connect(self.handle_vim_toggle_clicked)
+        pref_layout.addWidget(self.vim_toggle_btn)
+
+        settings_layout.addWidget(self.pref_card)
 
         # 3. Themes Filter Bar (Header + Category Filter Pills)
         theme_bar = QHBoxLayout()
@@ -964,6 +987,10 @@ class NoteApp(QMainWindow):
         if matched:
             self.load_entry(matched[0]["id"])
 
+    def handle_vim_toggle_clicked(self):
+        current = self.config.get("vim_mode", False)
+        self.toggle_vim_mode(not current)
+
     def toggle_vim_mode(self, enabled: bool):
         self.config["vim_mode"] = enabled
         save_config(self.config)
@@ -971,6 +998,68 @@ class NoteApp(QMainWindow):
         self.vim_status_lbl.setVisible(enabled)
         if enabled:
             self.update_vim_status("NORMAL")
+        self.style_vim_card()
+
+    def style_vim_card(self):
+        if not hasattr(self, 'pref_card') or not hasattr(self, 'vim_toggle_btn'):
+            return
+        meta = THEME_META.get(self.current_theme, THEME_META["Void (Dark)"])
+        enabled = self.config.get("vim_mode", False)
+        
+        if enabled:
+            self.pref_card.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {meta['card']};
+                    border: 1px solid {meta['acc']};
+                    border-radius: 12px;
+                }}
+            """)
+            self.vim_badge.setStyleSheet(f"background-color: {meta['acc']}; border-radius: 8px;")
+            self.vim_icon_lbl.setStyleSheet(f"color: {meta['bg']}; background: transparent;")
+            self.vim_toggle_btn.setText("✓ ACTIVE")
+            self.vim_toggle_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {meta['acc']};
+                    color: {meta['bg']};
+                    border: 1px solid {meta['acc']};
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    font-weight: 900;
+                }}
+                QPushButton:hover {{
+                    background-color: {meta['card_hover']};
+                    color: {meta['acc']};
+                }}
+            """)
+        else:
+            self.pref_card.setStyleSheet(f"""
+                QFrame {{
+                    background-color: rgba(255, 255, 255, 0.02);
+                    border: 1px solid {meta['border']};
+                    border-radius: 12px;
+                }}
+                QFrame:hover {{
+                    border-color: {meta['btn_border']};
+                }}
+            """)
+            self.vim_badge.setStyleSheet(f"background-color: rgba(255, 255, 255, 0.05); border: 1px solid {meta['border']}; border-radius: 8px;")
+            self.vim_icon_lbl.setStyleSheet(f"color: {meta['acc']}; background: transparent;")
+            self.vim_toggle_btn.setText("ENABLE")
+            self.vim_toggle_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {meta['card']};
+                    color: {meta['fg']};
+                    border: 1px solid {meta['border']};
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background-color: {meta['card_hover']};
+                    border-color: {meta['acc']};
+                    color: {meta['acc']};
+                }}
+            """)
 
     def update_vim_status(self, mode_str: str):
         if not self.config.get("vim_mode", False):
