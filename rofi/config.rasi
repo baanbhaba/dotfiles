@@ -10,7 +10,7 @@ configuration {
 * {
     bg: #080808;              /* CRT Black */
     fg: #8c9b32;              /* Muted Amber Green */
-    highlight: #ffb000;       /* Amber Selection */
+    highlight: #ffb000;       /* Amber Selection Box */
     text-selected: #080808;   /* Dark text on selection */
     text-active: #ffb000;     /* Amber typing text */
 }
@@ -18,7 +18,8 @@ configuration {
 window {
     width: 700px;
     background-color: @bg;
-    border: 0px;
+    border: 1px;
+    border-color: #ffb000;
     padding: 25px;
     location: center;
     anchor: center;
@@ -33,6 +34,9 @@ inputbar {
     background-color: transparent;
     margin: 0 0 15px 0;
     children: [ prompt, entry ];
+    border-bottom: 1px;
+    border-color: #ffb000;
+    padding-bottom: 8px;
 }
 
 prompt {
@@ -68,5 +72,5 @@ element selected {
 
 element-text {
     background-color: transparent;
-    text-color: @text-active;
+    text-color: inherit;
 }

@@ -8,17 +8,18 @@ configuration {
 }
 
 * {
-    bg: #121212;          /* Strict Charcoal Background */
-    fg: #888888;          /* Muted Gray for inactive text */
-    highlight: #D4D4D4;   /* Muted White Selection Box */
-    text-selected: #121212; /* Dark Charcoal text when selected */
-    text-active: #ffffff;   /* White text for typing area */
+    bg: #080808;              /* CRT Black */
+    fg: #8c9b32;              /* Muted Amber Green */
+    highlight: #ffb000;       /* Amber Selection Box */
+    text-selected: #080808;   /* Dark text on selection */
+    text-active: #ffb000;     /* Amber typing text */
 }
 
 window {
-    width: 700px;         /* Wide layout */
+    width: 700px;
     background-color: @bg;
-    border: 0px;
+    border: 1px;
+    border-color: #ffb000;
     padding: 25px;
     location: center;
     anchor: center;
@@ -33,6 +34,9 @@ inputbar {
     background-color: transparent;
     margin: 0 0 15px 0;
     children: [ prompt, entry ];
+    border-bottom: 1px;
+    border-color: #ffb000;
+    padding-bottom: 8px;
 }
 
 prompt {
@@ -43,8 +47,8 @@ prompt {
 entry {
     background-color: transparent;
     text-color: @text-active;
-    placeholder: "Search...";
-    placeholder-color: #444444;
+    placeholder: " ";
+    placeholder-color: #3a3a3a;
 }
 
 listview {
@@ -62,11 +66,11 @@ element {
 }
 
 element selected {
-    background-color: @highlight;   /* Muted White Box */
-    text-color: @text-selected;    /* Charcoal Text inside the White Box */
+    background-color: @highlight;
+    text-color: @text-selected;
 }
 
 element-text {
     background-color: transparent;
-    text-color: inherit;           /* Inherits Charcoal when selected */
+    text-color: inherit;
 }
