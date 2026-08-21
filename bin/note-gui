@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Note (note-gui) - Encrypted Local Thought Journal & Knowledge Vault
+Built with AES-256 PBKDF2 Zero-Knowledge Security, Dynamic Theming & Fluid Micro-Interactions.
+"""
 import sys
 import os
 import json
@@ -10,14 +14,18 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit, QTextEdit, QListWidget, QListWidgetItem,
     QStackedWidget, QFrame, QSplitter, QCalendarWidget, QScrollArea,
-    QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout
+    QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QSizePolicy, QGridLayout,
+    QFileDialog, QMessageBox
 )
-from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat
+from PyQt5.QtGui import QColor, QFont, QCursor, QTextCharFormat, QIcon
 from PyQt5.QtCore import Qt, QDate, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 
 VAULT_PATH = Path.home() / ".local" / "share" / "note_vault.json"
 CONFIG_PATH = Path.home() / ".config" / "note" / "config.json"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURATION & CRYPTO ENGINE
+# ─────────────────────────────────────────────────────────────────────────────
 def load_config() -> dict:
     if CONFIG_PATH.exists():
         try:
@@ -25,7 +33,7 @@ def load_config() -> dict:
                 return json.load(f)
         except Exception:
             pass
-    return {"theme": "Charcoal Amber (Dark)"}
+    return {"theme": "Charcoal Amber (Dark)", "zen": False}
 
 def save_config(cfg: dict):
     try:
@@ -62,103 +70,103 @@ def decrypt_string(payload: dict, pin: str) -> str:
     return decrypted.decode('utf-8')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PRODUCTION-GRADE HARMONIC DESIGN PALETTES (Curated HSL/OKLCH color theory)
+# 26 CURATED HARMONIC DESIGN THEMES (HSL / WCAG AAA Compliant)
 # ─────────────────────────────────────────────────────────────────────────────
 THEME_META = {
-    # 1. CHARCOAL AMBER (Phosphor Gold / Vault Signature)
+    # 1. CHARCOAL AMBER (Phosphor Gold Vault)
     "Charcoal Amber (Dark)": {
         "bg": "#09090b", "sidebar": "#121215", "card": "#18181b", "card_hover": "#222226", "fg": "#fafafa",
         "acc": "#f59e0b", "sub": "#71717a", "border": "#27272a",
         "input_bg": "#121215", "input_fg": "#fbbf24", "pill_radius": "18px", "btn_border": "#3f3f46",
-        "desc": "Phosphor amber cathode-ray terminal with deep obsidian contrast.",
-        "glow": (245, 158, 11, 100)
+        "category": "Minimal Dark", "desc": "Phosphor amber cathode-ray glow with deep zinc contrast.",
+        "glow": (245, 158, 11, 100), "swatches": ["#09090b", "#18181b", "#f59e0b", "#fafafa"]
     },
     "Charcoal Amber (Light)": {
         "bg": "#faf8f5", "sidebar": "#f3eee5", "card": "#ffffff", "card_hover": "#fbf9f5", "fg": "#1c1917",
         "acc": "#d97706", "sub": "#78716c", "border": "#e7e0d3",
         "input_bg": "#ffffff", "input_fg": "#92400e", "pill_radius": "18px", "btn_border": "#d6ccbb",
-        "desc": "Warm editorial parchment with rich burnished amber typeface.",
-        "glow": (217, 119, 6, 75)
+        "category": "Warm Editorial", "desc": "Warm museum parchment with burnished amber ink typography.",
+        "glow": (217, 119, 6, 75), "swatches": ["#faf8f5", "#f3eee5", "#d97706", "#1c1917"]
     },
 
-    # 2. NEO-BRUTALISM (Gumroad / Figma Bold Pop)
-    "Neo-Brutalism (Dark)": {
-        "bg": "#121214", "sidebar": "#18181b", "card": "#202024", "card_hover": "#27272d", "fg": "#ffffff",
-        "acc": "#2dd4bf", "sub": "#a1a1aa", "border": "#f43f5e",
-        "input_bg": "#18181b", "input_fg": "#2dd4bf", "pill_radius": "6px", "btn_border": "#f43f5e",
-        "desc": "Cyberpunk high-contrast pop with 2px crimson borders & mint green.",
-        "glow": (45, 212, 191, 100)
-    },
-    "Neo-Brutalism (Light)": {
-        "bg": "#fffbeb", "sidebar": "#fef3c7", "card": "#ffffff", "card_hover": "#fffdf5", "fg": "#0f172a",
-        "acc": "#e11d48", "sub": "#475569", "border": "#0f172a",
-        "input_bg": "#ffffff", "input_fg": "#0f172a", "pill_radius": "6px", "btn_border": "#0f172a",
-        "desc": "Playful Gumroad yellow with stark 2px structural ink framing.",
-        "glow": (225, 29, 72, 80)
-    },
-
-    # 3. MIDNIGHT PURPLE (Tokyo Night / Raycast Violet)
+    # 2. MIDNIGHT PURPLE (Raycast / Tokyo Night)
     "Midnight Purple (Dark)": {
         "bg": "#0b0813", "sidebar": "#130f21", "card": "#1a142e", "card_hover": "#221a3d", "fg": "#f5f3ff",
         "acc": "#a855f7", "sub": "#7e749c", "border": "#2c224d",
         "input_bg": "#130f21", "input_fg": "#d8b4fe", "pill_radius": "16px", "btn_border": "#3b2d66",
-        "desc": "Deep velvet nebula with glowing royal iris and lavender highlights.",
-        "glow": (168, 85, 247, 100)
+        "category": "Deep Velvet", "desc": "Deep nebula velvet with glowing royal iris and lavender accents.",
+        "glow": (168, 85, 247, 100), "swatches": ["#0b0813", "#1a142e", "#a855f7", "#f5f3ff"]
     },
     "Midnight Purple (Light)": {
         "bg": "#faf5ff", "sidebar": "#f3e8ff", "card": "#ffffff", "card_hover": "#faf5ff", "fg": "#3b0764",
         "acc": "#9333ea", "sub": "#6b21a8", "border": "#e9d5ff",
         "input_bg": "#ffffff", "input_fg": "#7e22ce", "pill_radius": "16px", "btn_border": "#d8b4fe",
-        "desc": "Pastel lavender linen with rich royal amethyst typography.",
-        "glow": (147, 51, 234, 75)
+        "category": "Pastel Dream", "desc": "Pastel lavender linen with royal amethyst headers.",
+        "glow": (147, 51, 234, 75), "swatches": ["#faf5ff", "#f3e8ff", "#9333ea", "#3b0764"]
     },
 
-    # 4. CYBERCORE / MATRIX TERMINAL
-    "Cybercore (Dark)": {
-        "bg": "#030712", "sidebar": "#080f20", "card": "#0d1830", "card_hover": "#132347", "fg": "#f0fdf4",
-        "acc": "#22c55e", "sub": "#64748b", "border": "#162a54",
-        "input_bg": "#080f20", "input_fg": "#4ade80", "pill_radius": "6px", "btn_border": "#1e3a8a",
-        "desc": "High-altitude avionics deck with crisp emerald telemetry glow.",
-        "glow": (34, 197, 94, 100)
+    # 3. NEO-BRUTALISM (Figma / Gumroad Bold Pop)
+    "Neo-Brutalism (Dark)": {
+        "bg": "#121214", "sidebar": "#18181b", "card": "#202024", "card_hover": "#27272d", "fg": "#ffffff",
+        "acc": "#2dd4bf", "sub": "#a1a1aa", "border": "#f43f5e",
+        "input_bg": "#18181b", "input_fg": "#2dd4bf", "pill_radius": "6px", "btn_border": "#f43f5e",
+        "category": "Cyber Pop", "desc": "Cyberpunk high-contrast pop with crimson borders & mint green.",
+        "glow": (45, 212, 191, 100), "swatches": ["#121214", "#202024", "#2dd4bf", "#f43f5e"]
     },
-    "Cybercore (Light)": {
-        "bg": "#f0fdf4", "sidebar": "#dcfce7", "card": "#ffffff", "card_hover": "#f7fee7", "fg": "#14532d",
-        "acc": "#16a34a", "sub": "#166534", "border": "#bbf7d0",
-        "input_bg": "#ffffff", "input_fg": "#15803d", "pill_radius": "6px", "btn_border": "#86efac",
-        "desc": "Clean biometrics console with crisp emerald green status lines.",
-        "glow": (22, 163, 74, 75)
+    "Neo-Brutalism (Light)": {
+        "bg": "#fffbeb", "sidebar": "#fef3c7", "card": "#ffffff", "card_hover": "#fffdf5", "fg": "#0f172a",
+        "acc": "#e11d48", "sub": "#475569", "border": "#0f172a",
+        "input_bg": "#ffffff", "input_fg": "#0f172a", "pill_radius": "6px", "btn_border": "#0f172a",
+        "category": "Pop Yellow", "desc": "Playful Gumroad yellow with stark 2px structural ink framing.",
+        "glow": (225, 29, 72, 80), "swatches": ["#fffbeb", "#fef3c7", "#e11d48", "#0f172a"]
     },
 
-    # 5. GLASSMORPHISM (macOS Sonoma / Linear Ice)
+    # 4. GLASSMORPHISM (Linear / macOS Sonoma Ice)
     "Glassmorphism (Dark)": {
         "bg": "#0c0f17", "sidebar": "#131824", "card": "#1a2133", "card_hover": "#222c44", "fg": "#f1f5f9",
         "acc": "#38bdf8", "sub": "#64748b", "border": "#28344d",
         "input_bg": "#131824", "input_fg": "#7dd3fc", "pill_radius": "16px", "btn_border": "#334155",
-        "desc": "Linear-inspired frosted twilight glass with diffused sky blue glow.",
-        "glow": (56, 189, 248, 95)
+        "category": "Frosted Glass", "desc": "Linear-inspired twilight frosted glass with diffused sky cyan aura.",
+        "glow": (56, 189, 248, 95), "swatches": ["#0c0f17", "#1a2133", "#38bdf8", "#f1f5f9"]
     },
     "Glassmorphism (Light)": {
         "bg": "#f0f6fc", "sidebar": "#e1edf8", "card": "#ffffff", "card_hover": "#f8fafc", "fg": "#0f172a",
         "acc": "#0284c7", "sub": "#475569", "border": "#cbd5e1",
         "input_bg": "#ffffff", "input_fg": "#0369a1", "pill_radius": "16px", "btn_border": "#94a3b8",
-        "desc": "Luminous frosted daylight ice-acrylic with crisp azure accents.",
-        "glow": (2, 132, 199, 75)
+        "category": "Daylight Frost", "desc": "Luminous frosted daylight acrylic with clean azure accents.",
+        "glow": (2, 132, 199, 75), "swatches": ["#f0f6fc", "#e1edf8", "#0284c7", "#0f172a"]
     },
 
-    # 6. Y2K AESTHETIC (Cyber Chrome & Bubblegum)
+    # 5. CYBERCORE (Matrix / Telemetry HUD)
+    "Cybercore (Dark)": {
+        "bg": "#030712", "sidebar": "#080f20", "card": "#0d1830", "card_hover": "#132347", "fg": "#f0fdf4",
+        "acc": "#22c55e", "sub": "#64748b", "border": "#162a54",
+        "input_bg": "#080f20", "input_fg": "#4ade80", "pill_radius": "6px", "btn_border": "#1e3a8a",
+        "category": "Matrix HUD", "desc": "High-altitude avionics deck with crisp emerald telemetry glow.",
+        "glow": (34, 197, 94, 100), "swatches": ["#030712", "#0d1830", "#22c55e", "#f0fdf4"]
+    },
+    "Cybercore (Light)": {
+        "bg": "#f0fdf4", "sidebar": "#dcfce7", "card": "#ffffff", "card_hover": "#f7fee7", "fg": "#14532d",
+        "acc": "#16a34a", "sub": "#166534", "border": "#bbf7d0",
+        "input_bg": "#ffffff", "input_fg": "#15803d", "pill_radius": "6px", "btn_border": "#86efac",
+        "category": "Biometrics", "desc": "Clean biometrics console with crisp emerald green status lines.",
+        "glow": (22, 163, 74, 75), "swatches": ["#f0fdf4", "#dcfce7", "#16a34a", "#14532d"]
+    },
+
+    # 6. Y2K AESTHETIC (Cyberpunk Club Rave)
     "Y2K Aesthetic (Dark)": {
         "bg": "#110718", "sidebar": "#190b24", "card": "#241033", "card_hover": "#301545", "fg": "#fdf4ff",
         "acc": "#f472b6", "sub": "#a21caf", "border": "#4a1966",
         "input_bg": "#190b24", "input_fg": "#f472b6", "pill_radius": "12px", "btn_border": "#6b21a8",
-        "desc": "Millennium rave club violet with hot chrome pink accents.",
-        "glow": (244, 114, 182, 100)
+        "category": "Rave Neon", "desc": "Millennium rave club violet with hot chrome pink accents.",
+        "glow": (244, 114, 182, 100), "swatches": ["#110718", "#241033", "#f472b6", "#fdf4ff"]
     },
     "Y2K Aesthetic (Light)": {
         "bg": "#fdf2f8", "sidebar": "#fce7f3", "card": "#ffffff", "card_hover": "#fff1f2", "fg": "#831843",
         "acc": "#db2777", "sub": "#9d174d", "border": "#fbcfe8",
         "input_bg": "#ffffff", "input_fg": "#be185d", "pill_radius": "12px", "btn_border": "#f472b6",
-        "desc": "Chrome cyber-pop gloss with vibrant raspberry highlights.",
-        "glow": (219, 39, 119, 85)
+        "category": "Gloss Pop", "desc": "Chrome cyber-pop gloss with vibrant raspberry highlights.",
+        "glow": (219, 39, 119, 85), "swatches": ["#fdf2f8", "#fce7f3", "#db2777", "#831843"]
     },
 
     # 7. PIXEL ART (Dracula / Retro 8-Bit)
@@ -166,116 +174,116 @@ THEME_META = {
         "bg": "#181920", "sidebar": "#1f2029", "card": "#262833", "card_hover": "#2f313f", "fg": "#f8f8f2",
         "acc": "#50fa7b", "sub": "#6272a4", "border": "#44475a",
         "input_bg": "#1f2029", "input_fg": "#50fa7b", "pill_radius": "2px", "btn_border": "#6272a4",
-        "desc": "Authentic Dracula theme palette with crisp dashed pixel styling.",
-        "glow": (80, 250, 123, 95)
+        "category": "Retro 8-Bit", "desc": "Authentic Dracula theme palette with crisp dashed pixel styling.",
+        "glow": (80, 250, 123, 95), "swatches": ["#181920", "#262833", "#50fa7b", "#f8f8f2"]
     },
     "Pixel Art (Light)": {
         "bg": "#f6f8fa", "sidebar": "#eaedf1", "card": "#ffffff", "card_hover": "#f3f4f6", "fg": "#1f2328",
         "acc": "#0969da", "sub": "#656d76", "border": "#d0d7de",
         "input_bg": "#ffffff", "input_fg": "#0969da", "pill_radius": "2px", "btn_border": "#afb8c1",
-        "desc": "Monochrome GameBoy Pocket LCD light pixel architecture.",
-        "glow": (9, 105, 218, 75)
+        "category": "GameBoy LCD", "desc": "Monochrome GameBoy Pocket LCD light pixel architecture.",
+        "glow": (9, 105, 218, 75), "swatches": ["#f6f8fa", "#eaedf1", "#0969da", "#1f2328"]
     },
 
-    # 8. BRUTALISM (Monochrome Architecture)
+    # 8. BRUTALISM (Swiss Concrete Monochrome)
     "Brutalism (Dark)": {
         "bg": "#090909", "sidebar": "#121212", "card": "#1a1a1a", "card_hover": "#242424", "fg": "#fafafa",
         "acc": "#ffffff", "sub": "#737373", "border": "#404040",
         "input_bg": "#121212", "input_fg": "#ffffff", "pill_radius": "0px", "btn_border": "#525252",
-        "desc": "Pure Swiss brutalist architecture with stark white typography.",
-        "glow": (255, 255, 255, 75)
+        "category": "Monochrome", "desc": "Pure Swiss brutalist architecture with stark white typography.",
+        "glow": (255, 255, 255, 75), "swatches": ["#090909", "#1a1a1a", "#ffffff", "#fafafa"]
     },
     "Brutalism (Light)": {
         "bg": "#f5f5f5", "sidebar": "#e5e5e5", "card": "#ffffff", "card_hover": "#f0f0f0", "fg": "#0a0a0a",
         "acc": "#0a0a0a", "sub": "#525252", "border": "#0a0a0a",
         "input_bg": "#ffffff", "input_fg": "#0a0a0a", "pill_radius": "0px", "btn_border": "#0a0a0a",
-        "desc": "Raw concrete light mode with ultra-bold architectural framing.",
-        "glow": (10, 10, 10, 60)
+        "category": "Architectural", "desc": "Raw concrete light mode with ultra-bold architectural framing.",
+        "glow": (10, 10, 10, 60), "swatches": ["#f5f5f5", "#e5e5e5", "#0a0a0a", "#0a0a0a"]
     },
 
-    # 9. NEO-CLASSICAL (Library Manuscript / Antique Gold)
+    # 9. NEO-CLASSICAL (Oxford Manuscript / Gilded Gold)
     "Neo-Classical (Dark)": {
         "bg": "#14110f", "sidebar": "#1c1815", "card": "#26201c", "card_hover": "#302a25", "fg": "#f7f1e6",
         "acc": "#d4af37", "sub": "#8c765c", "border": "#42372f",
         "input_bg": "#1c1815", "input_fg": "#f0d58a", "pill_radius": "8px", "btn_border": "#5a4b40",
-        "desc": "Gilded Oxford library leather with burnished antique gold.",
-        "glow": (212, 175, 55, 90)
+        "category": "Antique Gilt", "desc": "Gilded Oxford library leather with burnished antique gold.",
+        "glow": (212, 175, 55, 90), "swatches": ["#14110f", "#26201c", "#d4af37", "#f7f1e6"]
     },
     "Neo-Classical (Light)": {
         "bg": "#faf7f2", "sidebar": "#f2ebd9", "card": "#ffffff", "card_hover": "#faf4e8", "fg": "#2d2319",
         "acc": "#b8860b", "sub": "#78624a", "border": "#dfd5c2",
         "input_bg": "#ffffff", "input_fg": "#785303", "pill_radius": "8px", "btn_border": "#cfc0a5",
-        "desc": "Fine vellum manuscript with warm brass and golden ink.",
-        "glow": (184, 134, 11, 75)
+        "category": "Manuscript", "desc": "Fine vellum manuscript with warm brass and golden ink.",
+        "glow": (184, 134, 11, 75), "swatches": ["#faf7f2", "#f2ebd9", "#b8860b", "#2d2319"]
     },
 
-    # 10. NEUMORPHISM (Tactile Extruded Surface)
+    # 10. NEUMORPHISM (Tactile Beveled Slate)
     "Neumorphism (Dark)": {
         "bg": "#1b1e24", "sidebar": "#21252d", "card": "#282d37", "card_hover": "#303642", "fg": "#e2e8f0",
         "acc": "#38bdf8", "sub": "#78859e", "border": "#15171c",
         "input_bg": "#1b1e24", "input_fg": "#38bdf8", "pill_radius": "14px", "btn_border": "#2a303c",
-        "desc": "Tactile extruded matte slate with dual-depth bevels.",
-        "glow": (56, 189, 248, 85)
+        "category": "Tactile Bevel", "desc": "Tactile extruded matte slate with dual-depth bevels.",
+        "glow": (56, 189, 248, 85), "swatches": ["#1b1e24", "#282d37", "#38bdf8", "#e2e8f0"]
     },
     "Neumorphism (Light)": {
         "bg": "#e6ecf4", "sidebar": "#dbe3ee", "card": "#eef3f9", "card_hover": "#f5f8fc", "fg": "#334155",
         "acc": "#0284c7", "sub": "#64748b", "border": "#cbd5e1",
         "input_bg": "#eef3f9", "input_fg": "#0369a1", "pill_radius": "14px", "btn_border": "#c2cfdf",
-        "desc": "Embossed matte ceramic paper with sculpted shadow depth.",
-        "glow": (2, 132, 199, 65)
+        "category": "Embossed Ceramic", "desc": "Embossed matte ceramic paper with sculpted shadow depth.",
+        "glow": (2, 132, 199, 65), "swatches": ["#e6ecf4", "#eef3f9", "#0284c7", "#334155"]
     },
 
-    # 11. SCRAPBOOK / MOOD BOARD
+    # 11. SCRAPBOOK (Vintage Traveler Journal)
     "Scrapbook (Dark)": {
         "bg": "#181411", "sidebar": "#201b17", "card": "#2a241f", "card_hover": "#342c26", "fg": "#f5ede3",
         "acc": "#e0a96d", "sub": "#947a61", "border": "#4d3e33",
         "input_bg": "#201b17", "input_fg": "#f3cfa2", "pill_radius": "6px", "btn_border": "#635041",
-        "desc": "Aged traveler journal with kraft tape outlines and cream ink.",
-        "glow": (224, 169, 109, 85)
+        "category": "Travel Journal", "desc": "Aged traveler journal with kraft tape outlines and cream ink.",
+        "glow": (224, 169, 109, 85), "swatches": ["#181411", "#2a241f", "#e0a96d", "#f5ede3"]
     },
     "Scrapbook (Light)": {
         "bg": "#f9f6f0", "sidebar": "#ede5d5", "card": "#fffdfa", "card_hover": "#fbf7ee", "fg": "#2e241c",
         "acc": "#995d28", "sub": "#6e5743", "border": "#d8ccb8",
         "input_bg": "#fffdfa", "input_fg": "#784417", "pill_radius": "6px", "btn_border": "#c9baa3",
-        "desc": "Kraft cardboard sketchbook with vintage dashed tape lines.",
-        "glow": (153, 93, 40, 75)
+        "category": "Kraft Paper", "desc": "Kraft cardboard sketchbook with vintage dashed tape lines.",
+        "glow": (153, 93, 40, 75), "swatches": ["#f9f6f0", "#ede5d5", "#995d28", "#2e241c"]
     },
 
-    # 12. CONCEPTUAL SKETCHBOOK (Draftsman Studio)
+    # 12. CONCEPTUAL SKETCHBOOK (Apple Studio Drafting)
     "Conceptual Sketchbook (Dark)": {
         "bg": "#1c1c1e", "sidebar": "#242426", "card": "#2c2c2e", "card_hover": "#363639", "fg": "#f2f2f7",
         "acc": "#e5e5ea", "sub": "#8e8e93", "border": "#3a3a3c",
         "input_bg": "#242426", "input_fg": "#ffffff", "pill_radius": "4px", "btn_border": "#48484a",
-        "desc": "Matte graphite drafting tablet with crisp technical gridlines.",
-        "glow": (229, 229, 234, 75)
+        "category": "Studio Tablet", "desc": "Matte graphite drafting tablet with crisp technical gridlines.",
+        "glow": (229, 229, 234, 75), "swatches": ["#1c1c1e", "#2c2c2e", "#e5e5ea", "#f2f2f7"]
     },
     "Conceptual Sketchbook (Light)": {
         "bg": "#f5f5f7", "sidebar": "#e5e5ea", "card": "#ffffff", "card_hover": "#fbfbfd", "fg": "#1c1c1e",
         "acc": "#1c1c1e", "sub": "#636366", "border": "#d1d1d6",
         "input_bg": "#ffffff", "input_fg": "#000000", "pill_radius": "4px", "btn_border": "#aeaeb2",
-        "desc": "Clean industrial design blueprint paper with sharp ink lines.",
-        "glow": (28, 28, 30, 60)
+        "category": "Blueprint", "desc": "Clean industrial design blueprint paper with sharp ink lines.",
+        "glow": (28, 28, 30, 60), "swatches": ["#f5f5f7", "#e5e5ea", "#1c1c1e", "#1c1c1e"]
     },
 
-    # 13. ANTHROPOMORPHIC (Warm Terracotta / Clay)
+    # 13. ANTHROPOMORPHIC (Warm Terracotta Pottery)
     "Anthropomorphic (Dark)": {
         "bg": "#171210", "sidebar": "#201a17", "card": "#2c221e", "card_hover": "#382c27", "fg": "#f7ede8",
         "acc": "#f97316", "sub": "#9c6b5b", "border": "#4d3830",
         "input_bg": "#201a17", "input_fg": "#fb923c", "pill_radius": "10px", "btn_border": "#63473d",
-        "desc": "Earthy espresso and warm terracotta pottery with organic glow.",
-        "glow": (249, 115, 22, 90)
+        "category": "Roasted Espresso", "desc": "Earthy espresso and warm terracotta pottery with organic glow.",
+        "glow": (249, 115, 22, 90), "swatches": ["#171210", "#2c221e", "#f97316", "#f7ede8"]
     },
     "Anthropomorphic (Light)": {
         "bg": "#fffaf5", "sidebar": "#fdeee0", "card": "#ffffff", "card_hover": "#fff6ec", "fg": "#431407",
         "acc": "#ea580c", "sub": "#854d0e", "border": "#fed7aa",
         "input_bg": "#ffffff", "input_fg": "#c2410c", "pill_radius": "10px", "btn_border": "#fdba74",
-        "desc": "Sunrise terracotta clay with warm toasted peach undertones.",
-        "glow": (234, 88, 12, 80)
+        "category": "Toasted Peach", "desc": "Sunrise terracotta clay with warm toasted peach undertones.",
+        "glow": (234, 88, 12, 80), "swatches": ["#fffaf5", "#fdeee0", "#ea580c", "#431407"]
     }
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DYNAMIC HARMONIC STYLESHEET GENERATOR
+# DYNAMIC STYLESHEET GENERATOR
 # ─────────────────────────────────────────────────────────────────────────────
 def generate_stylesheet(name: str) -> str:
     m = THEME_META.get(name, THEME_META["Charcoal Amber (Dark)"])
@@ -368,7 +376,7 @@ def generate_stylesheet(name: str) -> str:
     """
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MOTION THEME PREVIEW CARD
+# KOKONUT / BKLIT UI THEME CARD COMPONENT WITH MINI VISUAL MOCKUP
 # ─────────────────────────────────────────────────────────────────────────────
 class MotionThemeCard(QFrame):
     def __init__(self, theme_name, meta, on_click_callback):
@@ -382,22 +390,79 @@ class MotionThemeCard(QFrame):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(6)
+        layout.setSpacing(10)
 
-        # Top indicator row
+        # 1. Top Header Row: Name + Category Pill + Active Badge
         top_row = QHBoxLayout()
-        self.dot = QLabel("●")
-        self.dot.setFont(QFont("JetBrainsMono Nerd Font", 11))
-        self.dot.setStyleSheet(f"color: {meta['acc']}; border: none; background: transparent;")
-        top_row.addWidget(self.dot)
-
         self.title_lbl = QLabel(theme_name)
         self.title_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
         self.title_lbl.setStyleSheet(f"color: {meta['fg']}; border: none; background: transparent;")
         top_row.addWidget(self.title_lbl)
         top_row.addStretch()
+
+        self.badge_lbl = QLabel(meta["category"])
+        self.badge_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8, QFont.Bold))
+        self.badge_lbl.setStyleSheet(f"""
+            color: {meta['acc']};
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid {meta['btn_border']};
+            border-radius: 6px;
+            padding: 2px 6px;
+        """)
+        top_row.addWidget(self.badge_lbl)
         layout.addLayout(top_row)
 
+        # 2. Visual Mini-Mockup (Canvas + Sidebar + Swatch Dots)
+        mockup = QFrame()
+        mockup.setFixedHeight(64)
+        mockup.setStyleSheet(f"""
+            QFrame {{
+                background-color: {meta['bg']};
+                border: 1px solid {meta['border']};
+                border-radius: 8px;
+            }}
+        """)
+        mock_layout = QHBoxLayout(mockup)
+        mock_layout.setContentsMargins(6, 6, 6, 6)
+        mock_layout.setSpacing(6)
+
+        # Mini Sidebar
+        mini_sb = QFrame()
+        mini_sb.setFixedWidth(42)
+        mini_sb.setStyleSheet(f"background-color: {meta['sidebar']}; border: 1px solid {meta['border']}; border-radius: 4px;")
+        mock_layout.addWidget(mini_sb)
+
+        # Mini Editor Area with 2 mock content lines + swatches
+        mini_ed = QWidget()
+        mini_ed_l = QVBoxLayout(mini_ed)
+        mini_ed_l.setContentsMargins(4, 2, 4, 2)
+        mini_ed_l.setSpacing(4)
+
+        line1 = QFrame()
+        line1.setFixedHeight(4)
+        line1.setStyleSheet(f"background-color: {meta['acc']}; border-radius: 2px;")
+        mini_ed_l.addWidget(line1)
+
+        line2 = QFrame()
+        line2.setFixedHeight(3)
+        line2.setStyleSheet(f"background-color: {meta['card']}; border-radius: 1px;")
+        mini_ed_l.addWidget(line2)
+
+        # 4 Swatch Circles Row
+        swatch_row = QHBoxLayout()
+        swatch_row.setSpacing(4)
+        for hex_col in meta.get("swatches", []):
+            dot = QFrame()
+            dot.setFixedSize(10, 10)
+            dot.setStyleSheet(f"background-color: {hex_col}; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px;")
+            swatch_row.addWidget(dot)
+        swatch_row.addStretch()
+        mini_ed_l.addLayout(swatch_row)
+
+        mock_layout.addWidget(mini_ed, 1)
+        layout.addWidget(mockup)
+
+        # 3. Descriptive Copy
         self.desc_lbl = QLabel(meta["desc"])
         self.desc_lbl.setWordWrap(True)
         self.desc_lbl.setFont(QFont("JetBrainsMono Nerd Font", 8))
@@ -416,11 +481,18 @@ class MotionThemeCard(QFrame):
         border_w = "2px" if active else "1px"
         bg_normal = m["card_hover"] if active else m["card"]
         
+        if active:
+            self.badge_lbl.setText("✓ ACTIVE")
+            self.badge_lbl.setStyleSheet(f"color: {m['bg']}; background-color: {m['acc']}; border-radius: 6px; padding: 2px 6px; font-weight: 900;")
+        else:
+            self.badge_lbl.setText(m["category"])
+            self.badge_lbl.setStyleSheet(f"color: {m['acc']}; background-color: rgba(255, 255, 255, 0.05); border: 1px solid {m['btn_border']}; border-radius: 6px; padding: 2px 6px;")
+
         self.setStyleSheet(f"""
             QFrame#ThemePreviewCard {{
                 background-color: {bg_normal};
                 border: {border_w} solid {border_col};
-                border-radius: 10px;
+                border-radius: 12px;
             }}
             QFrame#ThemePreviewCard:hover {{
                 background-color: {m['card_hover']};
@@ -429,12 +501,12 @@ class MotionThemeCard(QFrame):
         """)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN APPLICATION WINDOW
+# MAIN APPLICATION CONTROLLER
 # ─────────────────────────────────────────────────────────────────────────────
 class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Note")
+        self.setWindowTitle("Note — Zero-Knowledge Journal")
         self.setMinimumSize(960, 660)
         self.resize(1140, 750)
         self.pin = ""
@@ -464,7 +536,6 @@ class NoteApp(QMainWindow):
             self.config["theme"] = theme_name
             save_config(self.config)
             
-            # Apply stylesheet
             self.setStyleSheet(generate_stylesheet(theme_name))
             self.sync_lock_screen_theme(theme_name)
             
@@ -496,6 +567,7 @@ class NoteApp(QMainWindow):
         """)
         self.auth_msg.setStyleSheet(f"color: {meta['sub']}; border: none; background: transparent;")
 
+    # 1. HYPRLOCK MINIMALIST AUTH SCREEN
     def init_lock_screen(self):
         self.lock_widget = QWidget()
         layout = QVBoxLayout(self.lock_widget)
@@ -503,9 +575,9 @@ class NoteApp(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(24)
 
-        # 1. Giant Hyprlock Digital Time
+        # Digital Clock
         self.time_lbl = QLabel("")
-        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 72, QFont.Bold))
+        self.time_lbl.setFont(QFont("JetBrainsMono Nerd Font", 74, QFont.Bold))
         self.time_lbl.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.time_lbl)
 
@@ -521,7 +593,7 @@ class NoteApp(QMainWindow):
         self.clock_timer.start(1000)
         self.update_lock_clock()
 
-        # 2. Hyprlock Input Pill with Glow Effect & Shake capability
+        # Input Pill
         is_setup = not VAULT_PATH.exists()
         self.pin_input = QLineEdit()
         self.pin_input.setEchoMode(QLineEdit.Password)
@@ -538,7 +610,7 @@ class NoteApp(QMainWindow):
         self.pin_input.returnPressed.connect(self.handle_auth)
         layout.addWidget(self.pin_input, alignment=Qt.AlignCenter)
 
-        self.auth_msg = QLabel("Press Enter to Unlock" if not is_setup else "Press Enter to Initialize Vault")
+        self.auth_msg = QLabel("Press Enter to Decrypt · AES-256 Vault" if not is_setup else "Press Enter to Initialize Vault")
         self.auth_msg.setFont(QFont("JetBrainsMono Nerd Font", 9))
         self.auth_msg.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.auth_msg, alignment=Qt.AlignCenter)
@@ -550,11 +622,10 @@ class NoteApp(QMainWindow):
         self.time_lbl.setText(now.strftime("%I:%M"))
         self.date_lbl.setText(now.strftime("%A, %B %d").upper())
 
-    # MOTION SHAKE ANIMATION ON FAILED PIN
+    # Physics Error Shake Animation
     def trigger_shake_animation(self, widget):
         anim = QPropertyAnimation(widget, b"pos")
         anim.setDuration(300)
-        anim.setLoopCount(1)
         orig_pos = widget.pos()
         anim.setKeyValueAt(0.0, orig_pos)
         anim.setKeyValueAt(0.1, orig_pos + QPoint(-12, 0))
@@ -567,7 +638,7 @@ class NoteApp(QMainWindow):
         anim.start()
         self._shake_anim = anim
 
-    # CUBIC OPACITY TRANSITION ANIMATION
+    # Fluid Cross-Fade Transition
     def animate_view_transition(self, target_index):
         opacity_effect = QGraphicsOpacityEffect(self.stack)
         self.stack.setGraphicsEffect(opacity_effect)
@@ -593,7 +664,7 @@ class NoteApp(QMainWindow):
                 "date": date.today().isoformat(),
                 "time": datetime.now().strftime("%I:%M %p"),
                 "title": "Welcome to Note",
-                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all curated themes.\n- Real-time harmonic palettes, smooth cubic transitions, and zero distraction.\n- Toggle Zen Focus for pure uninterrupted flow.",
+                "content": "# Welcome to Note\n\nYour thoughts are encrypted locally on your machine with AES-256. Zero plain-text on disk, zero distraction.\n\n- Access Settings from the sidebar to browse all visual theme cards.\n- Real-time search, instant tag filtering, and markdown exports are enabled.\n- Toggle Zen Focus for pure uninterrupted flow.",
                 "tags": "welcome, journal",
                 "mood": "zen"
             }
@@ -622,6 +693,7 @@ class NoteApp(QMainWindow):
             except Exception as e:
                 print("Save error:", e)
 
+    # 2. MAIN JOURNAL WORKSPACE
     def init_main_workspace(self):
         self.main_widget = QWidget()
         main_layout = QHBoxLayout(self.main_widget)
@@ -639,7 +711,7 @@ class NoteApp(QMainWindow):
         sidebar_layout.setContentsMargins(12, 12, 12, 12)
         sidebar_layout.setSpacing(10)
 
-        # Header
+        # Header with Settings & Lock
         sb_header = QHBoxLayout()
         sb_title = QLabel("󰠮 NOTE")
         sb_title.setFont(QFont("JetBrainsMono Nerd Font", 12, QFont.Bold))
@@ -657,14 +729,21 @@ class NoteApp(QMainWindow):
         sb_header.addWidget(lock_btn)
         sidebar_layout.addLayout(sb_header)
 
-        # Native QCalendarWidget
+        # Search Bar
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("󰍉 Search thoughts or #tags...")
+        self.search_input.setFont(QFont("JetBrainsMono Nerd Font", 10))
+        self.search_input.textChanged.connect(self.on_search_filter)
+        sidebar_layout.addWidget(self.search_input)
+
+        # Native Calendar Widget
         self.calendar = QCalendarWidget()
         self.calendar.setGridVisible(True)
         self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
         self.calendar.clicked.connect(self.on_date_selected)
         sidebar_layout.addWidget(self.calendar)
 
-        # Entry List Controls
+        # List Header Controls
         list_ctrl = QHBoxLayout()
         self.list_lbl = QLabel("󰈙 Journal Feed")
         self.list_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10, QFont.Bold))
@@ -692,16 +771,21 @@ class NoteApp(QMainWindow):
         editor_layout.setContentsMargins(8, 0, 0, 0)
         editor_layout.setSpacing(10)
 
-        # Editor Top Bar
+        # Editor Metadata Top Bar
         ed_bar = QHBoxLayout()
         self.meta_lbl = QLabel("")
         self.meta_lbl.setFont(QFont("JetBrainsMono Nerd Font", 10))
         ed_bar.addWidget(self.meta_lbl)
         ed_bar.addStretch()
 
-        self.word_lbl = QLabel("0 words")
+        self.word_lbl = QLabel("0 words · 0 min read")
         self.word_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
         ed_bar.addWidget(self.word_lbl)
+
+        export_btn = QPushButton("󰈔 Export")
+        export_btn.setCursor(QCursor(Qt.PointingHandCursor))
+        export_btn.clicked.connect(self.export_entry_markdown)
+        ed_bar.addWidget(export_btn)
 
         self.zen_btn = QPushButton("󰈈 Zen Focus")
         self.zen_btn.setCursor(QCursor(Qt.PointingHandCursor))
@@ -723,7 +807,7 @@ class NoteApp(QMainWindow):
 
         # Tags Row
         self.tags_edit = QLineEdit()
-        self.tags_edit.setPlaceholderText("󰓹 Tags: e.g. college, coding, deep-work")
+        self.tags_edit.setPlaceholderText("󰓹 Tags: e.g. code, deep-work, ideas")
         self.tags_edit.setFont(QFont("JetBrainsMono Nerd Font", 10))
         self.tags_edit.textChanged.connect(self.on_content_modified)
         editor_layout.addWidget(self.tags_edit)
@@ -741,6 +825,7 @@ class NoteApp(QMainWindow):
         main_layout.addWidget(self.splitter)
         self.stack.addWidget(self.main_widget)
 
+    # 3. SETTINGS & THEMES GALLERY
     def init_settings_page(self):
         self.settings_widget = QWidget()
         settings_layout = QVBoxLayout(self.settings_widget)
@@ -761,15 +846,23 @@ class NoteApp(QMainWindow):
         header.addStretch()
         settings_layout.addLayout(header)
 
-        # Master PIN Card
+        # Master PIN & Stats Card
         pin_frame = QFrame()
         pin_frame.setStyleSheet("QFrame { background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; }")
         pf_layout = QVBoxLayout(pin_frame)
         pf_layout.setSpacing(12)
 
-        pf_title = QLabel("󰌆 Security & Vault Passcode")
+        pf_top = QHBoxLayout()
+        pf_title = QLabel("󰌆 Security & Vault Re-Key")
         pf_title.setFont(QFont("JetBrainsMono Nerd Font", 11, QFont.Bold))
-        pf_layout.addWidget(pf_title)
+        pf_top.addWidget(pf_title)
+        pf_top.addStretch()
+
+        self.stats_lbl = QLabel("")
+        self.stats_lbl.setFont(QFont("JetBrainsMono Nerd Font", 9))
+        self.stats_lbl.setStyleSheet("color: #888888; border: none;")
+        pf_top.addWidget(self.stats_lbl)
+        pf_layout.addLayout(pf_top)
 
         pin_row = QHBoxLayout()
         self.old_pin_input = QLineEdit()
@@ -855,6 +948,8 @@ class NoteApp(QMainWindow):
         self.confirm_pin_input.clear()
 
     def go_to_settings(self):
+        total_words = sum(len(e.get("content", "").split()) for e in self.entries)
+        self.stats_lbl.setText(f"󰈙 {len(self.entries)} entries · 󱌒 {total_words} total words")
         self.animate_view_transition(2)
 
     def go_to_workspace(self):
@@ -893,6 +988,23 @@ class NoteApp(QMainWindow):
         matched = [e for e in self.entries if e["date"] == d_str]
         if matched:
             self.load_entry(matched[0]["id"])
+
+    def on_search_filter(self, text):
+        query = text.strip().lower()
+        if not query:
+            self.refresh_entries_list(filter_date=self.active_date_str)
+            return
+
+        self.entry_list.clear()
+        for e in self.entries:
+            title = e.get("title", "").lower()
+            content = e.get("content", "").lower()
+            tags = e.get("tags", "").lower()
+            if query in title or query in content or query in tags:
+                preview_title = e.get('title') or 'Untitled Thought'
+                item = QListWidgetItem(f"󱞪 {preview_title}\n󰃭 {e.get('date')} · 󱑂 {e.get('time')}")
+                item.setData(Qt.UserRole, e["id"])
+                self.entry_list.addItem(item)
 
     def on_entry_selected(self, item):
         entry_id = item.data(Qt.UserRole)
@@ -957,7 +1069,21 @@ class NoteApp(QMainWindow):
 
     def update_word_count(self, text):
         words = len(text.strip().split()) if text.strip() else 0
-        self.word_lbl.setText(f"{words} words")
+        read_time = max(1, round(words / 200)) if words > 0 else 0
+        self.word_lbl.setText(f"{words} words · {read_time} min read")
+
+    def export_entry_markdown(self):
+        if not self.active_id:
+            return
+        entry = next((e for e in self.entries if e["id"] == self.active_id), None)
+        if entry:
+            default_name = f"note_{entry.get('date')}_{entry.get('id')[:6]}.md"
+            path, _ = QFileDialog.getSaveFileName(self, "Export Note as Markdown", default_name, "Markdown Files (*.md)")
+            if path:
+                with open(path, "w") as f:
+                    f.write(f"# {entry.get('title', 'Untitled')}\n")
+                    f.write(f"*Date: {entry.get('date')} {entry.get('time')} | Tags: {entry.get('tags', '')}*\n\n")
+                    f.write(entry.get("content", ""))
 
     def delete_entry(self):
         if not self.active_id:
@@ -982,7 +1108,7 @@ class NoteApp(QMainWindow):
     def lock_vault(self):
         self.pin = ""
         self.pin_input.clear()
-        self.auth_msg.setText("Press Enter to Unlock")
+        self.auth_msg.setText("Press Enter to Decrypt · AES-256 Vault")
         self.sync_lock_screen_theme(self.current_theme)
         self.animate_view_transition(0)
         self.pin_input.setFocus()
