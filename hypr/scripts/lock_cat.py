@@ -4,25 +4,17 @@ import time
 step = int(time.time()) % 4
 
 frames = [
-    # 0. Idle Loaf
-    """    |\\__/,|   (`\\
-  _.|o o  |_   ) )
--(((---(((--------""",
+    # 0. Idle Eyes
+    "  /\\_/\\  \n ( o.o ) \n  > ^ <  ",
 
-    # 1. Blinking / Happy
-    """    |\\__/,|   (`\\
-  _.|^ ^  |_   ) )
--(((---(((--------""",
+    # 1. Happy Eyes
+    "  /\\_/\\  \n ( ^.^ ) \n  > ^ <  ",
 
-    # 2. Sleeping / Purring
-    """    |\\__/,|   (`\\
-  _.|- -  |_   ) )
--(((---(((---zzZ--""",
+    # 2. Sleeping Loaf
+    "  /\\_/\\  \n ( -.- ) \n  (___)z ",
 
-    # 3. Curious / Meow
-    """    |\\__/,|   (`\\
-  _.(* *  |_   ) )
--(((---(((---*meow"""
+    # 3. Curious Winking
+    "  /\\_/\\  \n ( o.- ) \n  > ^ <  "
 ]
 
 print(frames[step])
