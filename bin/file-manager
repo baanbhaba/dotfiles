@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 export PATH="$HOME/.local/bin:$PATH"
+if [ -x "$HOME/.local/bin/vega" ]; then
+    exec "$HOME/.local/bin/vega" "$@"
+fi
 exec kitty --class yazi-fm --title "Files" -e "$HOME/.local/bin/yazi" "$@"
