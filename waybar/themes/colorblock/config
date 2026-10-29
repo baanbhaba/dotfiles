@@ -6,43 +6,37 @@
     "margin-left": 16,
     "margin-right": 16,
     "spacing": 8,
-
     "modules-left": [
         "custom/music",
         "hyprland/workspaces"
     ],
-
     "modules-center": [
         "clock",
         "network"
     ],
-
     "modules-right": [
         "custom/clipboard",
+        "custom/sounds",
         "pulseaudio",
         "battery",
         "tray"
     ],
-
     "custom/block": {
-        "format": "▦ COLOR",
+        "format": "\u25a6 COLOR",
         "tooltip": false
     },
-
     "hyprland/workspaces": {
         "active-only": false,
         "all-outputs": true,
         "format": "{id}",
         "on-click": "hyprctl dispatch workspace {id}"
     },
-
     "clock": {
         "interval": 60,
-        "format": "󱑂 {:%I:%M %p  ·  %a %b %d}",
-        "format-alt": "󰸗 {:%A, %B %d, %Y}",
+        "format": "\udb85\udc42 {:%I:%M %p  \u00b7  %a %b %d}",
+        "format-alt": "\udb83\ude17 {:%A, %B %d, %Y}",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>"
     },
-
     "custom/music": {
         "format": "{}",
         "return-type": "json",
@@ -55,7 +49,6 @@
         "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
         "tooltip": true
     },
-
     "custom/weather": {
         "format": "{}",
         "return-type": "json",
@@ -64,49 +57,60 @@
         "interval": 900,
         "tooltip": true
     },
-
     "network": {
-        "format-wifi": "󰤨 {essid}",
-        "format-ethernet": "󰈀 ETH",
-        "format-disconnected": "󰤭 Offline",
+        "format-wifi": "\udb82\udd28 {essid}",
+        "format-ethernet": "\udb80\ude00 ETH",
+        "format-disconnected": "\udb82\udd2d Offline",
         "max-length": 18,
         "interval": 5,
         "on-click": "~/.local/bin/rofi-wifi",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | ⇡ {bandwidthUpBytes} ⇣ {bandwidthDownBytes}"
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | \u21e1 {bandwidthUpBytes} \u21e3 {bandwidthDownBytes}"
     },
-
     "custom/clipboard": {
-        "format": "󰅌 Clip",
+        "format": "\udb80\udd4c Clip",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
-
     "pulseaudio": {
         "format": "{icon} {volume}%",
-        "format-muted": "󰝟 Muted",
+        "format-muted": "\udb81\udf5f Muted",
         "format-icons": {
-            "headphone": "󰋋",
-            "hands-free": "󰋎",
-            "headset": "󰋎",
-            "phone": "󰏲",
-            "portable": "󰏲",
-            "car": "󰄋",
-            "default": ["󰕿", "󰖀", "󰕾"]
+            "headphone": "\udb80\udecb",
+            "hands-free": "\udb80\udece",
+            "headset": "\udb80\udece",
+            "phone": "\udb80\udff2",
+            "portable": "\udb80\udff2",
+            "car": "\udb80\udd0b",
+            "default": [
+                "\udb81\udd7f",
+                "\udb81\udd80",
+                "\udb81\udd7e"
+            ]
         },
         "on-click": "pavucontrol",
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "scroll-step": 5,
-        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n🖱️ Click: Audio Mixer\n🖱️ Right-Click: Mute Toggle\n📜 Scroll: Adjust Volume"
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n\ud83d\uddb1\ufe0f Click: Audio Mixer\n\ud83d\uddb1\ufe0f Right-Click: Mute Toggle\n\ud83d\udcdc Scroll: Adjust Volume"
     },
-
     "battery": {
-        "states": { "warning": 20, "critical": 10 },
-        "format": "󰁹 {capacity}%",
-        "format-charging": "󰂄 {capacity}%"
+        "states": {
+            "warning": 20,
+            "critical": 10
+        },
+        "format": "\udb80\udc79 {capacity}%",
+        "format-charging": "\udb80\udc84 {capacity}%"
     },
-
     "tray": {
         "icon-size": 16,
         "spacing": 8
+    },
+    "custom/sounds": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/toggle-system-sounds --status",
+        "interval": 2,
+        "signal": 9,
+        "on-click": "/home/baanbhaba/.local/bin/toggle-system-sounds --toggle",
+        "tooltip": true
     }
 }

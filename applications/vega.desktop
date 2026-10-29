@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Vega
+GenericName=File Manager
+Comment=Ultra-fast GPU-accelerated file manager for Linux
+Exec=vega %U
+Icon=system-file-manager
+Categories=System;FileTools;FileManager;
+Keywords=files;folders;browser;manager;vega;
+Terminal=false
+StartupNotify=true
+StartupWMClass=vega
+MimeType=inode/directory;

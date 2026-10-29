@@ -214,3 +214,10 @@ tooltip label {
     font-size: 13px;
     font-weight: 600;
 }
+
+#custom-sounds {
+    margin: 0 2px;
+}
+#custom-sounds.muted {
+    opacity: 0.6;
+}

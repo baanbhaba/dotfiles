@@ -133,3 +133,10 @@ tooltip label {
     font-size: 15px;
     font-weight: bold;
 }
+
+#custom-sounds {
+    margin: 0 2px;
+}
+#custom-sounds.muted {
+    opacity: 0.6;
+}

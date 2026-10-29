@@ -143,10 +143,12 @@ reload_all() {
     ~/.config/hypr/scripts/wallpaper.sh
     local cur_name=$(get_current_theme)
     notify-send "Theme Switcher" "Switched to ${cur_name^^} theme" -i color-select 2>/dev/null || true
-    if [ -f "$HOME/.config/hypr/sounds/current/switch.wav" ]; then
-        paplay "$HOME/.config/hypr/sounds/current/switch.wav" 2>/dev/null &
-    else
-        paplay "$HOME/.config/hypr/sounds/chime.wav" 2>/dev/null &
+    if [ ! -f "$HOME/.config/hypr/.sounds_muted" ]; then
+        if [ -f "$HOME/.config/hypr/sounds/current/switch.wav" ]; then
+            paplay "$HOME/.config/hypr/sounds/current/switch.wav" 2>/dev/null &
+        else
+            paplay "$HOME/.config/hypr/sounds/chime.wav" 2>/dev/null &
+        fi
     fi
 }
 

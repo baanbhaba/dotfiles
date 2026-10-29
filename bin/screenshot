@@ -135,7 +135,7 @@ wl-copy --type image/png < "$FILE"
 # Play shutter audio effect
 SHUTTER_SND="$HOME/.config/hypr/sounds/current/shutter.wav"
 [ -f "$SHUTTER_SND" ] || SHUTTER_SND="$HOME/.config/hypr/sounds/shutter.oga"
-paplay "$SHUTTER_SND" 2>/dev/null &
+[ ! -f "$HOME/.config/hypr/.sounds_muted" ] && paplay "$SHUTTER_SND" 2>/dev/null &
 
 # Non-blocking notification with action callbacks
 (

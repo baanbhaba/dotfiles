@@ -6,59 +6,53 @@
     "margin-left": 14,
     "margin-right": 14,
     "spacing": 8,
-
     "modules-left": [
         "custom/music",
         "hyprland/workspaces"
     ],
-
     "modules-center": [
         "clock",
         "network"
     ],
-
     "modules-right": [
         "custom/clipboard",
+        "custom/sounds",
         "pulseaudio",
         "battery",
         "tray"
     ],
-
     "custom/launcher": {
-        "format": "👾 START",
+        "format": "\ud83d\udc7e START",
         "on-click": "rofi -show drun",
         "tooltip": false
     },
-
     "hyprland/workspaces": {
         "active-only": false,
         "all-outputs": true,
         "format": "[{id}]",
         "on-click": "hyprctl dispatch workspace {id}"
     },
-
     "clock": {
         "interval": 60,
-        "format": "⏰ {:%H:%M | %a %d}",
-        "format-alt": "📅 {:%Y-%m-%d}",
+        "format": "\u23f0 {:%H:%M | %a %d}",
+        "format-alt": "\ud83d\udcc5 {:%Y-%m-%d}",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
         "calendar": {
-            "mode"          : "month",
-            "mode-mon-col"  : 3,
-            "weeks-pos"     : "right",
-            "on-scroll"     : 1,
+            "mode": "month",
+            "mode-mon-col": 3,
+            "weeks-pos": "right",
+            "on-scroll": 1,
             "format": {
-                "months":     "<span color='#0f380f'><b>{}</b></span>",
-                "days":       "<span color='#0f380f'><b>{}</b></span>",
-                "weeks":      "<span color='#306230'><b>W{}</b></span>",
-                "weekdays":   "<span color='#306230'><b>{}</b></span>",
-                "today":      "<span background='#9bbc0f' color='#0f380f'><b>{}</b></span>"
+                "months": "<span color='#0f380f'><b>{}</b></span>",
+                "days": "<span color='#0f380f'><b>{}</b></span>",
+                "weeks": "<span color='#306230'><b>W{}</b></span>",
+                "weekdays": "<span color='#306230'><b>{}</b></span>",
+                "today": "<span background='#9bbc0f' color='#0f380f'><b>{}</b></span>"
             }
         }
     },
-
     "custom/music": {
-        "format": "♪ {}",
+        "format": "\u266a {}",
         "return-type": "json",
         "exec": "/home/baanbhaba/.local/bin/waybar-music",
         "interval": 2,
@@ -69,7 +63,6 @@
         "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
         "tooltip": true
     },
-
     "network": {
         "format-wifi": "WIFI {essid}",
         "format-ethernet": "ETH LINK",
@@ -79,13 +72,11 @@
         "on-click": "~/.local/bin/rofi-wifi",
         "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
     },
-
     "custom/clipboard": {
-        "format": "💾 CLIP",
+        "format": "\ud83d\udcbe CLIP",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
-
     "pulseaudio": {
         "format": "VOL {volume}%",
         "format-muted": "VOL MUTE",
@@ -94,15 +85,25 @@
         "scroll-step": 5,
         "tooltip-format": "Volume: {volume}%\nDevice: {desc}"
     },
-
     "battery": {
-        "states": { "warning": 25, "critical": 10 },
+        "states": {
+            "warning": 25,
+            "critical": 10
+        },
         "format": "HP [{capacity}%]",
         "format-charging": "HP+ [{capacity}%]"
     },
-
     "tray": {
         "icon-size": 16,
         "spacing": 6
+    },
+    "custom/sounds": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/toggle-system-sounds --status",
+        "interval": 2,
+        "signal": 9,
+        "on-click": "/home/baanbhaba/.local/bin/toggle-system-sounds --toggle",
+        "tooltip": true
     }
 }

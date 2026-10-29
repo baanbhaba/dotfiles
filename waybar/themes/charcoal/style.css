@@ -133,3 +133,10 @@ tooltip label {
 
 #battery.warning { color: #ffd166; }
 #battery.critical { color: #ff5c00; }
+
+#custom-sounds {
+    margin: 0 2px;
+}
+#custom-sounds.muted {
+    opacity: 0.6;
+}

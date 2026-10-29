@@ -3,47 +3,43 @@
     "position": "top",
     "height": 26,
     "spacing": 4,
-
     "modules-left": [
         "custom/music",
         "hyprland/workspaces"
     ],
-
     "modules-center": [
         "clock",
         "network"
     ],
-
     "modules-right": [
         "custom/clipboard",
+        "custom/sounds",
         "pulseaudio",
         "battery",
         "tray"
     ],
-
     "hyprland/workspaces": {
         "active-only": false,
         "all-outputs": true,
         "format": "{id}",
         "on-click": "hyprctl dispatch workspace {id}"
     },
-
     "clock": {
         "interval": 60,
-        "format": "󱑂 {:%I:%M %p | %a, %d %b}",
-        "format-alt": "󰃭 {:%A, %B %d, %Y}",
+        "format": "\udb85\udc42 {:%I:%M %p | %a, %d %b}",
+        "format-alt": "\udb80\udced {:%A, %B %d, %Y}",
         "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
         "calendar": {
-            "mode"          : "month",
-            "mode-mon-col"  : 3,
-            "weeks-pos"     : "right",
-            "on-scroll"     : 1,
+            "mode": "month",
+            "mode-mon-col": 3,
+            "weeks-pos": "right",
+            "on-scroll": 1,
             "format": {
-                "months":     "<span color='#ffb000'><b>{}</b></span>",
-                "days":       "<span color='#e0e0e0'><b>{}</b></span>",
-                "weeks":      "<span color='#8c9b32'><b>W{}</b></span>",
-                "weekdays":   "<span color='#ffd166'><b>{}</b></span>",
-                "today":      "<span background='#ffb000' color='#080808'><b>{}</b></span>"
+                "months": "<span color='#ffb000'><b>{}</b></span>",
+                "days": "<span color='#e0e0e0'><b>{}</b></span>",
+                "weeks": "<span color='#8c9b32'><b>W{}</b></span>",
+                "weekdays": "<span color='#ffd166'><b>{}</b></span>",
+                "today": "<span background='#ffb000' color='#080808'><b>{}</b></span>"
             }
         },
         "actions": {
@@ -54,7 +50,6 @@
             "on-scroll-down": "shift_down"
         }
     },
-
     "custom/music": {
         "format": "{}",
         "return-type": "json",
@@ -67,7 +62,6 @@
         "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
         "tooltip": true
     },
-
     "custom/weather": {
         "format": "{}",
         "return-type": "json",
@@ -76,41 +70,41 @@
         "interval": 900,
         "tooltip": true
     },
-
     "network": {
-        "format-wifi": "󰤨 {essid}",
-        "format-ethernet": "󰈀 eth",
-        "format-disconnected": "󰤭 off",
+        "format-wifi": "\udb82\udd28 {essid}",
+        "format-ethernet": "\udb80\ude00 eth",
+        "format-disconnected": "\udb82\udd2d off",
         "max-length": 18,
         "interval": 5,
         "on-click": "~/.local/bin/rofi-wifi",
-        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | ⇡ {bandwidthUpBytes} ⇣ {bandwidthDownBytes}"
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | \u21e1 {bandwidthUpBytes} \u21e3 {bandwidthDownBytes}"
     },
-
     "custom/clipboard": {
         "format": "clip",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
-
     "pulseaudio": {
         "format": "{icon} {volume}%",
-        "format-muted": "󰝟 muted",
+        "format-muted": "\udb81\udf5f muted",
         "format-icons": {
-            "headphone": "󰋋",
-            "hands-free": "󰋎",
-            "headset": "󰋎",
-            "phone": "󰏲",
-            "portable": "󰏲",
-            "car": "󰄋",
-            "default": ["󰕿", "󰖀", "󰕾"]
+            "headphone": "\udb80\udecb",
+            "hands-free": "\udb80\udece",
+            "headset": "\udb80\udece",
+            "phone": "\udb80\udff2",
+            "portable": "\udb80\udff2",
+            "car": "\udb80\udd0b",
+            "default": [
+                "\udb81\udd7f",
+                "\udb81\udd80",
+                "\udb81\udd7e"
+            ]
         },
         "on-click": "pavucontrol",
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
         "scroll-step": 5,
-        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n🖱️ Click: Audio Mixer\n🖱️ Right-Click: Mute Toggle\n📜 Scroll: Adjust Volume"
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n\ud83d\uddb1\ufe0f Click: Audio Mixer\n\ud83d\uddb1\ufe0f Right-Click: Mute Toggle\n\ud83d\udcdc Scroll: Adjust Volume"
     },
-
     "battery": {
         "states": {
             "warning": 20,
@@ -118,22 +112,30 @@
         },
         "format": "battery {capacity}%",
         "format-icons": [
-            "󰂎",
-            "󰁺",
-            "󰁻",
-            "󰁼",
-            "󰁽",
-            "󰁾",
-            "󰁿",
-            "󰂀",
-            "󰂁",
-            "󰂂",
-            "󰁹"
+            "\udb80\udc8e",
+            "\udb80\udc7a",
+            "\udb80\udc7b",
+            "\udb80\udc7c",
+            "\udb80\udc7d",
+            "\udb80\udc7e",
+            "\udb80\udc7f",
+            "\udb80\udc80",
+            "\udb80\udc81",
+            "\udb80\udc82",
+            "\udb80\udc79"
         ]
     },
-
     "tray": {
         "icon-size": 16,
         "spacing": 10
+    },
+    "custom/sounds": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/toggle-system-sounds --status",
+        "interval": 2,
+        "signal": 9,
+        "on-click": "/home/baanbhaba/.local/bin/toggle-system-sounds --toggle",
+        "tooltip": true
     }
 }

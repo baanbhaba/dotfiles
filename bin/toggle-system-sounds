@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Script:      toggle-system-sounds
+# Description: Global mute toggle and Waybar telemetry for system/rice sounds.
+#              Controls: workspace OSD chimes, UI clicks, shutter, theme sounds,
+#              thockd mechanical keyboard typing sounds, and terminal beeps.
+# ==============================================================================
+
+MUTE_FILE="$HOME/.config/hypr/.sounds_muted"
+
+is_muted() {
+    [ -f "$MUTE_FILE" ]
+}
+
+status_json() {
+    if is_muted; then
+        echo '{"text":"🔕 MUTE","tooltip":"System Sounds: MUTED\nAll UI clicks, workspace chimes, beeps & typing sounds disabled.\nClick to UNMUTE","class":"muted"}'
+    else
+        echo '{"text":"🔔 FX","tooltip":"System Sounds: ENABLED\nAll UI clicks, workspace chimes & typing sounds active.\nClick to MUTE","class":"enabled"}'
+    fi
+}
+
+toggle_mute() {
+    if is_muted; then
+        rm -f "$MUTE_FILE"
+        notify-send -u low -i audio-volume-high "System Sounds" "UI sounds, workspace chimes & typing audio ENABLED"
+        paplay "$HOME/.config/hypr/sounds/current/switch.wav" 2>/dev/null &
+    else
+        touch "$MUTE_FILE"
+        pkill -f paplay 2>/dev/null || true
+        notify-send -u low -i audio-volume-muted "System Sounds" "UI sounds, workspace chimes & typing audio MUTED"
+    fi
+    # Instantly trigger Waybar custom module refresh
+    pkill -RTMIN+9 waybar 2>/dev/null || true
+}
+
+case "${1:-}" in
+    --status)
+        status_json
+        ;;
+    --toggle|"")
+        toggle_mute
+        ;;
+    --enable)
+        rm -f "$MUTE_FILE"
+        pkill -RTMIN+9 waybar 2>/dev/null || true
+        ;;
+    --disable)
+        touch "$MUTE_FILE"
+        pkill -f paplay 2>/dev/null || true
+        pkill -RTMIN+9 waybar 2>/dev/null || true
+        ;;
+    *)
+        echo "Usage: toggle-system-sounds [--toggle|--status|--enable|--disable]"
+        exit 1
+        ;;
+esac

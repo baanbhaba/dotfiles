@@ -12,7 +12,7 @@ fi
 # Tactile opening click
 CLICK_SND="$HOME/.config/hypr/sounds/current/click.wav"
 [ -f "$CLICK_SND" ] || CLICK_SND="$HOME/.config/hypr/sounds/click.wav"
-paplay "$CLICK_SND" 2>/dev/null &
+[ ! -f "$HOME/.config/hypr/.sounds_muted" ] && paplay "$CLICK_SND" 2>/dev/null &
 
 # Launch themed wlogout (6 buttons in 1 row with clean margins)
 if command -v wlogout &>/dev/null; then
@@ -37,7 +37,7 @@ case "$chosen" in
     $lock)
         LOCK_SND="$HOME/.config/hypr/sounds/current/lock.wav"
         [ -f "$LOCK_SND" ] || LOCK_SND="$HOME/.config/hypr/sounds/lock.wav"
-        paplay "$LOCK_SND" 2>/dev/null
+        [ ! -f "$HOME/.config/hypr/.sounds_muted" ] && paplay "$LOCK_SND" 2>/dev/null
         pidof hyprlock >/dev/null || hyprlock
         ;;
     $hibernate) systemctl hibernate ;;

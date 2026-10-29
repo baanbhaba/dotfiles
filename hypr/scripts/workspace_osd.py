@@ -41,7 +41,8 @@ def main():
                         if not os.path.exists(sound_path):
                             sound_path = os.path.expanduser("~/.config/hypr/sounds/click.wav")
 
-                        if os.path.exists(sound_path):
+                        mute_file = os.path.expanduser("~/.config/hypr/.sounds_muted")
+                        if not os.path.exists(mute_file) and os.path.exists(sound_path):
                             subprocess.Popen(
                                 ["paplay", sound_path],
                                 stdout=subprocess.DEVNULL,
