@@ -1,0 +1,32 @@
+# Starship Theme: Neo-Brutalism (Loud Retro-Graphic Pop)
+
+format = """
+[  fedora ](bold #000000 bg:#ffbe0b)\
+[](fg:#ffbe0b bg:#00f5d4)\
+[ $directory ](bold #000000 bg:#00f5d4)\
+[](fg:#00f5d4 bg:#ff006e)\
+[ $git_branch ](bold #ffffff bg:#ff006e)\
+[](fg:#ff006e)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[➔](bold #000000) "
+error_symbol = "[✗](bold #ff006e) "
+
+[directory]
+format = "$path"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+format = "$symbol$branch"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #ff006e"
+format = " [⏱ $duration]($style)"

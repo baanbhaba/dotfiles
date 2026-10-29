@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Dedicated launcher for instant floating Neovim editor
+export PATH="$HOME/.local/bin:$PATH"
+exec kitty --class instant-editor --title "Neovim" -e nvim "$@"

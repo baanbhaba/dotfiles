@@ -1,0 +1,420 @@
+#!/usr/bin/env python3
+"""
+flac-queue - High performance Queue Engine & Playback Orchestrator for FLAC Library
+Supports:
+  - Play Track (automatically queues the remainder of the album in order)
+  - Play Album (Gapless)
+  - Play Next / Enqueue (Custom Queue)
+  - Interactive Queue Reordering & Inspection
+  - M3U Playlist Export & Import
+  - Sleep Timer with smooth volume fade-out
+"""
+
+import os
+import sys
+import json
+import time
+import glob
+import shutil
+import argparse
+import threading
+import subprocess
+from typing import List, Dict, Optional, Any
+
+STATE_FILE = os.path.expanduser("~/.cache/flac_player/queue.json")
+ALBUM_PLAYLIST_FILE = os.path.expanduser("~/Music/playlists/_current_album.m3u")
+FAVORITES_FILE = os.path.expanduser("~/Music/favorites.m3u")
+MUSIC_DIR = os.path.expanduser("~/Music/flac")
+PLAYLISTS_DIR = os.path.expanduser("~/Music/playlists")
+
+os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+os.makedirs(PLAYLISTS_DIR, exist_ok=True)
+
+DEFAULT_STATE = {
+    "current": None,
+    "queue": [],
+    "history": []
+}
+
+def load_state() -> Dict[str, Any]:
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                data = json.load(f)
+                for k, v in DEFAULT_STATE.items():
+                    data.setdefault(k, v)
+                return data
+        except Exception:
+            pass
+    return DEFAULT_STATE.copy()
+
+def save_state(state: Dict[str, Any]):
+    try:
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception:
+        pass
+
+def get_track_metadata(path: str) -> Dict[str, str]:
+    fname = os.path.splitext(os.path.basename(path))[0]
+    album = os.path.basename(os.path.dirname(path))
+    artist = ""
+    title = fname
+
+    try:
+        res = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format_tags=title,artist,album",
+             "-of", "default=noprint_wrappers=1:nokey=0", path],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.8
+        )
+        if res.returncode == 0:
+            tags = {}
+            for line in res.stdout.strip().splitlines():
+                if "=" in line:
+                    k, v = line.split("=", 1)
+                    tags[k.strip().lower()] = v.strip()
+            if "title" in tags:
+                title = tags["title"]
+            if "artist" in tags:
+                artist = tags["artist"]
+            if "album" in tags:
+                album = tags["album"]
+    except Exception:
+        pass
+
+    if not artist:
+        parts = title.split(" - ", 1)
+        if len(parts) == 2:
+            artist, title = parts[0].strip(), parts[1].strip()
+
+    cover = os.path.join(os.path.dirname(path), "cover.jpg")
+    cover_path = cover if os.path.exists(cover) else ""
+
+    return {
+        "path": path,
+        "title": title,
+        "artist": artist,
+        "album": album,
+        "cover": cover_path
+    }
+
+def launch_g4music(path: str):
+    if shutil.which("hyprctl"):
+        cmd = ["hyprctl", "dispatch", "exec", f'[workspace special:music silent] flatpak run com.github.neithern.g4music "{path}"']
+    else:
+        cmd = ["flatpak", "run", "com.github.neithern.g4music", path]
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    def _play_trigger():
+        time.sleep(0.6)
+        subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "play"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    threading.Thread(target=_play_trigger, daemon=True).start()
+
+def notify_track(meta: Dict[str, str], prefix: str = "󰎆 Playing Track"):
+    title = meta.get("title", "Unknown Track")
+    artist = meta.get("artist", "")
+    album = meta.get("album", "")
+    body = f"{title}\n{artist} · {album}" if artist else title
+    icon = meta.get("cover") or "audio-speakers"
+    subprocess.run(["notify-send", prefix, body, "-i", icon, "-t", "3000"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMMANDS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def cmd_play(path: str, clear_queue: bool = True):
+    if not os.path.exists(path):
+        print(f"File not found: {path}", file=sys.stderr)
+        return
+
+    album_dir = os.path.dirname(path)
+    flacs = sorted(glob.glob(os.path.join(album_dir, "*.flac")))
+
+    # Automatically queue the remainder of the album in order!
+    if flacs and path in flacs:
+        idx = flacs.index(path)
+        playlist_tracks = flacs[idx:]
+
+        with open(ALBUM_PLAYLIST_FILE, "w", encoding="utf-8") as f:
+            f.write("#EXTM3U\n")
+            for t in playlist_tracks:
+                f.write(f"{t}\n")
+
+        state = load_state()
+        meta = get_track_metadata(path)
+        if state["current"] and state["current"].get("path"):
+            state["history"].append(state["current"]["path"])
+            state["history"] = state["history"][-50:]
+        state["current"] = meta
+        if clear_queue:
+            state["queue"] = playlist_tracks[1:]
+        save_state(state)
+
+        launch_g4music(ALBUM_PLAYLIST_FILE)
+        notify_track(meta, "󰎆 Playing Track")
+    else:
+        state = load_state()
+        meta = get_track_metadata(path)
+        state["current"] = meta
+        if clear_queue:
+            state["queue"] = []
+        save_state(state)
+        launch_g4music(path)
+        notify_track(meta, "󰎆 Playing Track")
+
+def cmd_play_album(dir_path: str, start_track: Optional[str] = None):
+    if not os.path.isdir(dir_path):
+        print(f"Directory not found: {dir_path}", file=sys.stderr)
+        return
+
+    flacs = sorted(glob.glob(os.path.join(dir_path, "*.flac")))
+    if not flacs:
+        return
+
+    start_idx = 0
+    if start_track and start_track in flacs:
+        start_idx = flacs.index(start_track)
+
+    playlist_tracks = flacs[start_idx:]
+    with open(ALBUM_PLAYLIST_FILE, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        for t in playlist_tracks:
+            f.write(f"{t}\n")
+
+    state = load_state()
+    meta = get_track_metadata(playlist_tracks[0])
+    state["current"] = meta
+    state["queue"] = playlist_tracks[1:]
+    save_state(state)
+
+    launch_g4music(ALBUM_PLAYLIST_FILE)
+    album_name = os.path.basename(dir_path)
+    cover = os.path.join(dir_path, "cover.jpg")
+    icon = cover if os.path.exists(cover) else "audio-speakers"
+    subprocess.run([
+        "notify-send", "󰎆 Playing Album",
+        f"{album_name} ({len(playlist_tracks)} tracks from start)",
+        "-i", icon, "-t", "3500"
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def cmd_play_next(path: str):
+    if not os.path.exists(path):
+        print(f"File not found: {path}", file=sys.stderr)
+        return
+    state = load_state()
+    state["queue"].insert(0, path)
+    save_state(state)
+    meta = get_track_metadata(path)
+    notify_track(meta, "⚡ Up Next")
+
+def cmd_enqueue(path: str):
+    if not os.path.exists(path):
+        print(f"File not found: {path}", file=sys.stderr)
+        return
+    state = load_state()
+    state["queue"].append(path)
+    save_state(state)
+    meta = get_track_metadata(path)
+    q_len = len(state["queue"])
+    notify_track(meta, f"➕ Added to Queue (#{q_len})")
+
+def cmd_enqueue_album(dir_path: str):
+    if not os.path.isdir(dir_path):
+        return
+    tracks = sorted(glob.glob(os.path.join(dir_path, "*.flac")))
+    if not tracks:
+        return
+    state = load_state()
+    state["queue"].extend(tracks)
+    save_state(state)
+    album_name = os.path.basename(dir_path)
+    cover = os.path.join(dir_path, "cover.jpg")
+    icon = cover if os.path.exists(cover) else "audio-speakers"
+    subprocess.run([
+        "notify-send", "➕ Album Enqueued",
+        f"{album_name} (+{len(tracks)} tracks)",
+        "-i", icon, "-t", "3000"
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def cmd_next():
+    state = load_state()
+    if state.get("queue"):
+        next_track = state["queue"].pop(0)
+        save_state(state)
+        cmd_play(next_track, clear_queue=False)
+        return True
+
+    subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "next"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return False
+
+def cmd_prev():
+    subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "previous"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def cmd_list():
+    state = load_state()
+    items = []
+    for idx, p in enumerate(state.get("queue", []), 1):
+        fname = os.path.splitext(os.path.basename(p))[0]
+        album = os.path.basename(os.path.dirname(p))
+        cover = os.path.join(os.path.dirname(p), "cover.jpg")
+        items.append({
+            "index": idx,
+            "path": p,
+            "title": fname,
+            "album": album,
+            "cover": cover if os.path.exists(cover) else ""
+        })
+    print(json.dumps({
+        "current": state.get("current"),
+        "queue": items,
+        "count": len(items)
+    }, indent=2))
+
+def cmd_clear():
+    state = load_state()
+    state["queue"] = []
+    save_state(state)
+    subprocess.run(["notify-send", "📋 Queue Cleared", "Upcoming queue has been emptied.", "-i", "dialog-information", "-t", "2000"])
+
+def cmd_remove(idx: int):
+    state = load_state()
+    if 1 <= idx <= len(state["queue"]):
+        removed = state["queue"].pop(idx - 1)
+        save_state(state)
+        fname = os.path.splitext(os.path.basename(removed))[0]
+        subprocess.run(["notify-send", "🗑️ Removed from Queue", fname, "-i", "dialog-information", "-t", "2000"])
+
+def cmd_save_playlist(name: str):
+    state = load_state()
+    tracks = []
+    if state["current"] and state["current"].get("path"):
+        tracks.append(state["current"]["path"])
+    tracks.extend(state["queue"])
+    if not tracks:
+        print("Queue is empty, nothing to save.", file=sys.stderr)
+        return
+    clean_name = name.strip().replace("/", "_")
+    if not clean_name.endswith(".m3u"):
+        clean_name += ".m3u"
+    target = os.path.join(PLAYLISTS_DIR, clean_name)
+    with open(target, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        for t in tracks:
+            f.write(f"{t}\n")
+    subprocess.run(["notify-send", "💾 Playlist Saved", f"Saved {len(tracks)} tracks to {clean_name}", "-i", "media-playlist-symbolic", "-t", "3000"])
+
+def cmd_load_playlist(path: str):
+    if not os.path.exists(path):
+        print(f"Playlist not found: {path}", file=sys.stderr)
+        return
+    tracks = []
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and os.path.exists(line):
+                tracks.append(line)
+    if not tracks:
+        print("No valid tracks found in playlist.", file=sys.stderr)
+        return
+    state = load_state()
+    state["queue"] = tracks[1:]
+    save_state(state)
+    cmd_play(tracks[0], clear_queue=False)
+    subprocess.run(["notify-send", "▶ Playlist Loaded", f"Loaded {os.path.basename(path)} ({len(tracks)} tracks)", "-i", "media-playlist-symbolic", "-t", "3000"])
+
+def cmd_sleep_timer(minutes: float):
+    def _fade_and_stop():
+        duration = minutes * 60.0
+        fade_time = 15.0
+        sleep_dur = max(0.0, duration - fade_time)
+        time.sleep(sleep_dur)
+        for step in range(10, 0, -1):
+            vol = step / 10.0
+            subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "volume", str(vol)],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(1.5)
+        subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "pause"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(0.5)
+        subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "volume", "1.0"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["notify-send", "🌙 Sleep Timer", "Playback paused.", "-i", "weather-clear-night", "-t", "3000"])
+
+    threading.Thread(target=_fade_and_stop, daemon=False).start()
+    subprocess.run(["notify-send", "🌙 Sleep Timer Set", f"Music will fade and pause in {minutes:g} minutes.", "-i", "weather-clear-night", "-t", "3000"])
+
+def main():
+    parser = argparse.ArgumentParser(description="flac-queue manager")
+    sub = parser.add_subparsers(dest="command")
+
+    p_play = sub.add_parser("play")
+    p_play.add_argument("path")
+
+    p_palbum = sub.add_parser("play-album")
+    p_palbum.add_argument("dir")
+    p_palbum.add_argument("start_track", nargs="?", default=None)
+
+    p_next = sub.add_parser("play-next")
+    p_next.add_argument("path")
+
+    p_enqueue = sub.add_parser("enqueue")
+    p_enqueue.add_argument("path")
+
+    p_enq_alb = sub.add_parser("enqueue-album")
+    p_enq_alb.add_argument("dir")
+
+    sub.add_parser("next")
+    sub.add_parser("prev")
+    sub.add_parser("list")
+    sub.add_parser("clear")
+
+    p_rem = sub.add_parser("remove")
+    p_rem.add_argument("index", type=int)
+
+    p_save = sub.add_parser("save-playlist")
+    p_save.add_argument("name")
+
+    p_load = sub.add_parser("load-playlist")
+    p_load.add_argument("path")
+
+    p_sleep = sub.add_parser("sleep-timer")
+    p_sleep.add_argument("minutes", type=float)
+
+    args = parser.parse_args()
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+
+    if args.command == "play":
+        cmd_play(args.path)
+    elif args.command == "play-album":
+        cmd_play_album(args.dir, args.start_track)
+    elif args.command == "play-next":
+        cmd_play_next(args.path)
+    elif args.command == "enqueue":
+        cmd_enqueue(args.path)
+    elif args.command == "enqueue-album":
+        cmd_enqueue_album(args.dir)
+    elif args.command == "next":
+        cmd_next()
+    elif args.command == "prev":
+        cmd_prev()
+    elif args.command == "list":
+        cmd_list()
+    elif args.command == "clear":
+        cmd_clear()
+    elif args.command == "remove":
+        cmd_remove(args.index)
+    elif args.command == "save-playlist":
+        cmd_save_playlist(args.name)
+    elif args.command == "load-playlist":
+        cmd_load_playlist(args.path)
+    elif args.command == "sleep-timer":
+        cmd_sleep_timer(args.minutes)
+
+if __name__ == "__main__":
+    main()

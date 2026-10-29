@@ -1,0 +1,147 @@
+/* ==========================================================================
+   DARK BRUTALISM - HIGH-CONTRAST CYBER BRUTALIST OBSIDIAN THEME
+   Matches Hyprland Dark Brutalism, Kitty, and Waybar aesthetic.
+   ========================================================================== */
+
+.theme-dark {
+  /* Core Palette */
+  --bg-primary: #0c0d12;
+  --bg-primary-alt: #13151c;
+  --bg-secondary: #0c0d12;
+  --bg-secondary-alt: #181b24;
+
+  --background-primary: var(--bg-primary);
+  --background-primary-alt: var(--bg-primary-alt);
+  --background-secondary: var(--bg-secondary);
+  --background-secondary-alt: var(--bg-secondary-alt);
+
+  /* High-Contrast Borders */
+  --border-color: #252834;
+  --background-modifier-border: var(--border-color);
+  --background-modifier-border-hover: #ffe600;
+  --background-modifier-border-focus: #00f5d4;
+  --divider-color: #252834;
+
+  /* Text Colors */
+  --text-normal: #ffffff;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --text-accent: #ffe600;
+  --text-accent-hover: #00f5d4;
+
+  /* Accents & Selection */
+  --color-accent: #ffe600;
+  --interactive-accent: #ffe600;
+  --interactive-accent-hover: #00f5d4;
+  --text-selection: rgba(255, 230, 0, 0.35);
+  --interactive-hover: #1c1f28;
+
+  /* Typography */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+
+  /* Headings */
+  --h1-color: #ffe600;
+  --h2-color: #00f5d4;
+  --h3-color: #ffffff;
+  --h4-color: #ffe600;
+  --h5-color: #00f5d4;
+  --h6-color: #cbd5e1;
+
+  /* Tabs & Navigation */
+  --tab-text-color-focused-active: #000000;
+  --tab-background-active: #ffe600;
+  --status-bar-background: #0c0d12;
+  --status-bar-text-color: #ffe600;
+  --status-bar-border-color: #252834;
+
+  /* Code Blocks */
+  --code-normal: #00f5d4;
+  --code-background: #13151c;
+  --code-comment: #64748b;
+  --code-keyword: #ffe600;
+  --code-string: #a7f3d0;
+  --code-value: #f43f5e;
+
+  /* Links & Tags */
+  --link-color: #00f5d4;
+  --link-color-hover: #ffe600;
+  --link-decoration: underline;
+  --link-external-color: #ffe600;
+  --link-external-color-hover: #ffffff;
+  --tag-color: #000000;
+  --tag-background: #00f5d4;
+  --tag-background-hover: #ffe600;
+  --tag-radius: 2px;
+
+  /* Tables */
+  --table-border-color: #252834;
+  --table-header-background: #181b24;
+  --table-header-color: #ffe600;
+  --table-row-even-background: #0f1017;
+}
+
+/* --- Brutalist UI Enhancements --- */
+
+/* Active Sidebar File */
+.nav-file-title.is-active {
+  background-color: #ffe600 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 1px solid #ffe600 !important;
+  border-radius: 2px;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #181b24 !important;
+  color: #ffe600 !important;
+}
+
+/* Brutalist Header Titles */
+.workspace-leaf-header-title {
+  color: #ffe600 !important;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* Blockquotes with Cyan Bar */
+.markdown-rendered blockquote {
+  border-left: 4px solid #00f5d4 !important;
+  background-color: #13151c !important;
+  color: #ffffff !important;
+  padding: 10px 16px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Callouts with Hard Cyber Borders */
+.callout {
+  border: 2px solid #ffe600 !important;
+  background-color: #11131a !important;
+  border-radius: 2px !important;
+}
+
+.callout-title {
+  color: #ffe600 !important;
+  font-weight: 800 !important;
+}
+
+/* Horizontal Divider */
+.markdown-rendered hr {
+  border: none !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, #ffe600, #00f5d4) !important;
+}
+
+/* Buttons with Brutalist Borders */
+button.mod-cta {
+  background-color: #ffe600 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #ffffff !important;
+}
+
+button.mod-cta:hover {
+  background-color: #00f5d4 !important;
+  color: #000000 !important;
+}

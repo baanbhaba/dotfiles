@@ -1,0 +1,32 @@
+# Starship Theme: RetroBoy (GameBoy DMG 8-Bit Cartridge)
+
+format = """
+[ 👾 RETROBOY ](bold #0f380f bg:#8bac0f)\
+[](fg:#8bac0f bg:#306230)\
+[ 📁 $directory ](bold #9bbc0f bg:#306230)\
+[](fg:#306230 bg:#0f380f)\
+[ $git_branch ](bold #8bac0f bg:#0f380f)\
+[](fg:#0f380f)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[▶](bold #8bac0f) "
+error_symbol = "[✗](bold #306230) "
+
+[directory]
+format = "$path"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = "🌿 "
+format = "$symbol$branch"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #8bac0f"
+format = " [⏱ $duration]($style)"

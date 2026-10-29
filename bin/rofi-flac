@@ -1,0 +1,381 @@
+#!/usr/bin/env python3
+"""
+rofi-flac - Modern Hi-Res FLAC Library Browser, Queue Manager & Search Engine
+Features:
+  - Album Art Thumbnails in Rofi
+  - Global Track Search (fuzzy find across all 794+ tracks)
+  - Browse by Artist (grouping albums by artist)
+  - Set Sleep Timer (with smooth volume fade)
+  - Interactive Queue Management (view, remove, clear, jump)
+  - Play Favorites & Random Album modes
+  - Clean error-free navigation
+"""
+
+import os
+import sys
+import glob
+import json
+import random
+import subprocess
+from typing import List, Dict, Optional, Tuple
+
+MUSIC_DIR = os.path.expanduser("~/Music/flac")
+PLAYLISTS_DIR = os.path.expanduser("~/Music/playlists")
+FAVORITES_FILE = os.path.expanduser("~/Music/favorites.m3u")
+ARTISTS_FILE = os.path.expanduser("~/.cache/flac_player/artists.json")
+ROFI_THEME = os.path.expanduser("~/.config/rofi/config.rasi")
+QUEUE_BIN = os.path.expanduser("~/.local/bin/flac-queue")
+FAV_BIN = os.path.expanduser("~/.local/bin/flac-fav")
+
+def run_rofi(
+    prompt: str,
+    lines: List[Tuple[str, Optional[str]]],
+    extra_theme: str = "",
+    placeholder: str = ""
+) -> Optional[str]:
+    rofi_cmd = [
+        "rofi", "-dmenu", "-i",
+        "-show-icons",
+        "-p", prompt,
+        "-theme", ROFI_THEME
+    ]
+
+    theme_str = 'window { width: 720px; } listview { lines: 14; }'
+    if placeholder:
+        theme_str += f' entry {{ placeholder: "{placeholder}"; }}'
+    if extra_theme:
+        theme_str += f" {extra_theme}"
+
+    rofi_cmd.extend(["-theme-str", theme_str])
+
+    payload = []
+    for text, icon in lines:
+        if icon and os.path.exists(icon):
+            payload.append(f"{text}\0icon\x1f{icon}")
+        else:
+            payload.append(text)
+
+    input_data = "\n".join(payload)
+
+    proc = subprocess.run(
+        rofi_cmd,
+        input=input_data,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True
+    )
+
+    if proc.returncode != 0:
+        return None
+
+    chosen = proc.stdout.strip()
+    return chosen if chosen else None
+
+def get_favorites_count() -> int:
+    if os.path.exists(FAVORITES_FILE):
+        try:
+            with open(FAVORITES_FILE, "r") as f:
+                return len([l for l in f if l.strip() and not l.startswith("#")])
+        except Exception:
+            pass
+    return 0
+
+def get_queue_info() -> Dict:
+    res = subprocess.run([QUEUE_BIN, "list"], stdout=subprocess.PIPE, text=True)
+    try:
+        return json.loads(res.stdout)
+    except Exception:
+        return {"current": None, "queue": [], "count": 0}
+
+def load_artists_cache() -> Dict[str, List[Dict]]:
+    if os.path.exists(ARTISTS_FILE):
+        try:
+            with open(ARTISTS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACTIONS & SCREENS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def action_menu_for_track(track_path: str, album_dir: Optional[str] = None):
+    fname = os.path.splitext(os.path.basename(track_path))[0]
+    cover = os.path.join(os.path.dirname(track_path), "cover.jpg")
+    icon = cover if os.path.exists(cover) else None
+
+    options = [
+        ("▶️  Play Now", icon),
+        ("⚡  Play Next (Up Next)", icon),
+        ("➕  Add to End of Queue", icon),
+    ]
+    if album_dir and os.path.isdir(album_dir):
+        options.append(("💿  Play Full Album From Here", icon))
+    options.append(("❤️  Toggle Favorite", "emblem-favorite"))
+
+    choice = run_rofi(f"🎵 {fname}", options, placeholder="Select playback action...")
+    if not choice:
+        return
+
+    if "Play Now" in choice:
+        subprocess.run([QUEUE_BIN, "play", track_path])
+    elif "Play Next" in choice:
+        subprocess.run([QUEUE_BIN, "play-next", track_path])
+    elif "Add to End of Queue" in choice:
+        subprocess.run([QUEUE_BIN, "enqueue", track_path])
+    elif "Play Full Album" in choice and album_dir:
+        subprocess.run([QUEUE_BIN, "play-album", album_dir, track_path])
+    elif "Toggle Favorite" in choice:
+        subprocess.run([FAV_BIN, "toggle", track_path])
+
+def screen_global_search():
+    tracks = []
+    for flac in sorted(glob.glob(os.path.join(MUSIC_DIR, "*/*.flac"))):
+        fname = os.path.splitext(os.path.basename(flac))[0]
+        album = os.path.basename(os.path.dirname(flac))
+        cover = os.path.join(os.path.dirname(flac), "cover.jpg")
+        disp = f"{fname}  [💿 {album}]"
+        tracks.append((disp, cover if os.path.exists(cover) else None, flac, os.path.dirname(flac)))
+
+    menu_lines = [(t[0], t[1]) for t in tracks]
+    choice = run_rofi("🔍 Search Songs", menu_lines, placeholder="Type song or album name...")
+    if not choice:
+        return
+
+    for disp, icon, path, alb_dir in tracks:
+        if choice == disp:
+            action_menu_for_track(path, alb_dir)
+            break
+
+def screen_browse_artists():
+    artists = load_artists_cache()
+    if not artists:
+        return
+
+    items = []
+    for artist, albs in sorted(artists.items()):
+        total_trks = sum(a["track_count"] for a in albs)
+        first_cover = albs[0]["cover"] if albs and albs[0].get("cover") else None
+        disp = f"🎤  {artist} ({len(albs)} albums · {total_trks} tracks)"
+        items.append((disp, first_cover, artist))
+
+    choice = run_rofi("🎤 Browse Artists", [(i[0], i[1]) for i in items], placeholder="Filter artists...")
+    if not choice:
+        return
+
+    for disp, icon, art_name in items:
+        if choice == disp:
+            screen_artist_albums(art_name, artists[art_name])
+            break
+
+def screen_artist_albums(artist_name: str, albums: List[Dict]):
+    items = []
+    for a in albums:
+        disp = f"📁  {a['album_name']} ({a['track_count']} tracks)"
+        items.append((disp, a["cover"] if a.get("cover") else None, a["path"]))
+
+    choice = run_rofi(f"💿 {artist_name}", [(i[0], i[1]) for i in items], placeholder="Select album...")
+    if not choice:
+        return
+
+    for disp, icon, path in items:
+        if choice == disp:
+            screen_album_tracks(path)
+            break
+
+def screen_sleep_timer():
+    options = [
+        ("🌙  15 Minutes", "weather-clear-night"),
+        ("🌙  30 Minutes", "weather-clear-night"),
+        ("🌙  45 Minutes", "weather-clear-night"),
+        ("🌙  60 Minutes", "weather-clear-night"),
+        ("🌙  90 Minutes", "weather-clear-night"),
+        ("🌙  120 Minutes", "weather-clear-night")
+    ]
+    choice = run_rofi("🌙 Sleep Timer", options, placeholder="Select timer duration...")
+    if not choice:
+        return
+
+    minutes_map = {
+        "15": 15, "30": 30, "45": 45, "60": 60, "90": 90, "120": 120
+    }
+    for k, v in minutes_map.items():
+        if f"{k} Minutes" in choice:
+            subprocess.run([QUEUE_BIN, "sleep-timer", str(v)])
+            break
+
+def screen_view_queue():
+    q_data = get_queue_info()
+    current = q_data.get("current")
+    queue = q_data.get("queue", [])
+
+    items = []
+    items.append(("🗑️  Clear Upcoming Queue", "edit-clear"))
+    items.append(("💾  Save Queue as Playlist", "document-save"))
+
+    if current and current.get("title"):
+        c_title = current.get("title")
+        c_artist = current.get("artist") or "Now Playing"
+        c_cover = current.get("cover")
+        items.append((f"▶  Now Playing: {c_title} ({c_artist})", c_cover if c_cover and os.path.exists(c_cover) else "audio-speakers"))
+
+    for item in queue:
+        idx = item["index"]
+        title = item["title"]
+        album = item["album"]
+        cover = item.get("cover")
+        disp = f"#{idx:02d}  {title}  ·  {album}"
+        items.append((disp, cover if cover and os.path.exists(cover) else None))
+
+    if len(items) <= 2:
+        items.append(("ℹ️  Queue is currently empty", "dialog-information"))
+
+    choice = run_rofi(f"📋 Queue ({len(queue)} upcoming)", items, placeholder="Select to jump or remove...")
+    if not choice:
+        return
+
+    if "Clear Upcoming Queue" in choice:
+        subprocess.run([QUEUE_BIN, "clear"])
+    elif "Save Queue as Playlist" in choice:
+        name_choice = run_rofi("💾 Name Playlist", [("My Playlist", None), ("Favorites Mix", None), ("Chill FLACs", None)], placeholder="Type playlist name...")
+        if name_choice:
+            subprocess.run([QUEUE_BIN, "save-playlist", name_choice])
+    elif choice.startswith("#"):
+        try:
+            idx = int(choice.split()[0].replace("#", ""))
+            target_track = queue[idx - 1]["path"]
+            action = run_rofi(f"Track #{idx}", [
+                ("▶️  Jump & Play Immediately", None),
+                ("🗑️  Remove from Queue", "edit-delete")
+            ], placeholder="Choose queue action...")
+            if action and "Jump" in action:
+                subprocess.run([QUEUE_BIN, "play", target_track])
+            elif action and "Remove" in action:
+                subprocess.run([QUEUE_BIN, "remove", str(idx)])
+        except Exception:
+            pass
+
+def screen_recently_added():
+    albums = [d for d in glob.glob(os.path.join(MUSIC_DIR, "*")) if os.path.isdir(d)]
+    albums.sort(key=lambda d: os.path.getmtime(d), reverse=True)
+
+    items = []
+    for alb in albums:
+        name = os.path.basename(alb)
+        cnt = len(glob.glob(os.path.join(alb, "*.flac")))
+        cover = os.path.join(alb, "cover.jpg")
+        items.append((f"📁  {name} ({cnt} tracks)", cover if os.path.exists(cover) else None, alb))
+
+    choice = run_rofi("🆕 Recently Added", [(i[0], i[1]) for i in items], placeholder="Filter recently added...")
+    if not choice:
+        return
+
+    for disp, icon, path in items:
+        if choice == disp:
+            screen_album_tracks(path)
+            break
+
+def screen_album_tracks(album_path: str):
+    album_name = os.path.basename(album_path)
+    cover = os.path.join(album_path, "cover.jpg")
+    cover_icon = cover if os.path.exists(cover) else None
+
+    flacs = sorted(glob.glob(os.path.join(album_path, "*.flac")))
+    items = [
+        ("▶️  Play Full Album", cover_icon),
+        ("➕  Add Full Album to Queue", cover_icon)
+    ]
+    track_lookup = {}
+    for f in flacs:
+        fname = os.path.splitext(os.path.basename(f))[0]
+        disp = f"🎵  {fname}"
+        items.append((disp, cover_icon))
+        track_lookup[disp] = f
+
+    choice = run_rofi(f"💿 {album_name}", items, placeholder="Select track or action...")
+    if not choice:
+        return
+
+    if "Play Full Album" in choice:
+        subprocess.run([QUEUE_BIN, "play-album", album_path])
+    elif "Add Full Album to Queue" in choice:
+        subprocess.run([QUEUE_BIN, "enqueue-album", album_path])
+    elif choice in track_lookup:
+        action_menu_for_track(track_lookup[choice], album_path)
+    else:
+        # Fallback partial match
+        for disp, path in track_lookup.items():
+            if choice == disp or choice in disp:
+                action_menu_for_track(path, album_path)
+                break
+
+def main():
+    fav_count = get_favorites_count()
+    q_data = get_queue_info()
+    q_count = len(q_data.get("queue", []))
+    artists = load_artists_cache()
+
+    albums = sorted([d for d in glob.glob(os.path.join(MUSIC_DIR, "*")) if os.path.isdir(d)])
+    total_tracks = sum(len(glob.glob(os.path.join(d, "*.flac"))) for d in albums)
+
+    menu = [
+        (f"🔍  Search All Songs ({total_tracks} Tracks)", "system-search"),
+        (f"🎤  Browse by Artist ({len(artists)} Artists)", "system-users"),
+        (f"📋  View / Manage Queue ({q_count} tracks)", "media-playlist-symbolic"),
+        (f"❤️  Play Favorites ({fav_count} tracks)", "emblem-favorite"),
+        ("🎲  Play Random Album", "media-playlist-shuffle"),
+        ("🔀  Shuffle All FLACs", "media-playlist-shuffle"),
+        ("🆕  Recently Added Albums", "document-open-recent"),
+        ("🌙  Set Sleep Timer", "weather-clear-night"),
+        ("🎚️  Audio Outputs & Sound Profiles", "audio-card")
+    ]
+
+    album_lookup = {}
+    for alb in albums:
+        name = os.path.basename(alb)
+        cnt = len(glob.glob(os.path.join(alb, "*.flac")))
+        cover = os.path.join(alb, "cover.jpg")
+        disp = f"📁  {name} ({cnt} tracks)"
+        menu.append((disp, cover if os.path.exists(cover) else None))
+        album_lookup[disp] = alb
+
+    choice = run_rofi("󰎆 FLAC Library", menu, placeholder="Search songs, artists, queue, albums...")
+    if not choice:
+        sys.exit(0)
+
+    if choice.startswith("🔍  Search All Songs"):
+        screen_global_search()
+    elif choice.startswith("🎤  Browse by Artist"):
+        screen_browse_artists()
+    elif choice.startswith("📋  View / Manage Queue"):
+        screen_view_queue()
+    elif choice.startswith("❤️  Play Favorites"):
+        subprocess.run([FAV_BIN, "play"])
+    elif choice.startswith("🎲  Play Random Album"):
+        if albums:
+            chosen = random.choice(albums)
+            subprocess.run([QUEUE_BIN, "play-album", chosen])
+    elif choice.startswith("🔀  Shuffle All FLACs"):
+        all_flacs = glob.glob(os.path.join(MUSIC_DIR, "*/*.flac"))
+        if all_flacs:
+            random.shuffle(all_flacs)
+            subprocess.run([QUEUE_BIN, "play", all_flacs[0]])
+            for t in all_flacs[1:50]:
+                subprocess.run([QUEUE_BIN, "enqueue", t])
+    elif choice.startswith("🆕  Recently Added Albums"):
+        screen_recently_added()
+    elif choice.startswith("🌙  Set Sleep Timer"):
+        screen_sleep_timer()
+    elif choice.startswith("🎚️  Audio Outputs"):
+        subprocess.run([os.path.expanduser("~/.local/bin/rofi-eq")])
+    elif choice in album_lookup:
+        screen_album_tracks(album_lookup[choice])
+    elif choice.startswith("📁 "):
+        for disp, alb in album_lookup.items():
+            if choice == disp or choice.strip() == disp.strip():
+                screen_album_tracks(alb)
+                break
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,56 @@
+# Starship Theme: Charcoal (CRT Pitch-Black & Amber Gold)
+
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$package\
+$python\
+$rust\
+$nodejs\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[❯](bold #ffb000)"
+error_symbol = "[❯](bold #ff3333)"
+
+[directory]
+style = "bold #ffb000"
+format = "[$path]($style) "
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+style = "bold #8c9b32"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "#ffb000"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 2_000
+style = "#636b28"
+format = "took [$duration]($style) "
+
+[python]
+symbol = " "
+style = "#8c9b32"
+format = "via [${symbol}${pyenv_prefix}(${version} )]($style)"
+
+[rust]
+symbol = " "
+style = "#ffb000"
+format = "via [$symbol($version )]($style)"
+
+[nodejs]
+symbol = " "
+style = "#8c9b32"
+format = "via [$symbol($version )]($style)"

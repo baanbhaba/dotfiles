@@ -3,7 +3,7 @@
    ----------------------------------------------------- */
 
 * {
-    font-family: "JetBrainsMono Nerd Font";
+    font-family: "Cinzel", "Source Code Pro", serif;
     font-size: 13px;
     border: none;
     border-radius: 0;
@@ -50,7 +50,68 @@ window#waybar {
     padding: 0 20px;
 }
 
-#custom-clipboard, #pulseaudio, #battery, #tray {
+#custom-weather {
+    font-weight: bold;
+    color: #f5ede3;
+    padding: 0 14px;
+    background: rgba(196, 90, 60, 0.2);
+    border-radius: 4px;
+    transition: all 0.25s ease;
+}
+
+#custom-weather:hover {
+    background: rgba(196, 90, 60, 0.45);
+    color: #d4a847;
+}
+
+#network {
+    font-weight: bold;
+    color: #d4a847;
+    padding: 0 14px;
+    background: rgba(212, 168, 71, 0.15);
+    border-radius: 4px;
+    transition: all 0.25s ease;
+}
+
+#network:hover {
+    background: rgba(212, 168, 71, 0.35);
+    color: #f5ede3;
+}
+
+#network.disconnected {
+    color: #c45a3c;
+}
+
+#custom-music {
+    padding: 0 12px;
+    color: #f5ede3;
+    font-weight: bold;
+}
+
+#custom-music:hover {
+    color: #d4a847;
+}
+
+#custom-music.paused {
+    color: #8d5b4c;
+}
+
+#pulseaudio {
+    padding: 0 12px;
+    color: #f4a261;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+#pulseaudio:hover {
+    color: #e76f51;
+}
+
+#pulseaudio.muted {
+    color: #c45a3c;
+}
+
+#custom-clipboard, #battery, #tray {
     padding: 0 12px;
     color: #f5ede3;
 }
@@ -68,7 +129,7 @@ tooltip {
 
 tooltip label {
     color: #f5ede3;
-    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-family: "Cinzel", "Source Code Pro", serif;
     font-size: 15px;
     font-weight: bold;
 }

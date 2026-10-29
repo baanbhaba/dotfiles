@@ -1,0 +1,108 @@
+{
+    "layer": "top",
+    "position": "bottom",
+    "height": 40,
+    "margin-bottom": 10,
+    "margin-left": 14,
+    "margin-right": 14,
+    "spacing": 8,
+
+    "modules-left": [
+        "custom/music",
+        "hyprland/workspaces"
+    ],
+
+    "modules-center": [
+        "clock",
+        "network"
+    ],
+
+    "modules-right": [
+        "custom/clipboard",
+        "pulseaudio",
+        "battery",
+        "tray"
+    ],
+
+    "custom/launcher": {
+        "format": "👾 START",
+        "on-click": "rofi -show drun",
+        "tooltip": false
+    },
+
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": true,
+        "format": "[{id}]",
+        "on-click": "hyprctl dispatch workspace {id}"
+    },
+
+    "clock": {
+        "interval": 60,
+        "format": "⏰ {:%H:%M | %a %d}",
+        "format-alt": "📅 {:%Y-%m-%d}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
+        "calendar": {
+            "mode"          : "month",
+            "mode-mon-col"  : 3,
+            "weeks-pos"     : "right",
+            "on-scroll"     : 1,
+            "format": {
+                "months":     "<span color='#0f380f'><b>{}</b></span>",
+                "days":       "<span color='#0f380f'><b>{}</b></span>",
+                "weeks":      "<span color='#306230'><b>W{}</b></span>",
+                "weekdays":   "<span color='#306230'><b>{}</b></span>",
+                "today":      "<span background='#9bbc0f' color='#0f380f'><b>{}</b></span>"
+            }
+        }
+    },
+
+    "custom/music": {
+        "format": "♪ {}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/waybar-music",
+        "interval": 2,
+        "on-click": "/home/baanbhaba/.local/bin/music-click --toggle",
+        "on-click-right": "/home/baanbhaba/.local/bin/music-click --library",
+        "on-click-middle": "playerctl -p com.github.neithern.g4music play-pause",
+        "on-scroll-up": "/home/baanbhaba/.local/bin/flac-queue next",
+        "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
+        "tooltip": true
+    },
+
+    "network": {
+        "format-wifi": "WIFI {essid}",
+        "format-ethernet": "ETH LINK",
+        "format-disconnected": "NO LINK",
+        "max-length": 20,
+        "interval": 5,
+        "on-click": "~/.local/bin/rofi-wifi",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr}"
+    },
+
+    "custom/clipboard": {
+        "format": "💾 CLIP",
+        "on-click": "~/.local/bin/clipboard-menu",
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "format": "VOL {volume}%",
+        "format-muted": "VOL MUTE",
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 5,
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}"
+    },
+
+    "battery": {
+        "states": { "warning": 25, "critical": 10 },
+        "format": "HP [{capacity}%]",
+        "format-charging": "HP+ [{capacity}%]"
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 6
+    }
+}

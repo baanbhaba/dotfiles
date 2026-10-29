@@ -1,0 +1,89 @@
+/* ==========================================================================
+   FIREFOX NEW TAB: JAIPUR (ROYAL TERRACOTTA & GOLD)
+   ========================================================================== */
+
+@-moz-document url("about:newtab"), url("about:home"), url("about:blank") {
+  :root {
+    --newtab-background-color: #1a0404 !important;
+    --newtab-text-primary-color: #f5ede3 !important;
+    --newtab-text-secondary-color: #a0845c !important;
+    --newtab-search-icon-color: #d4a847 !important;
+    --newtab-card-background-color: #250707 !important;
+    --newtab-primary-action-background: #c45a3c !important;
+    --newtab-element-hover-color: rgba(212, 168, 71, 0.15) !important;
+  }
+
+  body {
+    background-color: #1a0404 !important;
+    color: #f5ede3 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Search Bar */
+  .search-wrapper .search-inner-wrapper {
+    background-color: #250707 !important;
+    border: 1px solid #4a1515 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7) !important;
+    transition: all 0.25s ease !important;
+  }
+
+  .search-wrapper .search-inner-wrapper:hover,
+  .search-wrapper:has(input:focus) .search-inner-wrapper {
+    border-color: #d4a847 !important;
+    box-shadow: 0 0 14px rgba(212, 168, 71, 0.3) !important;
+  }
+
+  .search-wrapper input {
+    color: #f5ede3 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Top Sites / Shortcuts */
+  .top-site-outer .tile {
+    background-color: #250707 !important;
+    border: 1px solid #4a1515 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .top-site-outer:hover .tile {
+    border-color: #d4a847 !important;
+    box-shadow: 0 0 12px rgba(212, 168, 71, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .top-site-outer .title {
+    color: #a0845c !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  .top-site-outer:hover .title {
+    color: #f5ede3 !important;
+  }
+
+  /* Logo / Wordmark */
+  .wordmark {
+    fill: #d4a847 !important;
+  }
+}
+
+/* ==========================================================================
+   MONKEYTYPE THEME: JAIPUR (ROYAL TERRACOTTA & GOLD)
+   ========================================================================== */
+
+@-moz-document domain("monkeytype.com") {
+  :root {
+    --bg-color: #1a0404 !important;
+    --main-color: #d4a847 !important;
+    --caret-color: #d4a847 !important;
+    --sub-color: #a0845c !important;
+    --sub-alt-color: #250707 !important;
+    --text-color: #f5ede3 !important;
+    --error-color: #c45a3c !important;
+    --error-extra-color: #6b2210 !important;
+    --colorful-error-color: #e07a5f !important;
+    --colorful-error-extra-color: #7a3522 !important;
+  }
+}

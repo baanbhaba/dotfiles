@@ -1,0 +1,164 @@
+/* -----------------------------------------------------
+   RETROBOY BOTTOM WAYBAR (GAMEBOY DMG PIXEL HUD)
+   ----------------------------------------------------- */
+
+* {
+    font-family: "Silkscreen", "VT323", monospace;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background-color: transparent;
+    color: #0f380f;
+}
+
+#custom-launcher {
+    background: #8bac0f;
+    color: #0f380f;
+    padding: 4px 12px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#workspaces button {
+    padding: 4px 10px;
+    margin: 0 2px;
+    background: #306230;
+    color: #8bac0f;
+    border: 2px solid #0f380f;
+    box-shadow: 2px 2px 0px #0f380f;
+    transition: none;
+}
+
+#workspaces button.active {
+    background: #9bbc0f;
+    color: #0f380f;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#workspaces button:hover {
+    background: #8bac0f;
+    color: #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#workspaces button.urgent {
+    background: #8bac0f;
+    color: #0f380f;
+    border: 2px solid #0f380f;
+}
+
+#clock {
+    background: #9bbc0f;
+    color: #0f380f;
+    padding: 4px 16px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#clock:hover {
+    background: #8bac0f;
+}
+
+#custom-music {
+    background: #8bac0f;
+    color: #0f380f;
+    padding: 4px 14px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#custom-music:hover {
+    background: #9bbc0f;
+}
+
+#custom-music.paused {
+    background: #306230;
+    color: #8bac0f;
+}
+
+#network {
+    background: #8bac0f;
+    color: #0f380f;
+    padding: 4px 12px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#network:hover {
+    background: #9bbc0f;
+}
+
+#network.disconnected {
+    background: #306230;
+    color: #9bbc0f;
+}
+
+#custom-clipboard {
+    background: #8bac0f;
+    color: #0f380f;
+    padding: 4px 12px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#pulseaudio {
+    background: #8bac0f;
+    color: #0f380f;
+    padding: 4px 12px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#pulseaudio:hover {
+    background: #9bbc0f;
+}
+
+#pulseaudio.muted {
+    background: #306230;
+    color: #8bac0f;
+}
+
+#battery {
+    background: #9bbc0f;
+    color: #0f380f;
+    padding: 4px 12px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+#battery.warning {
+    background: #8bac0f;
+}
+
+#battery.critical {
+    background: #306230;
+    color: #9bbc0f;
+}
+
+#tray {
+    background: #8bac0f;
+    padding: 4px 10px;
+    border: 2px solid #0f380f;
+    box-shadow: 3px 3px 0px #0f380f;
+}
+
+tooltip {
+    background: #9bbc0f;
+    border: 3px solid #0f380f;
+    box-shadow: 4px 4px 0px #0f380f;
+    padding: 12px 16px;
+}
+
+tooltip label {
+    color: #0f380f;
+    font-family: "Silkscreen", "VT323", monospace;
+    font-size: 13px;
+    font-weight: bold;
+}

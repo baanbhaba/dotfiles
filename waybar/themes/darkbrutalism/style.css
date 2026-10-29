@@ -1,0 +1,208 @@
+/* -----------------------------------------------------
+   DARK BRUTALISM BOTTOM WAYBAR (GRAPHIC RETRO-DARK POP)
+   ----------------------------------------------------- */
+
+* {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 13px;
+    font-weight: 900;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background-color: transparent;
+    color: #ffffff;
+}
+
+#custom-launcher {
+    background: #ff006e;
+    color: #ffffff;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#workspaces button {
+    padding: 4px 12px;
+    margin: 0 2px;
+    background: #171922;
+    color: #ffffff;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
+    transition: all 0.15s ease;
+}
+
+#workspaces button.active {
+    background: #ffe600;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#workspaces button:hover {
+    background: #00f5d4;
+    color: #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#workspaces button.urgent {
+    background: #ff006e;
+    color: #ffffff;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#clock {
+    background: #00f5d4;
+    color: #000000;
+    padding: 4px 18px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#clock:hover {
+    background: #ffe600;
+}
+
+#custom-music {
+    background: #ff006e;
+    color: #ffffff;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#custom-music:hover {
+    background: #00f5d4;
+    color: #000000;
+}
+
+#custom-music.paused {
+    background: #171922;
+    color: #8c90a4;
+}
+
+#custom-weather {
+    background: #ffbe0b;
+    color: #000000;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#custom-weather:hover {
+    background: #ff006e;
+    color: #ffffff;
+}
+
+#network {
+    background: #06d6a0;
+    color: #000000;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#network:hover {
+    background: #ffe600;
+    color: #000000;
+}
+
+#network.disconnected {
+    background: #ff006e;
+    color: #ffffff;
+}
+
+
+#custom-clipboard {
+    background: #ffe600;
+    color: #000000;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
+}
+
+#pulseaudio {
+    background: #8338ec;
+    color: #ffffff;
+    font-weight: 900;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+#pulseaudio:hover {
+    background: #ffe600;
+    color: #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#pulseaudio.muted {
+    background: #ff006e;
+    color: #ffffff;
+    border-color: #000000;
+}
+
+#battery {
+    background: #3a86ff;
+    color: #ffffff;
+    padding: 4px 12px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
+}
+
+#tray {
+    background: #171922;
+    padding: 4px 10px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0px #000000;
+}
+
+#workspaces button,
+#custom-music,
+#clock,
+#network,
+#custom-clipboard,
+#group-hardware,
+#battery,
+#tray {
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+#custom-music:hover,
+#clock:hover,
+#network:hover,
+#custom-clipboard:hover,
+#group-hardware:hover,
+#battery:hover {
+    box-shadow: 1px 1px 0px #000000;
+}
+
+tooltip {
+    background: #12131a;
+    border: 4px solid #ffe600;
+    border-radius: 6px;
+    box-shadow: 6px 6px 0px #000000;
+    padding: 16px 20px;
+}
+
+tooltip label {
+    color: #ffffff;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 15px;
+    font-weight: 900;
+}

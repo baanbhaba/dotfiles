@@ -1,0 +1,216 @@
+/* ==========================================================================
+   FIREFOX THEME: CHARCOAL (CRT PITCH-BLACK & AMBER GOLD)
+   ========================================================================== */
+
+:root {
+  /* Colors */
+  --bg-primary: #080808;
+  --bg-secondary: #121212;
+  --bg-tertiary: #181818;
+  --bg-hover: rgba(255, 176, 0, 0.15);
+  --text-primary: #ffb000;
+  --text-muted: #8c9b32;
+  --text-dim: #636b28;
+  --accent-amber: #ffb000;
+  --accent-olive: #8c9b32;
+  --accent-dark: #080808;
+  --border-subtle: #222222;
+  --border-focus: #ffb000;
+  
+  /* System / Proton Overrides */
+  --toolbar-bgcolor: var(--bg-primary) !important;
+  --toolbar-color: var(--text-primary) !important;
+  --toolbarbutton-icon-fill: var(--accent-amber) !important;
+  --toolbarbutton-hover-background: var(--bg-hover) !important;
+  --toolbarbutton-active-background: rgba(255, 176, 0, 0.25) !important;
+  
+  --lwt-accent-color: var(--bg-primary) !important;
+  --lwt-text-color: var(--text-primary) !important;
+  --lwt-selected-tab-background-color: var(--accent-amber) !important;
+  
+  --toolbar-field-background-color: var(--bg-secondary) !important;
+  --toolbar-field-color: var(--text-primary) !important;
+  --toolbar-field-border-color: var(--border-subtle) !important;
+  --toolbar-field-focus-background-color: var(--bg-secondary) !important;
+  --toolbar-field-focus-color: var(--text-primary) !important;
+  --toolbar-field-focus-border-color: var(--border-focus) !important;
+  
+  --tab-selected-bgcolor: var(--accent-amber) !important;
+  --tab-selected-textcolor: var(--accent-dark) !important;
+  --tab-hover-background-color: var(--bg-hover) !important;
+  
+  --arrowpanel-background: var(--bg-secondary) !important;
+  --arrowpanel-color: var(--text-primary) !important;
+  --arrowpanel-border-color: var(--border-subtle) !important;
+  
+  --sidebar-background-color: var(--bg-primary) !important;
+  --sidebar-text-color: var(--text-primary) !important;
+  --sidebar-border-color: var(--border-subtle) !important;
+}
+
+/* Base Window & Font */
+#navigator-toolbox {
+  background-color: var(--bg-primary) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* Navigation Toolbar */
+#nav-bar {
+  background-color: var(--bg-primary) !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 3px 6px !important;
+}
+
+#PersonalToolbar {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-muted) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  font-size: 12px !important;
+}
+
+#PersonalToolbar .bookmark-item {
+  color: var(--text-muted) !important;
+}
+
+#PersonalToolbar .bookmark-item:hover {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-hover) !important;
+}
+
+/* Tabs Toolbar */
+#TabsToolbar {
+  background-color: var(--bg-primary) !important;
+}
+
+.tabbrowser-tab {
+  padding-inline: 2px !important;
+  font-size: 13px !important;
+}
+
+.tab-background {
+  border-radius: 4px 4px 0 0 !important;
+  margin-block: 4px 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Inactive Tab */
+.tabbrowser-tab:not([selected="true"]) .tab-background {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.tabbrowser-tab:not([selected="true"]):hover .tab-background {
+  background-color: var(--bg-hover) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]) .tab-label {
+  color: var(--text-muted) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]):hover .tab-label {
+  color: var(--text-primary) !important;
+}
+
+/* Active Tab */
+.tabbrowser-tab[selected="true"] .tab-background {
+  background-color: var(--accent-amber) !important;
+  border: 1px solid var(--accent-amber) !important;
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.3) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-label {
+  color: var(--accent-dark) !important;
+  font-weight: 700 !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button {
+  fill: var(--accent-dark) !important;
+  color: var(--accent-dark) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button:hover {
+  background-color: rgba(8, 8, 8, 0.25) !important;
+}
+
+/* URL Bar */
+#urlbar {
+  font-size: 13px !important;
+}
+
+#urlbar-background {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 4px !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+#urlbar[focused="true"] > #urlbar-background {
+  border: 1px solid var(--border-focus) !important;
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.35) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+#urlbar-input {
+  color: var(--text-primary) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* URL Bar Dropdown */
+#urlbar-results {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+.urlbarView-row[selected] {
+  background-color: rgba(255, 176, 0, 0.2) !important;
+  color: var(--text-primary) !important;
+}
+
+.urlbarView-row:hover:not([selected]) {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Buttons and Controls */
+toolbarbutton {
+  border-radius: 4px !important;
+}
+
+#nav-bar toolbarbutton:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Sidebar & Findbar */
+#sidebar-box {
+  background-color: var(--bg-primary) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+
+#sidebar-header {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+findbar {
+  background-color: var(--bg-secondary) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Context Menus and Popups */
+menupopup, panel {
+  --panel-background: var(--bg-secondary) !important;
+  --panel-color: var(--text-primary) !important;
+  --panel-border-color: var(--border-subtle) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+  border-radius: 4px !important;
+}
+
+menuitem:hover, menu:hover {
+  background-color: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}

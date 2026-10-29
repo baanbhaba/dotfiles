@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+"""
+flac-notify - Bulletproof Background Track-Change Notification Daemon
+Properly daemonizes to systemd/init, listens to MPRIS track changes,
+and pops desktop notifications with exact album cover artwork.
+"""
+
+import os
+import sys
+import time
+import glob
+import subprocess
+from urllib.parse import unquote
+
+PID_FILE = "/tmp/flac_notify.pid"
+MUSIC_DIR = os.path.expanduser("~/Music/flac")
+
+def is_already_running() -> bool:
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            if pid == os.getpid():
+                return False
+            cmdline_file = f"/proc/{pid}/cmdline"
+            if os.path.exists(cmdline_file):
+                with open(cmdline_file, "r") as f:
+                    cmdline = f.read()
+                    if "flac-notify" in cmdline:
+                        return True
+        except Exception:
+            pass
+    return False
+
+def daemonize():
+    if os.fork() > 0:
+        sys.exit(0)
+    os.setsid()
+    if os.fork() > 0:
+        sys.exit(0)
+    try:
+        devnull = os.open(os.devnull, os.O_RDWR)
+        os.dup2(devnull, 0)
+        os.dup2(devnull, 1)
+        os.dup2(devnull, 2)
+    except Exception:
+        pass
+
+def find_album_cover(album: str) -> str:
+    if album:
+        cand = os.path.join(MUSIC_DIR, album, "cover.jpg")
+        if os.path.exists(cand):
+            return cand
+        norm_a = "".join(c.lower() for c in album if c.isalnum())
+        for d in glob.glob(os.path.join(MUSIC_DIR, "*")):
+            if os.path.isdir(d):
+                name = os.path.basename(d)
+                if norm_a in "".join(c.lower() for c in name if c.isalnum()):
+                    c_cand = os.path.join(d, "cover.jpg")
+                    if os.path.exists(c_cand):
+                        return c_cand
+    return "audio-speakers"
+
+def main():
+    if is_already_running():
+        sys.exit(0)
+
+    # Detach from terminal session
+    daemonize()
+
+    try:
+        with open(PID_FILE, "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+    cmd = [
+        "playerctl",
+        "-p", "com.github.neithern.g4music",
+        "metadata",
+        "--format",
+        "{{title}}\t{{artist}}\t{{album}}\t{{mpris:artUrl}}"
+    ]
+
+    last_title = ""
+
+    while True:
+        try:
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.8)
+            if res.returncode == 0 and res.stdout.strip():
+                parts = res.stdout.strip().split("\t")
+                if len(parts) >= 3:
+                    title = parts[0].strip()
+                    artist = parts[1].strip()
+                    album = parts[2].strip()
+                    art_url = parts[3].strip() if len(parts) > 3 else ""
+
+                    if title and title != last_title:
+                        last_title = title
+
+                        cover = ""
+                        if art_url:
+                            cover_cand = unquote(art_url[7:]) if art_url.startswith("file://") else art_url
+                            if os.path.exists(cover_cand):
+                                cover = cover_cand
+
+                        if not cover:
+                            cover = find_album_cover(album)
+
+                        body = f"{artist} · {album}" if artist else album
+                        subprocess.run([
+                            "notify-send",
+                            f"󰎆 {title}",
+                            body,
+                            "-i", cover,
+                            "-t", "3500",
+                            "-a", "FLAC Player"
+                        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+        time.sleep(0.5)
+
+if __name__ == "__main__":
+    main()

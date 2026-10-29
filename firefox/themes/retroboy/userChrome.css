@@ -1,0 +1,62 @@
+/* ==========================================================================
+   FIREFOX THEME: RETROBOY (GAMEBOY DMG 4-SHADE PIXEL BROWSER)
+   ========================================================================== */
+
+:root {
+  /* Colors */
+  --dmg-darkest: #0f380f;
+  --dmg-olive: #306230;
+  --dmg-peagreen: #8bac0f;
+  --dmg-lcdgreen: #9bbc0f;
+  
+  /* System / Proton Overrides */
+  --toolbar-bgcolor: var(--dmg-darkest) !important;
+  --toolbar-color: var(--dmg-lcdgreen) !important;
+  --toolbarbutton-icon-fill: var(--dmg-lcdgreen) !important;
+  --toolbarbutton-hover-background: var(--dmg-olive) !important;
+  
+  --lwt-accent-color: var(--dmg-darkest) !important;
+  --lwt-text-color: var(--dmg-lcdgreen) !important;
+  --lwt-selected-tab-background-color: var(--dmg-peagreen) !important;
+  
+  --toolbar-field-background-color: var(--dmg-olive) !important;
+  --toolbar-field-color: var(--dmg-lcdgreen) !important;
+  --toolbar-field-border-color: var(--dmg-peagreen) !important;
+  --toolbar-field-focus-border-color: var(--dmg-lcdgreen) !important;
+}
+
+#navigator-toolbox {
+  background-color: var(--dmg-darkest) !important;
+  border-bottom: 2px solid var(--dmg-olive) !important;
+}
+
+/* Tabs */
+.tab-background {
+  border-radius: 0px !important;
+}
+
+.tab-background[selected="true"] {
+  background-color: var(--dmg-peagreen) !important;
+  color: var(--dmg-darkest) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-label {
+  color: var(--dmg-darkest) !important;
+  font-weight: bold !important;
+}
+
+/* URL Bar */
+#urlbar-background {
+  border-radius: 0px !important;
+  border: 2px solid var(--dmg-olive) !important;
+  background-color: var(--dmg-darkest) !important;
+}
+
+#urlbar[focused="true"] > #urlbar-background {
+  border-color: var(--dmg-peagreen) !important;
+}
+
+#urlbar-input {
+  color: var(--dmg-lcdgreen) !important;
+  font-family: "Silkscreen", "VT323", monospace !important;
+}

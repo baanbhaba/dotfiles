@@ -1,0 +1,33 @@
+# Starship Theme: ColorBlock (Modern Geometric Pastel Capsules)
+
+format = """
+[](fg:#e5a93c)\
+[  ](fg:#1e2022 bg:#e5a93c)\
+[](fg:#e5a93c bg:#8e7ca8)\
+[ $directory ](bold #ffffff bg:#8e7ca8)\
+[](fg:#8e7ca8 bg:#7d9d8b)\
+[ $git_branch ](bold #ffffff bg:#7d9d8b)\
+[](fg:#7d9d8b)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[󰄯](bold #e5a93c) "
+error_symbol = "[󰄯](bold #8e7ca8) "
+
+[directory]
+format = "$path"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+format = "$symbol$branch"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #7a7065"
+format = " [took $duration]($style)"

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# TOGGLE FLAC MINI PLAYER
+# Floating micro-player card on Hyprland
+# -----------------------------------------------------
+
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:$PATH"
+
+address=$(hyprctl clients -j | jq -r '.[] | select(.class == "flac-mini") | .address' 2>/dev/null | head -n 1)
+
+if [[ -n "$address" ]]; then
+    hyprctl dispatch closewindow "address:$address"
+else
+    hyprctl dispatch exec "[float; size 560 170; center] env PATH=\"$HOME/.local/bin:\$PATH\" kitty --class flac-mini --title 'FLAC Mini Player' -e /home/baanbhaba/.local/bin/flac-mini"
+fi

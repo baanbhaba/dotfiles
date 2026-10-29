@@ -1,6 +1,6 @@
 * {
-    font-family: "JetBrainsMono Nerd Font";
-    font-size: 16px;
+    font-family: "Hack", monospace;
+    font-size: 14px;
     border: none;
     border-radius: 0;
     margin: 0;
@@ -12,21 +12,32 @@ window#waybar {
     color: #ffb000;
 }
 
-#custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5, #custom-ws6, #custom-ws7, #custom-ws8, #custom-ws9 {
+#workspaces button {
     padding: 0 10px;
     color: #8c9b32;
     background: transparent;
+    transition: all 0.2s ease;
 }
 
-#custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active, #custom-ws6.active, #custom-ws7.active, #custom-ws8.active, #custom-ws9.active {
+#workspaces button.active {
+    background: #ffb000;
+    color: #080808;
+    font-weight: bold;
+}
+
+#workspaces button:hover {
+    background: rgba(255, 176, 0, 0.25);
+    color: #ffd166;
+}
+
+#workspaces button.active:hover {
     background: #ffb000;
     color: #080808;
 }
 
-#custom-ws1.hidden, #custom-ws2.hidden, #custom-ws3.hidden, #custom-ws4.hidden, #custom-ws5.hidden, #custom-ws6.hidden, #custom-ws7.hidden, #custom-ws8.hidden, #custom-ws9.hidden {
-    padding: 0;
-    margin: 0;
-    min-width: 0;
+#workspaces button.urgent {
+    background: #ff5c00;
+    color: #080808;
 }
 
 #clock {
@@ -42,6 +53,37 @@ window#waybar {
     color: #080808;
 }
 
+#custom-weather {
+    color: #ffb000;
+    padding: 0 10px;
+    background: rgba(8, 8, 8, 0.6);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#custom-weather:hover {
+    background: #ffb000;
+    color: #080808;
+}
+
+#network {
+    color: #ffb000;
+    padding: 0 10px;
+    background: rgba(8, 8, 8, 0.6);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#network:hover {
+    background: #ffb000;
+    color: #080808;
+}
+
+#network.disconnected {
+    color: #ff5c00;
+}
+
+
 tooltip {
     background: #080808;
     border: 2px solid #ffb000;
@@ -51,13 +93,40 @@ tooltip {
 
 tooltip label {
     color: #e0e0e0;
-    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-family: "Hack", monospace;
     font-size: 16px;
     font-weight: bold;
     padding: 4px;
 }
 
-#custom-clipboard, #pulseaudio, #battery, #tray {
+#custom-music {
+    padding: 0 12px;
+    color: #ffb000;
+    font-weight: bold;
+}
+
+#custom-music.paused {
+    color: #757575;
+}
+
+#pulseaudio {
+    padding: 0 12px;
+    color: #ffb000;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+#pulseaudio:hover {
+    color: #ffffff;
+    background: #242734;
+}
+
+#pulseaudio.muted {
+    color: #ff5c00;
+}
+
+#custom-clipboard, #battery, #tray {
     padding: 0 10px;
     color: #ffb000;
 }

@@ -1,0 +1,230 @@
+/* ==========================================================================
+   FIREFOX THEME: NEO-BRUTALISM (LOUD RETRO-GRAPHIC POP)
+   ========================================================================== */
+
+:root {
+  /* Colors */
+  --bg-cream: #fffdf0;
+  --bg-white: #ffffff;
+  --bg-yellow: #ffbe0b;
+  --bg-pink: #ff006e;
+  --bg-cyan: #00f5d4;
+  --text-black: #000000;
+  --text-white: #ffffff;
+  --border-black: #000000;
+  --hard-shadow: 3px 3px 0px #000000;
+  --hard-shadow-sm: 2px 2px 0px #000000;
+  
+  /* System / Proton Overrides */
+  --toolbar-bgcolor: var(--bg-cream) !important;
+  --toolbar-color: var(--text-black) !important;
+  --toolbarbutton-icon-fill: var(--text-black) !important;
+  --toolbarbutton-hover-background: var(--bg-yellow) !important;
+  
+  --lwt-accent-color: var(--bg-cream) !important;
+  --lwt-text-color: var(--text-black) !important;
+  --lwt-selected-tab-background-color: var(--bg-pink) !important;
+  
+  --toolbar-field-background-color: var(--bg-white) !important;
+  --toolbar-field-color: var(--text-black) !important;
+  --toolbar-field-border-color: var(--border-black) !important;
+  --toolbar-field-focus-background-color: var(--bg-cream) !important;
+  --toolbar-field-focus-color: var(--text-black) !important;
+  --toolbar-field-focus-border-color: var(--border-black) !important;
+  
+  --tab-selected-bgcolor: var(--bg-pink) !important;
+  --tab-selected-textcolor: var(--text-white) !important;
+  --tab-hover-background-color: var(--bg-yellow) !important;
+  
+  --arrowpanel-background: var(--bg-white) !important;
+  --arrowpanel-color: var(--text-black) !important;
+  --arrowpanel-border-color: var(--border-black) !important;
+  
+  --sidebar-background-color: var(--bg-cream) !important;
+  --sidebar-text-color: var(--text-black) !important;
+  --sidebar-border-color: var(--border-black) !important;
+}
+
+/* Base Window & Font */
+#navigator-toolbox {
+  background-color: var(--bg-cream) !important;
+  border-bottom: 3px solid var(--border-black) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* Navigation Toolbar */
+#nav-bar {
+  background-color: var(--bg-white) !important;
+  border-top: 2px solid var(--border-black) !important;
+  padding: 4px 8px !important;
+}
+
+#PersonalToolbar {
+  background-color: var(--bg-white) !important;
+  color: var(--text-black) !important;
+  border-top: 2px solid var(--border-black) !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+}
+
+#PersonalToolbar .bookmark-item {
+  color: var(--text-black) !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  margin: 1px 2px !important;
+}
+
+#PersonalToolbar .bookmark-item:hover {
+  background-color: var(--bg-yellow) !important;
+  border: 1px solid var(--border-black) !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* Tabs Toolbar */
+#TabsToolbar {
+  background-color: var(--bg-cream) !important;
+}
+
+.tabbrowser-tab {
+  padding-inline: 3px !important;
+  font-size: 13px !important;
+}
+
+.tab-background {
+  border-radius: 6px !important;
+  margin-block: 5px !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+/* Inactive Tab */
+.tabbrowser-tab:not([selected="true"]) .tab-background {
+  background-color: var(--bg-white) !important;
+  border: 2px solid var(--border-black) !important;
+  box-shadow: var(--hard-shadow-sm) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]):hover .tab-background {
+  background-color: var(--bg-yellow) !important;
+  border: 2px solid var(--border-black) !important;
+  box-shadow: var(--hard-shadow) !important;
+  transform: translate(-1px, -1px) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]) .tab-label {
+  color: var(--text-black) !important;
+  font-weight: 700 !important;
+}
+
+/* Active Tab */
+.tabbrowser-tab[selected="true"] .tab-background {
+  background-color: var(--bg-pink) !important;
+  border: 2px solid var(--border-black) !important;
+  box-shadow: var(--hard-shadow) !important;
+  transform: translate(-1px, -1px) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-label {
+  color: var(--text-white) !important;
+  font-weight: 900 !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button {
+  fill: var(--text-white) !important;
+  color: var(--text-white) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+/* URL Bar */
+#urlbar {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+#urlbar-background {
+  background-color: var(--bg-white) !important;
+  border: 2px solid var(--border-black) !important;
+  border-radius: 6px !important;
+  box-shadow: var(--hard-shadow-sm) !important;
+  transition: all 0.15s ease !important;
+}
+
+#urlbar[focused="true"] > #urlbar-background {
+  border: 2px solid var(--border-black) !important;
+  box-shadow: var(--hard-shadow) !important;
+  background-color: var(--bg-cream) !important;
+  transform: translate(-1px, -1px) !important;
+}
+
+#urlbar-input {
+  color: var(--text-black) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+  font-weight: 700 !important;
+}
+
+/* URL Bar Dropdown */
+#urlbar-results {
+  background-color: var(--bg-white) !important;
+  color: var(--text-black) !important;
+  border-top: 2px solid var(--border-black) !important;
+}
+
+.urlbarView-row[selected] {
+  background-color: var(--bg-yellow) !important;
+  color: var(--text-black) !important;
+  font-weight: 700 !important;
+}
+
+.urlbarView-row:hover:not([selected]) {
+  background-color: rgba(255, 190, 11, 0.3) !important;
+}
+
+/* Buttons and Controls */
+#nav-bar toolbarbutton {
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  margin: 1px 2px !important;
+}
+
+#nav-bar toolbarbutton:hover {
+  background-color: var(--bg-yellow) !important;
+  border: 2px solid var(--border-black) !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+/* Sidebar & Findbar */
+#sidebar-box {
+  background-color: var(--bg-cream) !important;
+  border-right: 2px solid var(--border-black) !important;
+}
+
+#sidebar-header {
+  background-color: var(--bg-yellow) !important;
+  color: var(--text-black) !important;
+  font-weight: 900 !important;
+  border-bottom: 2px solid var(--border-black) !important;
+}
+
+findbar {
+  background-color: var(--bg-cream) !important;
+  border-top: 2px solid var(--border-black) !important;
+  color: var(--text-black) !important;
+}
+
+/* Popups and Panels */
+menupopup, panel {
+  --panel-background: var(--bg-white) !important;
+  --panel-color: var(--text-black) !important;
+  --panel-border-color: var(--border-black) !important;
+  border: 2px solid var(--border-black) !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+menuitem:hover, menu:hover {
+  background-color: var(--bg-yellow) !important;
+  color: var(--text-black) !important;
+}

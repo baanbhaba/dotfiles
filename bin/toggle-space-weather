@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# TOGGLE SPACE WEATHER & ATMOSPHERIC RADAR POPUP
+# Floating brutalist terminal radar with live NOAA SWPC telemetry
+# -----------------------------------------------------
+
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:$PATH"
+
+address=$(hyprctl clients -j | jq -r '.[] | select(.class == "space-weather") | .address' 2>/dev/null | head -n 1)
+
+if [[ -n "$address" ]]; then
+    hyprctl dispatch closewindow "address:$address"
+else
+    hyprctl dispatch exec "[float; size 890 540; center] env PATH=\"$HOME/.local/bin:\$PATH\" kitty --class space-weather --title 'Space Telemetry Radar' -e /home/baanbhaba/.local/bin/space-weather -w"
+fi

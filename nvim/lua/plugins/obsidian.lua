@@ -42,7 +42,7 @@ return {
             workspaces = {
                 {
                     name = "workspaces",
-                    path = "/run/media/" .. vim.env.USER .. "/External/6. Common/workspaces",
+                    path = "/run/media/" .. vim.env.USER .. "/MEHH/6. Common/workspaces",
                 },
             },
 

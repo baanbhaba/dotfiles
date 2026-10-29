@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+CACHE="/tmp/waybar_weather_cache"
+SW_CACHE="$HOME/.cache/space-weather/telemetry.json"
+
+# Check if cache is younger than 600s
+if [ -f "$CACHE" ] && [ $(($(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0))) -lt 600 ]; then
+    cat "$CACHE"
+    exit 0
+fi
+
+# Fetch concise format
+DATA=$(curl -s --connect-timeout 2 "wttr.in?format=%c+%t" 2>/dev/null | tr -d '\n' | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')
+
+# Build tooltip from Space Weather telemetry if available
+TOOLTIP="Weather: $DATA\n\nClick to open Space Weather Radar"
+if [ -f "$SW_CACHE" ]; then
+    KP=$(jq -r '.kp // empty' "$SW_CACHE" 2>/dev/null)
+    WIND=$(jq -r '.wind_speed // empty' "$SW_CACHE" 2>/dev/null)
+    MOON=$(jq -r '.moon_phase // empty' "$SW_CACHE" 2>/dev/null)
+    ILLUM=$(jq -r '.moon_illum // empty' "$SW_CACHE" 2>/dev/null)
+    if [[ -n "$KP" ]]; then
+        TOOLTIP="🌤️ Weather: $DATA\n🌙 Moon: $MOON ($ILLUM%)\n⚡ Geomagnetic Kp: $KP\n💨 Solar Wind: $WIND km/s\n\nClick to toggle Space Weather Radar"
+    fi
+fi
+
+if [[ -n "$DATA" && "$DATA" != *"Unknown"* && "$DATA" != *"502"* && "$DATA" != *"503"* ]]; then
+    # Format valid JSON
+    ESCAPED_TOOLTIP=$(echo -e "$TOOLTIP" | python3 -c "import sys, json; print(json.dumps(sys.stdin.read().strip()))")
+    JSON="{\"text\": \"$DATA\", \"tooltip\": $ESCAPED_TOOLTIP}"
+    echo "$JSON" > "$CACHE"
+    echo "$JSON"
+else
+    if [ -f "$CACHE" ]; then
+        cat "$CACHE"
+    else
+        echo '{"text": "🌤️ --°C", "tooltip": "Weather Unavailable\nClick to open Space Weather Radar"}'
+    fi
+fi

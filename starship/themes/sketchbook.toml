@@ -1,0 +1,32 @@
+# Starship Theme: Sketchbook (Crisp Paper & Graphite Ink)
+
+format = """
+[✎ ](bold #18181b)\
+[ $directory ](bold #18181b)\
+[── ](#71717a)\
+[ $git_branch ](#71717a)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[✏ ❯](bold #18181b) "
+error_symbol = "[✏ ✗](bold #71717a) "
+
+[directory]
+style = "bold #18181b"
+format = "[$path]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+style = "#71717a"
+format = "[$symbol$branch]($style)"
+
+[cmd_duration]
+min_time = 2_000
+style = "#71717a"
+format = " [took $duration]($style)"

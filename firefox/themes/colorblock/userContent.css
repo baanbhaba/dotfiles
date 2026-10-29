@@ -1,0 +1,88 @@
+/* ==========================================================================
+   FIREFOX NEW TAB: COLORBLOCK (MODERN GEOMETRIC PASTEL CAPSULES)
+   ========================================================================== */
+
+@-moz-document url("about:newtab"), url("about:home"), url("about:blank") {
+  :root {
+    --newtab-background-color: #f2ede4 !important;
+    --newtab-text-primary-color: #1e2022 !important;
+    --newtab-text-secondary-color: #7a7065 !important;
+    --newtab-search-icon-color: #e5a93c !important;
+    --newtab-card-background-color: #ffffff !important;
+    --newtab-primary-action-background: #e5a93c !important;
+    --newtab-element-hover-color: rgba(142, 124, 168, 0.2) !important;
+  }
+
+  body {
+    background-color: #f2ede4 !important;
+    color: #1e2022 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Search Bar */
+  .search-wrapper .search-inner-wrapper {
+    background-color: #ffffff !important;
+    border: 1px solid #e2dacd !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 16px rgba(30, 32, 34, 0.08) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .search-wrapper .search-inner-wrapper:hover,
+  .search-wrapper:has(input:focus) .search-inner-wrapper {
+    border-color: #e5a93c !important;
+    box-shadow: 0 6px 20px rgba(229, 169, 60, 0.3) !important;
+  }
+
+  .search-wrapper input {
+    color: #1e2022 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+    font-weight: 700 !important;
+  }
+
+  /* Top Sites / Shortcuts */
+  .top-site-outer .tile {
+    background-color: #ffffff !important;
+    border: 1px solid #e2dacd !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 12px rgba(30, 32, 34, 0.06) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .top-site-outer:hover .tile {
+    background-color: #8e7ca8 !important;
+    border-color: #8e7ca8 !important;
+    box-shadow: 0 6px 16px rgba(142, 124, 168, 0.35) !important;
+    transform: translateY(-3px) !important;
+  }
+
+  .top-site-outer .title {
+    color: #1e2022 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+    font-weight: 700 !important;
+  }
+
+  /* Logo / Wordmark */
+  .wordmark {
+    fill: #e5a93c !important;
+  }
+}
+
+/* ==========================================================================
+   MONKEYTYPE THEME: COLORBLOCK (MODERN GEOMETRIC PASTEL CAPSULES)
+   ========================================================================== */
+
+@-moz-document domain("monkeytype.com") {
+  :root {
+    --bg-color: #f2ede4 !important;
+    --main-color: #e5a93c !important;
+    --caret-color: #8e7ca8 !important;
+    --sub-color: #7a7065 !important;
+    --sub-alt-color: #ded3c0 !important;
+    --text-color: #1e2022 !important;
+    --error-color: #d96b52 !important;
+    --error-extra-color: #8f3d2a !important;
+    --colorful-error-color: #7d9d8b !important;
+    --colorful-error-extra-color: #42634f !important;
+  }
+}

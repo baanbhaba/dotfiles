@@ -1,0 +1,32 @@
+# Starship Theme: Dark Brutalism (Graphic Retro-Dark Pop)
+
+format = """
+[  fedora ](bold #0c0d12 bg:#ffe600)\
+[](fg:#ffe600 bg:#171922)\
+[ $directory ](bold #ffffff bg:#171922)\
+[](fg:#171922 bg:#ff006e)\
+[ $git_branch ](bold #ffffff bg:#ff006e)\
+[](fg:#ff006e)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[❯](bold #ffe600) "
+error_symbol = "[❯](bold #ff006e) "
+
+[directory]
+format = "$path"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+format = "$symbol$branch"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #8c90a4"
+format = " [took $duration]($style)"

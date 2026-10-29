@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# ROFI BRIGHTNESS MANAGER / APPLET
+# Interactive brightness controller with visual feedback
+# -----------------------------------------------------
+
+export PATH="$HOME/.local/bin:$PATH"
+
+get_brightness() {
+    brightnessctl -m 2>/dev/null | awk -F, '{print $4}' | tr -d '%' || echo "100"
+}
+
+set_brightness() {
+    local val="$1"
+    # Clamp between 1 and 100
+    if (( val < 1 )); then val=1; fi
+    if (( val > 100 )); then val=100; fi
+    brightnessctl set "${val}%" >/dev/null 2>&1
+    swayosd-client --brightness 0 >/dev/null 2>&1 || true
+}
+
+adjust_brightness() {
+    local delta="$1"
+    local cur
+    cur=$(get_brightness)
+    local target=$(( cur + delta ))
+    if (( target < 1 )); then target=1; fi
+    if (( target > 100 )); then target=100; fi
+    set_brightness "$target"
+}
+
+# CLI Argument handling
+case "$1" in
+    --get)
+        get_brightness
+        exit 0
+        ;;
+    --set)
+        if [[ -n "$2" && "$2" =~ ^[0-9]+$ ]]; then
+            set_brightness "$2"
+            exit 0
+        fi
+        ;;
+    --inc)
+        step="${2:-5}"
+        adjust_brightness "$step"
+        exit 0
+        ;;
+    --dec)
+        step="${2:-5}"
+        adjust_brightness "-$step"
+        exit 0
+        ;;
+esac
+
+# Interactive Rofi Applet
+CUR=$(get_brightness)
+# Build ascii progress bar (10 segments)
+BLOCKS=$(( CUR / 10 ))
+EMPTY=$(( 10 - BLOCKS ))
+BAR=""
+for ((i=0; i<BLOCKS; i++)); do BAR="${BAR}█"; done
+for ((i=0; i<EMPTY; i++)); do BAR="${BAR}░"; done
+
+OPTIONS="󰃠  100%   Max (Daylight)
+󰃠   80%   High
+󰃟   60%   Standard
+󰃟   40%   Balanced / Dim
+󰃞   20%   Low (Late Night)
+󰃞    5%   Minimum
+󰃠  +10%   Increase (+10%)
+󰃞  -10%   Decrease (-10%)
+🌙  Toggle Night Light
+🔄  Toggle Invert Colors
+⌨️   Custom percentage..."
+
+CHOSEN=$(echo -e "$OPTIONS" | rofi -dmenu -i \
+    -p "󰃠 Brightness" \
+    -mesg "Current: <b>${CUR}%</b>  [${BAR}]" \
+    -theme-str 'window { width: 480px; } listview { lines: 11; }')
+
+if [ -z "$CHOSEN" ]; then
+    exit 0
+fi
+
+case "$CHOSEN" in
+    *100%*)
+        set_brightness 100
+        ;;
+    *80%*)
+        set_brightness 80
+        ;;
+    *60%*)
+        set_brightness 60
+        ;;
+    *40%*)
+        set_brightness 40
+        ;;
+    *20%*)
+        set_brightness 20
+        ;;
+    *5%*)
+        set_brightness 5
+        ;;
+    *"+10%"*)
+        adjust_brightness 10
+        ;;
+    *"-10%"*)
+        adjust_brightness -10
+        ;;
+    *"Night Light"*)
+        ~/.local/bin/toggle-nightlight
+        ;;
+    *"Invert Colors"*)
+        ~/.local/bin/toggle-invert
+        ;;
+    *"Custom"*)
+        INPUT=$(rofi -dmenu -p "Enter % (1-100)" -theme-str 'window { width: 340px; }')
+        if [[ "$INPUT" =~ ^[0-9]+$ ]]; then
+            set_brightness "$INPUT"
+        fi
+        ;;
+esac

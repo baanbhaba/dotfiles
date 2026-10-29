@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# OBSIDIAN THEME SYNC
+# Synchronizes Obsidian's active theme with the Hyprland/system theme.
+# ==============================================================================
+
+CURRENT_THEME_FILE="$HOME/.config/hypr/.theme_current"
+THEMES_SRC="$HOME/.config/obsidian-themes"
+OBSIDIAN_CONFIG="$HOME/.config/obsidian/obsidian.json"
+
+# 1. Determine target theme
+THEME="$1"
+if [ -z "$THEME" ]; then
+    if [ -f "$CURRENT_THEME_FILE" ]; then
+        THEME=$(cat "$CURRENT_THEME_FILE" | tr -d '[:space:]')
+    else
+        THEME="darkbrutalism"
+    fi
+fi
+
+# 2. Map theme to Display Name and Light/Dark Mode
+case "$THEME" in
+    "charcoal")
+        THEME_NAME="Charcoal Amber"
+        APP_MODE="obsidian" # Dark
+        SRC_DIR="$THEMES_SRC/charcoal"
+        ;;
+    "darkbrutalism")
+        THEME_NAME="Dark Brutalism"
+        APP_MODE="obsidian" # Dark
+        SRC_DIR="$THEMES_SRC/darkbrutalism"
+        ;;
+    "neobrutalism")
+        THEME_NAME="Neo Brutalism"
+        APP_MODE="moonstone" # Light
+        SRC_DIR="$THEMES_SRC/neobrutalism"
+        ;;
+    "jaipur")
+        THEME_NAME="Jaipur Terracotta"
+        APP_MODE="obsidian" # Dark
+        SRC_DIR="$THEMES_SRC/jaipur"
+        ;;
+    "colorblock")
+        THEME_NAME="Color Block"
+        APP_MODE="moonstone" # Light
+        SRC_DIR="$THEMES_SRC/colorblock"
+        ;;
+    "sketchbook")
+        THEME_NAME="Sketchbook Paper"
+        APP_MODE="moonstone" # Light
+        SRC_DIR="$THEMES_SRC/sketchbook"
+        ;;
+    "retroboy")
+        THEME_NAME="RetroBoy DMG"
+        APP_MODE="obsidian" # Dark
+        SRC_DIR="$THEMES_SRC/retroboy"
+        ;;
+    *)
+        echo "Unknown theme: $THEME"
+        exit 1
+        ;;
+esac
+
+# 3. Locate all Obsidian Vaults
+VAULTS=()
+
+# Extract from obsidian.json using python
+if [ -f "$OBSIDIAN_CONFIG" ]; then
+    while IFS= read -r path; do
+        if [ -n "$path" ] && [ -d "$path" ]; then
+            VAULTS+=("$path")
+        fi
+    done < <(python3 -c "
+import json, os
+try:
+    with open('$OBSIDIAN_CONFIG') as f:
+        data = json.load(f)
+        for v in data.get('vaults', {}).values():
+            p = v.get('path')
+            if p: print(p)
+except Exception:
+    pass
+" 2>/dev/null)
+fi
+
+# Fallback default workspace path if not found in JSON
+DEFAULT_VAULT="/run/media/$USER/MEHH/6. Common/workspaces"
+if [ -d "$DEFAULT_VAULT" ]; then
+    FOUND=0
+    for v in "${VAULTS[@]}"; do
+        if [ "$v" = "$DEFAULT_VAULT" ]; then FOUND=1; break; fi
+    done
+    if [ $FOUND -eq 0 ]; then
+        VAULTS+=("$DEFAULT_VAULT")
+    fi
+fi
+
+# 4. Sync each vault
+for vault in "${VAULTS[@]}"; do
+    OBS_DIR="$vault/.obsidian"
+    THEMES_DIR="$OBS_DIR/themes"
+    
+    if [ ! -d "$OBS_DIR" ]; then
+        mkdir -p "$OBS_DIR"
+    fi
+    mkdir -p "$THEMES_DIR"
+
+    # Install/update all theme directories into vault
+    for t in "charcoal:Charcoal Amber" "darkbrutalism:Dark Brutalism" "neobrutalism:Neo Brutalism" "jaipur:Jaipur Terracotta" "colorblock:Color Block" "sketchbook:Sketchbook Paper" "retroboy:RetroBoy DMG"; do
+        SRC_KEY="${t%%:*}"
+        TARGET_NAME="${t##*:}"
+        TARGET_DIR="$THEMES_DIR/$TARGET_NAME"
+        
+        if [ -d "$THEMES_SRC/$SRC_KEY" ]; then
+            mkdir -p "$TARGET_DIR"
+            cp -f "$THEMES_SRC/$SRC_KEY/manifest.json" "$TARGET_DIR/" 2>/dev/null || true
+            cp -f "$THEMES_SRC/$SRC_KEY/theme.css" "$TARGET_DIR/" 2>/dev/null || true
+        fi
+    done
+
+    # Update appearance.json safely using python
+    APPEARANCE_FILE="$OBS_DIR/appearance.json"
+    python3 -c "
+import json, os
+
+path = '$APPEARANCE_FILE'
+data = {}
+if os.path.exists(path):
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+
+data['cssTheme'] = '$THEME_NAME'
+data['theme'] = '$APP_MODE'
+
+with open(path, 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2)
+"
+
+    echo "Synced Obsidian vault: $vault -> $THEME_NAME ($APP_MODE mode)"
+done
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Obsidian Theme Sync" "Switched to ${THEME_NAME} (${APP_MODE})" -i obsidian 2>/dev/null || true
+fi

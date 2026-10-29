@@ -1,0 +1,87 @@
+/* -----------------------------------------------------
+   DARK BRUTALISM THEME - Rofi
+   Floating Obsidian Index Card & Electric Yellow Typography
+   ----------------------------------------------------- */
+
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: "⚡ ";
+    display-run: " ";
+    drun-display-format: "{name}";
+    font: "JetBrainsMono Nerd Font 10";
+}
+
+* {
+    bg: #0c0d12;
+    fg: #8c90a4;
+    highlight: #171922;
+    text-selected: #ffe600;
+    text-active: #ffffff;
+    border-subtle: #1f222e;
+}
+
+window {
+    width: 680px;
+    background-color: @bg;
+    border: 2px;
+    border-color: @border-subtle;
+    border-radius: 10px;
+    padding: 24px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+    spacing: 12px;
+}
+
+inputbar {
+    background-color: transparent;
+    children: [ prompt, entry ];
+    border-bottom: 2px;
+    border-color: @border-subtle;
+    padding-bottom: 10px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: #ffe600;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: "Search apps & commands...";
+    placeholder-color: #555869;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 10px 14px;
+    border-radius: 6px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 6px;
+    border: 2px;
+    border-color: #ffe600;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font-weight: bold;
+}

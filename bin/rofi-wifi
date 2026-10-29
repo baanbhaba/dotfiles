@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# ROFI WI-FI MANAGER
+# Clean, modern network switcher via nmcli + rofi
+# -----------------------------------------------------
+
+# Get current wifi status
+wifi_status=$(nmcli -fields WIFI g)
+
+if [[ "$wifi_status" =~ "enabled" ]]; then
+    toggle="󰖪  Disable Wi-Fi"
+else
+    toggle="󰖩  Enable Wi-Fi"
+fi
+
+# List available networks (deduped by SSID)
+fields=$(nmcli -t -f IN-USE,SSID,SIGNAL,SECURITY dev wifi list | awk -F: '$2 != "" && !seen[$2]++ {
+    icon = ($1 == "*") ? "󰤨 [ACTIVE]" : "󰤢"
+    sec = ($4 != "") ? "🔒" : "🔓"
+    printf "%s %-20s %s %3s%%\n", icon, $2, sec, $3
+}')
+
+chosen_network=$(echo -e "$toggle\n$fields" | rofi -dmenu -i -p "Wi-Fi Networks" -theme-str 'window { width: 520px; }')
+
+# Exit if cancelled
+if [ -z "$chosen_network" ]; then
+    exit 0
+fi
+
+# Handle toggle
+if [ "$chosen_network" = "󰖪  Disable Wi-Fi" ]; then
+    nmcli radio wifi off
+    notify-send "Wi-Fi" "Wi-Fi Disabled" -i network-wireless-disconnected
+    exit 0
+elif [ "$chosen_network" = "󰖩  Enable Wi-Fi" ]; then
+    nmcli radio wifi on
+    notify-send "Wi-Fi" "Wi-Fi Enabled" -i network-wireless
+    exit 0
+fi
+
+# Extract SSID
+ssid=$(echo "$chosen_network" | awk '{print $2}')
+if [[ "$chosen_network" =~ "\[ACTIVE\]" ]]; then
+    ssid=$(echo "$chosen_network" | awk '{print $3}')
+fi
+
+# Check if network is already known
+saved_connections=$(nmcli -g NAME connection show)
+
+if echo "$saved_connections" | grep -qw "$ssid"; then
+    if [[ "$chosen_network" =~ "\[ACTIVE\]" ]]; then
+        nmcli connection down "$ssid" && notify-send "Wi-Fi" "Disconnected from $ssid" -i network-wireless-disconnected
+    else
+        notify-send "Wi-Fi" "Connecting to $ssid..." -i network-wireless
+        nmcli connection up "$ssid" && notify-send "Wi-Fi" "Connected to $ssid" -i network-wireless-connected || notify-send "Wi-Fi" "Failed to connect to $ssid" -i dialog-error
+    fi
+else
+    # New connection - prompt for password if secured
+    if [[ "$chosen_network" =~ "🔒" ]]; then
+        password=$(rofi -dmenu -password -p "Enter Password for $ssid" -theme-str 'window { width: 420px; }')
+        if [ -n "$password" ]; then
+            notify-send "Wi-Fi" "Connecting to $ssid..." -i network-wireless
+            nmcli dev wifi connect "$ssid" password "$password" && notify-send "Wi-Fi" "Connected to $ssid" -i network-wireless-connected || notify-send "Wi-Fi" "Failed to connect to $ssid" -i dialog-error
+        fi
+    else
+        notify-send "Wi-Fi" "Connecting to $ssid..." -i network-wireless
+        nmcli dev wifi connect "$ssid" && notify-send "Wi-Fi" "Connected to $ssid" -i network-wireless-connected || notify-send "Wi-Fi" "Failed to connect to $ssid" -i dialog-error
+    fi
+fi

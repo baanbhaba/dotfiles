@@ -1,25 +1,31 @@
+/* -----------------------------------------------------
+   CHARCOAL THEME - Rofi
+   Floating CRT Terminal Card & Amber Gold Typography
+   ----------------------------------------------------- */
+
 configuration {
     modi: "drun,run";
     show-icons: false;
-    display-drun: " ";
+    display-drun: "󰘧 ";
     display-run: " ";
     drun-display-format: "{name}";
-    font: "JetBrainsMono Nerd Font 10";
+    font: "Hack 11";
 }
 
 * {
-    bg: #080808;              /* Deep CRT Black */
-    fg: #a8a8a8;              /* Clean readable light gray for unselected */
-    highlight-bg: #ffb000;    /* Vibrant Amber Gold Wide Selector Bar */
-    highlight-fg: #080808;    /* Deep Black text on Amber Bar (High contrast) */
+    bg: #080808;
+    fg: #8c9b32;
+    highlight: rgba(255, 176, 0, 0.10);
+    text-selected: #ffb000;
+    text-active: #ffb000;
 }
 
 window {
-    width: 750px;
+    width: 680px;
     background-color: @bg;
     border: 1px;
-    border-color: #ffb000;
-    border-radius: 4px;
+    border-color: #222222;
+    border-radius: 10px;
     padding: 24px;
     location: center;
     anchor: center;
@@ -35,57 +41,46 @@ inputbar {
     background-color: transparent;
     children: [ prompt, entry ];
     border-bottom: 1px;
-    border-color: #ffb000;
+    border-color: #222222;
     padding-bottom: 10px;
 }
 
 prompt {
     background-color: transparent;
-    text-color: #ffb000;
-    margin: 0 10px 0 0;
+    text-color: @text-active;
 }
 
 entry {
     background-color: transparent;
     text-color: #ffffff;
-    placeholder: "Search...";
-    placeholder-color: #555555;
-    cursor-color: #ffb000;
+    placeholder: "Execute command...";
+    placeholder-color: #636b28;
 }
 
 listview {
     background-color: transparent;
     lines: 7;
-    spacing: 6px;
+    spacing: 4px;
     scrollbar: false;
 }
 
 element {
-    padding: 10px 16px;
-    border-radius: 4px;
+    padding: 10px 14px;
+    border-radius: 6px;
     background-color: transparent;
     text-color: @fg;
 }
 
-element normal.normal {
-    background-color: transparent;
-    text-color: @fg;
-}
-
-element alternate.normal {
-    background-color: transparent;
-    text-color: @fg;
-}
-
-/* Wide Amber Selector Bar */
-element selected.normal, element selected.active {
-    background-color: @highlight-bg;
-    text-color: @highlight-fg;
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 6px;
+    border: 1px;
+    border-color: #ffb000;
 }
 
 element-text {
     background-color: transparent;
     text-color: inherit;
-    highlight: inherit;
-    cursor: inherit;
+    font-weight: bold;
 }

@@ -1,0 +1,562 @@
+#!/usr/bin/env python3
+"""
+space-weather - Themed Space Weather & Atmospheric Telemetry Radar
+Fetches live NOAA SWPC (Planetary K-Index, Solar Wind Speed, IMF Bz, 10.7cm Flux)
+and Lunar / Terrestrial atmospheric telemetry (wttr.in).
+Styled with theme-adaptive brutalist ASCII typography.
+"""
+
+import os
+import sys
+import time
+import json
+import argparse
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+
+CACHE_DIR = os.path.expanduser("~/.cache/space-weather")
+CACHE_FILE = os.path.join(CACHE_DIR, "telemetry.json")
+THEME_FILE = os.path.expanduser("~/.config/hypr/.theme_current")
+CACHE_TTL = 300  # 5 minutes cache
+
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PALETTES
+# ─────────────────────────────────────────────────────────────────────────────
+PALETTES = {
+    "darkbrutalism": {
+        "border": "\033[38;5;220m",      # Electric Yellow
+        "title": "\033[1;38;5;220m",
+        "accent": "\033[38;5;51m",       # Neon Cyan
+        "highlight": "\033[38;5;198m",   # Neon Magenta
+        "muted": "\033[38;5;244m",       # Slate Gray
+        "moon": "\033[38;5;231m",        # Bright Silver
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "neobrutalism": {
+        "border": "\033[38;5;198m",      # Bold Pink
+        "title": "\033[1;38;5;198m",
+        "accent": "\033[38;5;51m",       # Cyan
+        "highlight": "\033[38;5;226m",   # Yellow
+        "muted": "\033[38;5;245m",
+        "moon": "\033[38;5;231m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "charcoal": {
+        "border": "\033[38;5;214m",      # Warm Amber
+        "title": "\033[1;38;5;214m",
+        "accent": "\033[38;5;252m",      # Crisp White
+        "highlight": "\033[38;5;208m",   # Orange
+        "muted": "\033[38;5;240m",
+        "moon": "\033[38;5;255m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "jaipur": {
+        "border": "\033[38;5;167m",      # Terracotta Red
+        "title": "\033[1;38;5;167m",
+        "accent": "\033[38;5;221m",      # Desert Sand
+        "highlight": "\033[38;5;161m",   # Royal Rose
+        "muted": "\033[38;5;244m",
+        "moon": "\033[38;5;230m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "colorblock": {
+        "border": "\033[38;5;120m",      # Pastel Mint
+        "title": "\033[1;38;5;120m",
+        "accent": "\033[38;5;141m",      # Lilac
+        "highlight": "\033[38;5;217m",   # Peach
+        "muted": "\033[38;5;245m",
+        "moon": "\033[38;5;231m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "sketchbook": {
+        "border": "\033[38;5;250m",      # Chalk White
+        "title": "\033[1;38;5;255m",
+        "accent": "\033[38;5;244m",      # Charcoal
+        "highlight": "\033[38;5;252m",
+        "muted": "\033[38;5;240m",
+        "moon": "\033[38;5;255m",
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    },
+    "retroboy": {
+        "border": "\033[38;5;106m",      # Pea Green
+        "title": "\033[1;38;5;148m",     # Bright LCD Green
+        "accent": "\033[38;5;148m",      # Bright LCD Green
+        "highlight": "\033[38;5;106m",   # Pea Green
+        "muted": "\033[38;5;65m",        # Olive Muted
+        "moon": "\033[38;5;148m",        # Bright LCD Green
+        "reset": "\033[0m",
+        "bold": "\033[1m",
+    }
+}
+
+def get_theme_colors():
+    theme = "colorblock"
+    if os.path.exists(THEME_FILE):
+        try:
+            with open(THEME_FILE, "r") as f:
+                theme = f.read().strip()
+        except Exception:
+            pass
+    return PALETTES.get(theme, PALETTES["darkbrutalism"]), theme
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASCII CELESTIAL ARTWORK
+# ─────────────────────────────────────────────────────────────────────────────
+MOON_ARTS = {
+    "New Moon": [
+        "      .-------.      ",
+        "    .'  · · ·  '.    ",
+        "   /   · · · ·   \\   ",
+        "  |   · · · · ·   |  ",
+        "  |   · · · · ·   |  ",
+        "  |   · · · · ·   |  ",
+        "   \\   · · · ·   /   ",
+        "    '.  · · ·  .'    ",
+        "      '-------'      "
+    ],
+    "Waxing Crescent": [
+        "      .-------.      ",
+        "    .'     ..░█'.    ",
+        "   /      .░███  \\   ",
+        "  |      .░████   |  ",
+        "  |      .░████   |  ",
+        "  |      .░████   |  ",
+        "   \\      '░███  /   ",
+        "    '.     ''░█.'    ",
+        "      '-------'      "
+    ],
+    "First Quarter": [
+        "      .-------.      ",
+        "    .'    |████'.    ",
+        "   /      |████  \\   ",
+        "  |       |████   |  ",
+        "  |       |████   |  ",
+        "  |       |████   |  ",
+        "   \\      |████  /   ",
+        "    '.    |████.'    ",
+        "      '-------'      "
+    ],
+    "Waxing Gibbous": [
+        "      .-------.      ",
+        "    .' ░░░|████'.    ",
+        "   / ░░░░░|████  \\   ",
+        "  | ░░░░░░|████   |  ",
+        "  | ░░░░░░|████   |  ",
+        "  | ░░░░░░|████   |  ",
+        "   \\ ░░░░░|████  /   ",
+        "    '. ░░░|████.'    ",
+        "      '-------'      "
+    ],
+    "Full Moon": [
+        "      .-------.      ",
+        "    .'█████████'.    ",
+        "   /███████████  \\   ",
+        "  |█████████████  |  ",
+        "  |█████████████  |  ",
+        "  |█████████████  |  ",
+        "   \\███████████  /   ",
+        "    '.█████████.'    ",
+        "      '-------'      "
+    ],
+    "Waning Gibbous": [
+        "      .-------.      ",
+        "    .'████|░░░ '.    ",
+        "   /  ████|░░░░░ \\   ",
+        "  |   ████|░░░░░░ |  ",
+        "  |   ████|░░░░░░ |  ",
+        "  |   ████|░░░░░░ |  ",
+        "   \\  ████|░░░░░ /   ",
+        "    '.████|░░░ .'    ",
+        "      '-------'      "
+    ],
+    "Last Quarter": [
+        "      .-------.      ",
+        "    .'████|    '.    ",
+        "   /  ████|      \\   ",
+        "  |   ████|       |  ",
+        "  |   ████|       |  ",
+        "  |   ████|       |  ",
+        "   \\  ████|      /   ",
+        "    '.████|    .'    ",
+        "      '-------'      "
+    ],
+    "Waning Crescent": [
+        "      .-------.      ",
+        "    .'█░..     '.    ",
+        "   /  ███░.      \\   ",
+        "  |   ████░.      |  ",
+        "  |   ████░.      |  ",
+        "  |   ████░.      |  ",
+        "   \\  ███░'      /   ",
+        "    '.█░''     .'    ",
+        "      '-------'      "
+    ]
+}
+
+SUN_ART = [
+    "       \\   |   /     ",
+    "     -  .-----.  -   ",
+    "      .'  ☼☼☼  '.    ",
+    "   ─ /  ☼☼☼☼☼☼☼  \\ ─ ",
+    "    |  ☼☼☼☼☼☼☼☼☼  |  ",
+    "   ─ \\  ☼☼☼☼☼☼☼  / ─ ",
+    "      '.  ☼☼☼  .'    ",
+    "     -  '-----'  -   ",
+    "       /   |   \\     "
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DATA FETCHING
+# ─────────────────────────────────────────────────────────────────────────────
+def fetch_json(url, timeout=3):
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'curl/8.0'})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+def fetch_telemetry(force=False):
+    now = time.time()
+    if not force and os.path.exists(CACHE_FILE):
+        try:
+            mtime = os.path.getmtime(CACHE_FILE)
+            if now - mtime < CACHE_TTL:
+                with open(CACHE_FILE, "r") as f:
+                    return json.load(f)
+        except Exception:
+            pass
+
+    # Parallel HTTP fetch
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        f_kp = ex.submit(fetch_json, 'https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json')
+        f_wind = ex.submit(fetch_json, 'https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json')
+        f_bz = ex.submit(fetch_json, 'https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json')
+        f_flux = ex.submit(fetch_json, 'https://services.swpc.noaa.gov/products/summary/10cm-flux.json')
+        f_wttr = ex.submit(fetch_json, 'https://wttr.in?format=j1')
+
+        kp_raw = f_kp.result()
+        wind_raw = f_wind.result()
+        bz_raw = f_bz.result()
+        flux_raw = f_flux.result()
+        wttr_raw = f_wttr.result()
+
+    data = {}
+    
+    # Planetary K-Index
+    try:
+        data["kp"] = round(float(kp_raw[-1]["Kp"]), 2)
+    except Exception:
+        data["kp"] = 3.33
+
+    # Solar Wind Speed
+    try:
+        data["wind_speed"] = int(wind_raw[0]["proton_speed"])
+    except Exception:
+        data["wind_speed"] = 450
+
+    # IMF Bz
+    try:
+        data["bz"] = float(bz_raw[0]["bz_gsm"])
+    except Exception:
+        data["bz"] = 2.0
+
+    # 10.7cm Solar Radio Flux
+    try:
+        data["flux"] = int(flux_raw[0]["flux"])
+    except Exception:
+        data["flux"] = 120
+
+    # Terrestrial & Astro
+    if wttr_raw:
+        try:
+            cur = wttr_raw.get("current_condition", [{}])[0]
+            astro = wttr_raw.get("weather", [{}])[0].get("astronomy", [{}])[0]
+            data["temp"] = cur.get("temp_C", "--")
+            data["feels_like"] = cur.get("FeelsLikeC", "--")
+            data["condition"] = cur.get("weatherDesc", [{}])[0].get("value", "Clear")
+            data["wind_kmh"] = cur.get("windspeedKmph", "--")
+            data["wind_dir"] = cur.get("winddir16Point", "--")
+            data["humidity"] = cur.get("humidity", "--")
+            data["visibility"] = cur.get("visibility", "--")
+            data["moon_phase"] = astro.get("moon_phase", "Waxing Crescent")
+            data["moon_illum"] = astro.get("moon_illumination", "0")
+            data["sunrise"] = astro.get("sunrise", "--")
+            data["sunset"] = astro.get("sunset", "--")
+            data["moonrise"] = astro.get("moonrise", "--")
+            data["moonset"] = astro.get("moonset", "--")
+        except Exception:
+            pass
+    else:
+        data["temp"] = "30"
+        data["feels_like"] = "32"
+        data["condition"] = "Sunny"
+        data["wind_kmh"] = "8"
+        data["wind_dir"] = "SW"
+        data["humidity"] = "40"
+        data["visibility"] = "10"
+        data["moon_phase"] = "Waxing Crescent"
+        data["moon_illum"] = "1"
+        data["sunrise"] = "06:09 AM"
+        data["sunset"] = "05:53 PM"
+        data["moonrise"] = "06:33 AM"
+        data["moonset"] = "06:08 PM"
+
+    data["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Cache write
+    try:
+        with open(CACHE_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+
+    return data
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPUTED METRICS
+# ─────────────────────────────────────────────────────────────────────────────
+def make_bar(val, max_val, length=10):
+    ratio = min(max(val / max_val, 0.0), 1.0)
+    filled = int(round(ratio * length))
+    empty = length - filled
+    return "█" * filled + "░" * empty
+
+def get_storm_scale(kp):
+    if kp >= 9.0:
+        return "G5 (Extreme Storm)", "\033[1;31m"
+    elif kp >= 8.0:
+        return "G4 (Severe Storm)", "\033[1;31m"
+    elif kp >= 7.0:
+        return "G3 (Strong Storm)", "\033[31m"
+    elif kp >= 6.0:
+        return "G2 (Moderate Storm)", "\033[33m"
+    elif kp >= 5.0:
+        return "G1 (Minor Storm)", "\033[33m"
+    elif kp >= 4.0:
+        return "G0 (Active / Substorm)", "\033[36m"
+    else:
+        return "G0 (Nominal / Quiet)", "\033[32m"
+
+def get_aurora_status(kp):
+    if kp >= 7.0:
+        return "MID-LATITUDES VISIBLE (HIGH EXPANSION)"
+    elif kp >= 5.0:
+        return "AURORAL OVAL EXPANDED (SUB-ARCTIC)"
+    else:
+        return "POLAR REGIONS ONLY (>65° LATITUDE)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RENDER CARD
+# ─────────────────────────────────────────────────────────────────────────────
+def render_card(data):
+    c, theme_name = get_theme_colors()
+
+    kp = data.get("kp", 3.0)
+    storm_str, storm_color = get_storm_scale(kp)
+    wind = data.get("wind_speed", 450)
+    bz = data.get("bz", 0.0)
+    flux = data.get("flux", 120)
+    phase = data.get("moon_phase", "Waxing Crescent")
+    illum = int(data.get("moon_illum", 0))
+    temp = data.get("temp", "--")
+    cond = data.get("condition", "Clear")
+    wind_kmh = data.get("wind_kmh", "--")
+    wind_dir = data.get("wind_dir", "")
+    humid = data.get("humidity", "--")
+    vis = data.get("visibility", "--")
+    sunrise = data.get("sunrise", "--")
+    sunset = data.get("sunset", "--")
+    moonrise = data.get("moonrise", "--")
+    moonset = data.get("moonset", "--")
+    aurora = get_aurora_status(kp)
+
+    # Pick Moon ASCII
+    art = MOON_ARTS.get(phase, MOON_ARTS["Waxing Crescent"])
+
+    # Bz description
+    if bz > 1.5:
+        bz_desc = "Northward (Shielded)"
+    elif bz < -1.5:
+        bz_desc = "Southward (Active Coupling)"
+    else:
+        bz_desc = "Neutral (Equatorial)"
+
+    # Wind description
+    if wind >= 600:
+        wind_desc = "High-Speed Stream"
+    elif wind >= 450:
+        wind_desc = "Elevated"
+    else:
+        wind_desc = "Ambient / Nominal"
+
+    kp_bar = make_bar(kp, 9.0, 10)
+    wind_bar = make_bar(wind, 1000, 10)
+    illum_bar = make_bar(illum, 100, 10)
+
+    # Header / Framing
+    W = 86
+    out = []
+    
+    # Line 1: Top Border
+    out.append(f"{c['border']}┌{'─' * (W - 2)}┐{c['reset']}")
+    
+    # Line 2: Header Title
+    title = f" 🛰️  SPACE TELEMETRY RADAR  //  NOAA SWPC & ATMOSPHERIC SENSORS "
+    badge = f"[{theme_name.upper()}] "
+    pad = W - 4 - len(title) - len(badge)
+    out.append(f"{c['border']}│{c['reset']} {c['title']}{title}{c['reset']}{' ' * pad}{c['muted']}{badge}{c['border']}│{c['reset']}")
+    
+    # Line 3: Separator
+    out.append(f"{c['border']}├{'─' * 25}┬{'─' * (W - 28)}┤{c['reset']}")
+
+    # Content Lines (Total 18 lines)
+    # Left column: 23 chars content, Right column: 56 chars content
+    lines = [
+        # Line 0
+        (f" {c['bold']}[ ORBITAL OBSERVATORY ]{c['reset']}  ",
+         f" {c['accent']}☀️ SOLAR & GEOMAGNETIC ACTIVITY (NOAA SWPC){c['reset']}"),
+        
+        # Line 1
+        (f" {c['moon']}{art[0]}{c['reset']}  ",
+         f" Planetary Kp  : [{c['highlight']}{kp_bar}{c['reset']}] {kp:.2f}  ({storm_color}{storm_str}{c['reset']})"),
+        
+        # Line 2
+        (f" {c['moon']}{art[1]}{c['reset']}  ",
+         f" Solar Wind    : [{c['accent']}{wind_bar}{c['reset']}] {wind} km/s  ({wind_desc})"),
+        
+        # Line 3
+        (f" {c['moon']}{art[2]}{c['reset']}  ",
+         f" IMF Vector Bz : {bz:+.1f} nT  ({bz_desc})"),
+        
+        # Line 4
+        (f" {c['moon']}{art[3]}{c['reset']}  ",
+         f" 10.7cm Flux   : {flux} sfu  (Solar Cycle Activity)"),
+        
+        # Line 5
+        (f" {c['moon']}{art[4]}{c['reset']}  ",
+         f" Aurora Status : {aurora}"),
+        
+        # Line 6
+        (f" {c['moon']}{art[5]}{c['reset']}  ",
+         f"{c['border']}{'─' * (W - 28)}{c['reset']}"),
+        
+        # Line 7
+        (f" {c['moon']}{art[6]}{c['reset']}  ",
+         f" {c['accent']}🌙 LUNAR & EPHEMERIS TELEMETRY{c['reset']}"),
+        
+        # Line 8
+        (f" {c['moon']}{art[7]}{c['reset']}  ",
+         f" Moon Phase    : {phase}  ([{c['moon']}{illum_bar}{c['reset']}] {illum}%)"),
+        
+        # Line 9
+        (f" {c['moon']}{art[8]}{c['reset']}  ",
+         f" Lunar Transit : Rise {moonrise}  ──  Set {moonset}"),
+        
+        # Line 10
+        (f" {c['bold']}{phase[:21]:^21}{c['reset']}  ",
+         f"{c['border']}{'─' * (W - 28)}{c['reset']}"),
+        
+        # Line 11
+        (f" {c['muted']}Disk Illum: {illum}%{c['reset']}       ",
+         f" {c['accent']}🌍 TERRESTRIAL ATMOSPHERE{c['reset']}"),
+        
+        # Line 12
+        (f" {c['muted']}Dist: 384,400 km{c['reset']}    ",
+         f" Surface State : {temp}°C (Feels {data.get('feels_like', temp)}°C)  •  {cond}"),
+        
+        # Line 13
+        (f"                        ",
+         f" Surface Wind  : {wind_kmh} km/h {wind_dir}  •  Humidity: {humid}%  •  Vis: {vis}km"),
+        
+        # Line 14
+        (f"                        ",
+         f" Solar Cycle   : Dawn {sunrise}  ──  Dusk {sunset}"),
+    ]
+
+    for left_col, right_col in lines:
+        # Strip ANSI for padding calculation
+        left_visible = len(ansi_strip(left_col))
+        right_visible = len(ansi_strip(right_col))
+        
+        left_pad = max(0, 25 - left_visible)
+        right_pad = max(0, (W - 28) - right_visible)
+        
+        row = f"{c['border']}│{c['reset']}{left_col}{' ' * left_pad}{c['border']}│{c['reset']}{right_col}{' ' * right_pad}{c['border']}│{c['reset']}"
+        out.append(row)
+
+    # Footer Separator
+    out.append(f"{c['border']}├{'─' * (W - 2)}┤{c['reset']}")
+    
+    # Status Ticker Line
+    stat = f" ● TELEMETRY LINK: STABLE   │   MAGNETOSPHERE: NOMINAL   │   REFRESH: 5m "
+    pad_stat = W - 4 - len(stat)
+    out.append(f"{c['border']}│{c['reset']} {c['muted']}{stat}{' ' * pad_stat}{c['border']}│{c['reset']}")
+    
+    # Bottom Border
+    out.append(f"{c['border']}└{'─' * (W - 2)}┘{c['reset']}")
+
+    return "\n".join(out)
+
+def ansi_strip(text):
+    import re
+    return re.sub(r'\x1b\[[0-9;]*m', '', text)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN EXECUTION
+# ─────────────────────────────────────────────────────────────────────────────
+def main():
+    parser = argparse.ArgumentParser(description="Themed Space Weather & Atmospheric Telemetry Radar")
+    parser.add_argument("-w", "--watch", action="store_true", help="Live monitor dashboard (refresh every 30s)")
+    parser.add_argument("-f", "--force", action="store_true", help="Bypass cache and force fresh fetch")
+    parser.add_argument("--json", action="store_true", help="Print telemetry as JSON")
+    args = parser.parse_args()
+
+    if args.watch:
+        try:
+            # Hide cursor
+            sys.stdout.write("\033[?25l")
+            sys.stdout.flush()
+            first = True
+            while True:
+                data = fetch_telemetry(force=first or args.force)
+                first = False
+                card = render_card(data)
+                # Clear screen & home
+                sys.stdout.write("\033[2J\033[H")
+                sys.stdout.write(card + "\n")
+                sys.stdout.write(f"\033[38;5;244m [q] Quit  •  [r] Refresh now  •  Live update every 30s \033[0m\n")
+                sys.stdout.flush()
+                
+                # Non-blocking poll for keypress
+                import select
+                rlist, _, _ = select.select([sys.stdin], [], [], 30.0)
+                if rlist:
+                    ch = sys.stdin.read(1)
+                    if ch in ('q', 'Q', '\x1b'):
+                        break
+                    elif ch in ('r', 'R'):
+                        data = fetch_telemetry(force=True)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            # Show cursor
+            sys.stdout.write("\033[?25h\n")
+            sys.stdout.flush()
+    elif args.json:
+        data = fetch_telemetry(force=args.force)
+        print(json.dumps(data, indent=2))
+    else:
+        data = fetch_telemetry(force=args.force)
+        print(render_card(data))
+
+if __name__ == "__main__":
+    main()

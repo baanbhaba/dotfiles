@@ -1,0 +1,39 @@
+window#osd {
+    padding: 12px 20px;
+    border-radius: 16px;
+    border: 2px solid #a78bfa;
+    background: #13111c;
+    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.2);
+}
+
+#container {
+    margin: 14px;
+}
+
+image, label {
+    color: #6ee7b7;
+}
+
+progressbar:disabled,
+image:disabled {
+    opacity: 0.5;
+}
+
+progressbar {
+    min-height: 8px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+}
+
+trough {
+    min-height: 8px;
+    border-radius: 4px;
+    background: #221c33;
+}
+
+progress {
+    min-height: 8px;
+    border-radius: 4px;
+    background: #a78bfa;
+}

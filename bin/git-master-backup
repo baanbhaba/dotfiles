@@ -26,7 +26,7 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 SCAN_DIRS=(
     "$HOME"
 )
-[ -d "/run/media/baanbhaba/External" ] && SCAN_DIRS+=("/run/media/baanbhaba/External")
+[ -d "/run/media/baanbhaba/MEHH" ] && SCAN_DIRS+=("/run/media/baanbhaba/MEHH")
 
 # ---------------------- EXCLUSIONS ---------------------------
 EXCLUDE_PATTERNS=(

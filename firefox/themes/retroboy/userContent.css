@@ -1,0 +1,11 @@
+/* ==========================================================================
+   FIREFOX CONTENT THEME: RETROBOY
+   ========================================================================== */
+
+@-moz-document url("about:home"), url("about:newtab"), url("about:blank") {
+  body {
+    background-color: #0f380f !important;
+    color: #9bbc0f !important;
+    font-family: "Silkscreen", "VT323", monospace !important;
+  }
+}

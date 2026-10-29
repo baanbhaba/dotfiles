@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# TOGGLE MUSIC HUD & SYNCED LYRICS POPUP
+# Floating glass terminal HUD with CAVA visualizer & lyrics
+# -----------------------------------------------------
+
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:$PATH"
+
+address=$(hyprctl clients -j | jq -r '.[] | select(.class == "music-hud") | .address' 2>/dev/null | head -n 1)
+
+if [[ -n "$address" ]]; then
+    hyprctl dispatch closewindow "address:$address"
+else
+    hyprctl dispatch exec "[float; size 960 540; center] env PATH=\"$HOME/.local/bin:\$PATH\" kitty --class music-hud --title 'Music HUD & Lyrics' -e /home/baanbhaba/.local/bin/music-hud"
+fi

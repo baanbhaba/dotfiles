@@ -8,28 +8,20 @@
     "spacing": 10,
 
     "modules-left": [
-        "custom/launcher",
-        "custom/ws1",
-        "custom/ws2",
-        "custom/ws3",
-        "custom/ws4",
-        "custom/ws5",
-        "custom/ws6",
-        "custom/ws7",
-        "custom/ws8",
-        "custom/ws9"
+        "custom/music",
+        "hyprland/workspaces"
     ],
 
     "modules-center": [
-        "clock"
+        "clock",
+        "network"
     ],
 
     "modules-right": [
         "custom/clipboard",
         "pulseaudio",
         "battery",
-        "tray",
-        "custom/power"
+        "tray"
     ],
 
     "custom/launcher": {
@@ -38,68 +30,11 @@
         "tooltip": false
     },
 
-    "custom/ws1": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 1",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 1 switch",
-        "tooltip": false
-    },
-    "custom/ws2": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 2",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 2 switch",
-        "tooltip": false
-    },
-    "custom/ws3": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 3",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 3 switch",
-        "tooltip": false
-    },
-    "custom/ws4": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 4",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 4 switch",
-        "tooltip": false
-    },
-    "custom/ws5": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 5",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 5 switch",
-        "tooltip": false
-    },
-    "custom/ws6": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 6",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 6 switch",
-        "tooltip": false
-    },
-    "custom/ws7": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 7",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 7 switch",
-        "tooltip": false
-    },
-    "custom/ws8": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 8",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 8 switch",
-        "tooltip": false
-    },
-    "custom/ws9": {
-        "exec": "~/.config/waybar/themes/neobrutalism/ws_button.sh 9",
-        "return-type": "json",
-        "interval": 1,
-        "on-click": "~/.config/waybar/themes/neobrutalism/ws_button.sh 9 switch",
-        "tooltip": false
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": true,
+        "format": "{id}",
+        "on-click": "hyprctl dispatch workspace {id}"
     },
 
     "clock": {
@@ -122,28 +57,66 @@
         }
     },
 
+    "custom/music": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/waybar-music",
+        "interval": 2,
+        "on-click": "/home/baanbhaba/.local/bin/music-click --toggle",
+        "on-click-right": "/home/baanbhaba/.local/bin/music-click --library",
+        "on-click-middle": "playerctl -p com.github.neithern.g4music play-pause",
+        "on-scroll-up": "/home/baanbhaba/.local/bin/flac-queue next",
+        "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
+        "tooltip": true
+    },
+
+    "custom/weather": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.local/bin/waybar-weather",
+        "on-click": "~/.local/bin/toggle-space-weather",
+        "interval": 900,
+        "tooltip": true
+    },
+
+    "network": {
+        "format-wifi": "📶 {essid}",
+        "format-ethernet": "🌐 ETH",
+        "format-disconnected": "⚠️ OFFLINE",
+        "max-length": 20,
+        "interval": 5,
+        "on-click": "~/.local/bin/rofi-wifi",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | ⇡ {bandwidthUpBytes} ⇣ {bandwidthDownBytes}"
+    },
+
     "custom/clipboard": {
-        "format": "📋 CLIPS",
+        "format": "📋 CLIP",
         "on-click": "~/.local/bin/clipboard-menu",
         "tooltip": false
     },
 
     "pulseaudio": {
-        "format": "🔊 {volume}%",
-        "format-muted": "🔇 MUTED",
-        "on-click": "pavucontrol"
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟 MUTED",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰏲",
+            "car": "󰄋",
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 5,
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n🖱️ Click: Audio Mixer\n🖱️ Right-Click: Mute Toggle\n📜 Scroll: Adjust Volume"
     },
 
     "battery": {
         "states": { "warning": 20, "critical": 10 },
         "format": "🔋 {capacity}%",
         "format-charging": "⚡ {capacity}%"
-    },
-
-    "custom/power": {
-        "format": "💥 OFF",
-        "on-click": "~/.config/rofi/powermenu.sh",
-        "tooltip": false
     },
 
     "tray": {

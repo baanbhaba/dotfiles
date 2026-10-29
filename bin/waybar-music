@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+"""
+waybar-music - High performance Waybar MPRIS status module
+Displays dynamic track metadata, progress bar, audio format specs, queue preview, and favorites badge.
+"""
+
+import os
+import sys
+import json
+import glob
+import subprocess
+from urllib.parse import unquote
+from typing import Optional, Dict, Any
+
+STATS_FILE = os.path.expanduser("~/.cache/flac_player/stats.json")
+QUEUE_FILE = os.path.expanduser("~/.cache/flac_player/queue.json")
+FORMAT_CACHE_FILE = os.path.expanduser("~/.cache/flac_player/formats.json")
+FAVORITES_FILE = os.path.expanduser("~/Music/favorites.m3u")
+MUSIC_DIR = os.path.expanduser("~/Music/flac")
+
+def get_stats() -> Dict[str, int]:
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    try:
+        albums = len([d for d in glob.glob(os.path.join(MUSIC_DIR, "*")) if os.path.isdir(d)])
+        tracks = len(glob.glob(os.path.join(MUSIC_DIR, "*/*.flac")))
+        return {"total_albums": albums, "total_tracks": tracks}
+    except Exception:
+        return {"total_albums": 57, "total_tracks": 794}
+
+def get_audio_format_info(file_path: Optional[str]) -> str:
+    if not file_path or not os.path.exists(file_path):
+        return "Lossless FLAC"
+
+    # Fast file cache
+    cache = {}
+    if os.path.exists(FORMAT_CACHE_FILE):
+        try:
+            with open(FORMAT_CACHE_FILE, "r") as f:
+                cache = json.load(f)
+                if file_path in cache:
+                    return cache[file_path]
+        except Exception:
+            pass
+
+    # Inspect using ffprobe
+    fmt = "Lossless FLAC"
+    try:
+        res = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=sample_rate,bits_per_raw_sample",
+             "-of", "default=noprint_wrappers=1:nokey=1", file_path],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.6
+        )
+        if res.returncode == 0:
+            lines = res.stdout.strip().splitlines()
+            sr = lines[0] if len(lines) > 0 else "44100"
+            bd = lines[1] if len(lines) > 1 and lines[1] != "N/A" else "16"
+            sr_khz = f"{int(sr)/1000:g}kHz" if sr.isdigit() else "44.1kHz"
+            fmt = f"Lossless FLAC · {bd}-bit / {sr_khz}"
+            cache[file_path] = fmt
+            try:
+                with open(FORMAT_CACHE_FILE, "w") as f:
+                    json.dump(cache, f)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return fmt
+
+def get_mpris_info() -> Optional[Dict[str, Any]]:
+    cmd = [
+        "playerctl",
+        "-p", "com.github.neithern.g4music",
+        "metadata",
+        "--format",
+        '{{status}}\t{{playerName}}\t{{title}}\t{{artist}}\t{{album}}\t{{position}}\t{{mpris:length}}\t{{xesam:url}}'
+    ]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=1.0)
+        if res.returncode == 0 and res.stdout.strip():
+            lines = res.stdout.strip().split("\n")
+            target_line = lines[0]
+            parts = target_line.split("\t")
+            if len(parts) >= 4:
+                status, player, title, artist = parts[0], parts[1], parts[2], parts[3]
+                album = parts[4] if len(parts) > 4 else ""
+                pos_str = parts[5] if len(parts) > 5 else "0"
+                len_str = parts[6] if len(parts) > 6 else "0"
+                url = parts[7] if len(parts) > 7 else ""
+
+                pos = float(pos_str) / 1000000.0 if pos_str.isdigit() and len(pos_str) > 7 else float(pos_str or 0)
+                length = float(len_str) / 1000000.0 if len_str.isdigit() and len(len_str) > 7 else float(len_str or 0)
+
+                file_path = None
+                if url.startswith("file://"):
+                    file_path = unquote(url[7:])
+
+                return {
+                    "status": status.strip(),
+                    "player": player.strip(),
+                    "title": title.strip(),
+                    "artist": artist.strip(),
+                    "album": album.strip(),
+                    "position": pos,
+                    "length": length,
+                    "file_path": file_path
+                }
+    except Exception:
+        pass
+    return None
+
+def is_track_favorited(title: str) -> bool:
+    if os.path.exists(FAVORITES_FILE):
+        try:
+            with open(FAVORITES_FILE, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+                return title.lower() in content.lower()
+        except Exception:
+            pass
+    return False
+
+def get_up_next() -> Optional[str]:
+    if os.path.exists(QUEUE_FILE):
+        try:
+            with open(QUEUE_FILE, "r") as f:
+                data = json.load(f)
+                q = data.get("queue", [])
+                if q:
+                    first = q[0]
+                    fname = os.path.splitext(os.path.basename(first))[0]
+                    return fname
+        except Exception:
+            pass
+    return None
+
+def format_time(seconds: float) -> str:
+    m = int(seconds // 60)
+    s = int(seconds % 60)
+    return f"{m:02d}:{s:02d}"
+
+def render_progress_bar(pos: float, length: float, width: int = 14) -> str:
+    if length <= 0:
+        return "─" * width
+    ratio = min(1.0, max(0.0, pos / length))
+    filled = int(width * ratio)
+    empty = width - filled
+    return "━" * filled + "●" + "─" * max(0, empty - 1)
+
+def main():
+    info = get_mpris_info()
+    stats = get_stats()
+    n_albums = stats.get("total_albums", 57)
+    n_tracks = stats.get("total_tracks", 794)
+
+    if not info or not info.get("title"):
+        output = {
+            "text": "󰎆 FLAC Library",
+            "tooltip": (
+                f"󰎆 Hi-Res FLAC Audio ({n_albums} Albums · {n_tracks} Tracks)\n\n"
+                f"🖱️ Left-Click:   Browse & Play FLAC Library\n"
+                f"🖱️ Right-Click:  Open FLAC Search & Queue\n"
+                f"🖱️ Middle-Click: Play / Pause"
+            ),
+            "class": "stopped",
+            "alt": "stopped"
+        }
+        print(json.dumps(output))
+        return
+
+    status = info["status"]
+    title = info["title"]
+    artist = info["artist"]
+    album = info["album"]
+    pos = info.get("position", 0.0)
+    length = info.get("length", 0.0)
+    file_path = info.get("file_path")
+
+    # Favorite check
+    is_fav = is_track_favorited(title)
+    fav_icon = "❤️ " if is_fav else ""
+
+    # Shorten title / artist for Waybar pill
+    display_title = title if len(title) <= 22 else title[:20] + "…"
+    display_artist = f" · {artist[:15]}…" if len(artist) > 15 else (f" · {artist}" if artist else "")
+
+    if status.lower() == "playing":
+        icon = "󰎆 "
+        cls = "playing"
+        state_str = "▶ Playing"
+    else:
+        icon = "󰏤 "
+        cls = "paused"
+        state_str = "⏸ Paused"
+
+    full_text = f"{icon}{fav_icon}{display_title}{display_artist}"
+
+    # Build audio format & progress info
+    format_str = get_audio_format_info(file_path)
+    time_info = ""
+    if length > 0:
+        pct = int((pos / length) * 100) if length > 0 else 0
+        pbar = render_progress_bar(pos, length, width=16)
+        time_info = f"\n⏱️ {format_time(pos)} / {format_time(length)}  [{pbar}] {pct}%"
+
+    up_next = get_up_next()
+    up_next_str = f"\n⚡ Up Next: {up_next}" if up_next else ""
+
+    fav_str = "❤️ (Favorited)" if is_fav else "🤍 (Not in favorites)"
+
+    tooltip = (
+        f"{state_str} {fav_str}\n"
+        f"🎵 Title:  {title}\n"
+        f"🎤 Artist: {artist or 'Unknown'}\n"
+        f"💿 Album:  {album or 'Unknown'}\n"
+        f"💎 Audio:  {format_str}"
+        f"{time_info}"
+        f"{up_next_str}\n\n"
+        f"🖱️ Left-Click:   Visualizer, Lyrics HUD & Terminal Art\n"
+        f"🖱️ Right-Click:  Browse Albums, Search Songs & Queue\n"
+        f"🖱️ Middle-Click: Play / Pause\n"
+        f"📜 Scroll:       Next / Previous Track"
+    )
+
+    output = {
+        "text": full_text,
+        "tooltip": tooltip,
+        "class": cls,
+        "alt": cls
+    }
+    print(json.dumps(output))
+
+if __name__ == "__main__":
+    main()

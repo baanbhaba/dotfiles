@@ -1,0 +1,86 @@
+/* -----------------------------------------------------
+   SKETCHBOOK THEME - Rofi
+   Floating Paper Index Card & Graphite Typography
+   ----------------------------------------------------- */
+
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: "✏️ ";
+    display-run: " ";
+    drun-display-format: "{name}";
+    font: "Space Mono 11";
+}
+
+* {
+    bg: #ffffff;
+    fg: #71717a;
+    highlight: #f4f4f5;
+    text-selected: #09090b;
+    text-active: #18181b;
+}
+
+window {
+    width: 680px;
+    background-color: @bg;
+    border: 1px;
+    border-color: #d4d4d8;
+    border-radius: 10px;
+    padding: 24px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+    spacing: 12px;
+}
+
+inputbar {
+    background-color: transparent;
+    children: [ prompt, entry ];
+    border-bottom: 1px;
+    border-color: #e4e4e7;
+    padding-bottom: 10px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @text-active;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: "Draft a command...";
+    placeholder-color: #a1a1aa;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 10px 14px;
+    border-radius: 6px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 6px;
+    border: 1px;
+    border-color: #e4e4e7;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font-weight: bold;
+}

@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""
+music-hud - Themed Hi-Res Music HUD with Real-time CAVA Visualizer & Synced Lyrics
+Interactive, theme-adaptive terminal HUD for Waybar, Hyprland & Kitty
+
+Features:
+  - Multi-row Dynamic CAVA Spectrum Visualizer (4 vertical rows)
+  - Hardware Audio Resolution & Bit-Depth (24-bit / 96kHz)
+  - Synced Karaoke Lyrics with Live Nudge Calibration ([ / ])
+  - Seeking Controls (← / → / h / l)
+  - Volume Controls (↑ / ↓ / k / j / + / -)
+  - Shuffle & Repeat Toggles (s / r)
+  - Favorite Hearting (f)
+  - A-B Section Looping (a / b / c)
+  - Integrated Kitty Terminal Cover Art Support
+"""
+
+import os
+import sys
+import time
+import re
+import glob
+import json
+import curses
+import shutil
+import threading
+import subprocess
+from typing import List, Tuple, Optional, Dict
+
+MUSIC_DIR = os.path.expanduser("~/Music/flac")
+THEME_FILE = os.path.expanduser("~/.config/hypr/.theme_current")
+CACHE_DIR = os.path.expanduser("~/.cache/syncedlyrics")
+CAVA_CONF = "/tmp/music_hud_cava.conf"
+FAVORITES_FILE = os.path.expanduser("~/Music/favorites.m3u")
+QUEUE_BIN = os.path.expanduser("~/.local/bin/flac-queue")
+FAV_BIN = os.path.expanduser("~/.local/bin/flac-fav")
+
+# Ensure ~/.local/bin is always in PATH
+local_bin = os.path.expanduser("~/.local/bin")
+if local_bin not in os.environ.get("PATH", "").split(":"):
+    os.environ["PATH"] = f"{local_bin}:{os.environ.get('PATH', '')}"
+
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# THEME COLOR DEFINITIONS
+# ─────────────────────────────────────────────────────────────────────────────
+THEME_PALETTES = {
+    "darkbrutalism": {
+        "accent": curses.COLOR_YELLOW,
+        "secondary": curses.COLOR_CYAN,
+        "highlight": curses.COLOR_MAGENTA,
+        "name": "DARK BRUTALISM"
+    },
+    "neobrutalism": {
+        "accent": curses.COLOR_MAGENTA,
+        "secondary": curses.COLOR_CYAN,
+        "highlight": curses.COLOR_YELLOW,
+        "name": "NEOBRUTALISM"
+    },
+    "charcoal": {
+        "accent": curses.COLOR_YELLOW,
+        "secondary": curses.COLOR_WHITE,
+        "highlight": curses.COLOR_RED,
+        "name": "CHARCOAL"
+    },
+    "jaipur": {
+        "accent": curses.COLOR_RED,
+        "secondary": curses.COLOR_YELLOW,
+        "highlight": curses.COLOR_MAGENTA,
+        "name": "JAIPUR"
+    },
+    "colorblock": {
+        "accent": curses.COLOR_GREEN,
+        "secondary": curses.COLOR_MAGENTA,
+        "highlight": curses.COLOR_YELLOW,
+        "name": "COLOR BLOCK"
+    },
+    "sketchbook": {
+        "accent": curses.COLOR_WHITE,
+        "secondary": curses.COLOR_CYAN,
+        "highlight": curses.COLOR_RED,
+        "name": "SKETCHBOOK"
+    },
+    "retroboy": {
+        "accent": curses.COLOR_GREEN,
+        "secondary": curses.COLOR_WHITE,
+        "highlight": curses.COLOR_YELLOW,
+        "name": "RETROBOY DMG"
+    }
+}
+
+def get_current_theme_name() -> str:
+    if os.path.exists(THEME_FILE):
+        try:
+            with open(THEME_FILE, "r") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return "darkbrutalism"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUDIO RESOLUTION INSPECTOR
+# ─────────────────────────────────────────────────────────────────────────────
+AUDIO_FORMAT_CACHE: Dict[str, str] = {}
+
+def get_audio_format_info(track_path: Optional[str]) -> str:
+    if not track_path or not os.path.exists(track_path):
+        return "LOSSLESS FLAC"
+    if track_path in AUDIO_FORMAT_CACHE:
+        return AUDIO_FORMAT_CACHE[track_path]
+    try:
+        res = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=sample_rate,bits_per_raw_sample",
+             "-of", "default=noprint_wrappers=1:nokey=1", track_path],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.6
+        )
+        if res.returncode == 0:
+            lines = res.stdout.strip().splitlines()
+            sr = lines[0] if len(lines) > 0 else "44100"
+            bd = lines[1] if len(lines) > 1 and lines[1] != "N/A" else "16"
+            sr_khz = f"{int(sr)/1000:g}kHz" if sr.isdigit() else "44.1kHz"
+            fmt = f"LOSSLESS FLAC · {bd}-bit / {sr_khz}"
+            AUDIO_FORMAT_CACHE[track_path] = fmt
+            return fmt
+    except Exception:
+        pass
+    AUDIO_FORMAT_CACHE[track_path] = "LOSSLESS FLAC"
+    return "LOSSLESS FLAC"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LRC LYRICS PARSER & ENGINE
+# ─────────────────────────────────────────────────────────────────────────────
+def parse_lrc_content(content: str) -> List[Tuple[float, str]]:
+    lines = []
+    for raw in content.splitlines():
+        matches = re.findall(r'\[(\d+):(\d+(?:\.\d+)?)\]', raw)
+        if matches:
+            text = re.sub(r'\[\d+:\d+(?:\.\d+)?\]', '', raw).strip()
+            for m in matches:
+                mins, secs = int(m[0]), float(m[1])
+                lines.append((mins * 60 + secs, text))
+    lines.sort(key=lambda x: x[0])
+    return lines
+
+class LyricsManager:
+    def __init__(self, music_dir: str):
+        self.music_dir = music_dir
+        self.cache: dict = {}
+        self.loading_track: Optional[str] = None
+        self.index: list = []
+        self._build_index()
+
+    def _normalize(self, s: str) -> str:
+        return ' '.join(re.sub(r'[^\w\s]', ' ', s.lower()).split())
+
+    def _build_index(self):
+        if not os.path.isdir(self.music_dir):
+            return
+        for p in glob.glob(os.path.join(self.music_dir, "*/*.lrc")):
+            album_dir = os.path.basename(os.path.dirname(p))
+            fname = os.path.splitext(os.path.basename(p))[0]
+            m = re.match(r'^(\d+)\s*(.*)', fname)
+            track_num = int(m.group(1)) if m else None
+            rest = m.group(2) if m else fname
+            self.index.append({
+                'path': p,
+                'album_dir': album_dir,
+                'album_norm': self._normalize(album_dir),
+                'title_norm': self._normalize(rest),
+                'track_num': track_num
+            })
+
+    def _find_via_proc(self) -> Optional[str]:
+        pids = subprocess.run(['pgrep', '-x', 'g4music'], capture_output=True, text=True).stdout.split()
+        for pid in pids:
+            fd_dir = f'/proc/{pid}/fd'
+            if os.path.exists(fd_dir):
+                for fd in os.listdir(fd_dir):
+                    try:
+                        target = os.readlink(os.path.join(fd_dir, fd))
+                        if target.endswith('.flac'):
+                            candidate = os.path.splitext(target)[0] + '.lrc'
+                            if os.path.exists(candidate):
+                                return candidate
+                    except Exception:
+                        pass
+        return None
+
+    def _find_via_index(self, title: str, album: Optional[str]) -> Optional[str]:
+        t_norm = self._normalize(title)
+        a_norm = self._normalize(album) if album else ''
+
+        if a_norm:
+            for entry in self.index:
+                if entry['album_norm'] == a_norm or entry['album_norm'] in a_norm or a_norm in entry['album_norm']:
+                    if entry['title_norm'] == t_norm or entry['title_norm'] in t_norm or t_norm in entry['title_norm']:
+                        return entry['path']
+                    words_t = set(t_norm.split())
+                    words_entry = set(entry['title_norm'].split())
+                    if words_t and words_entry and len(words_t & words_entry) >= min(len(words_t), len(words_entry)) * 0.7:
+                        return entry['path']
+
+        for entry in self.index:
+            if entry['title_norm'] == t_norm or entry['title_norm'] in t_norm or t_norm in entry['title_norm']:
+                return entry['path']
+            words_t = set(t_norm.split())
+            words_entry = set(entry['title_norm'].split())
+            if words_t and words_entry and len(words_t & words_entry) >= min(len(words_t), len(words_entry)) * 0.8:
+                return entry['path']
+        return None
+
+    def get_lyrics(self, title: str, artist: str, album: Optional[str]) -> Tuple[List[Tuple[float, str]], bool]:
+        key = f"{title}::{artist}"
+        if key in self.cache:
+            return self.cache[key], False
+
+        lrc_path = self._find_via_proc()
+        if not lrc_path or not os.path.exists(lrc_path):
+            lrc_path = self._find_via_index(title, album)
+
+        if lrc_path and os.path.exists(lrc_path):
+            try:
+                with open(lrc_path, "r", encoding="utf-8", errors="ignore") as f:
+                    parsed = parse_lrc_content(f.read())
+                    self.cache[key] = parsed
+                    return parsed, False
+            except Exception:
+                pass
+
+        cache_key = re.sub(r'[^\w]', '_', f"{title}_{artist}").lower() + ".lrc"
+        disk_path = os.path.join(CACHE_DIR, cache_key)
+        if os.path.exists(disk_path):
+            try:
+                with open(disk_path, "r", encoding="utf-8", errors="ignore") as f:
+                    parsed = parse_lrc_content(f.read())
+                    self.cache[key] = parsed
+                    return parsed, False
+            except Exception:
+                pass
+
+        if self.loading_track != key:
+            self.loading_track = key
+            threading.Thread(target=self._async_online_fetch, args=(title, artist, key, disk_path), daemon=True).start()
+
+        return [], True
+
+    def _async_online_fetch(self, title: str, artist: str, key: str, disk_path: str):
+        try:
+            import syncedlyrics
+            lrc_text = syncedlyrics.search(f"{title} {artist}")
+            if lrc_text:
+                with open(disk_path, "w", encoding="utf-8") as f:
+                    f.write(lrc_text)
+                self.cache[key] = parse_lrc_content(lrc_text)
+            else:
+                self.cache[key] = []
+        except Exception:
+            self.cache[key] = []
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MULTI-ROW CAVA SPECTRUM VISUALIZER THREAD
+# ─────────────────────────────────────────────────────────────────────────────
+class CavaReader:
+    def __init__(self, num_bars=28):
+        self.num_bars = num_bars
+        self.levels = [0] * num_bars
+        self.running = True
+        self.proc = None
+        self._init_cava()
+
+    def _init_cava(self):
+        cfg_content = f"""
+[general]
+framerate = 30
+bars = {self.num_bars}
+autosens = 1
+
+[input]
+method = pulse
+source = auto
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 32
+"""
+        try:
+            with open(CAVA_CONF, "w") as f:
+                f.write(cfg_content)
+            self.proc = subprocess.Popen(
+                ["cava", "-p", CAVA_CONF],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                bufsize=1
+            )
+            threading.Thread(target=self._read_loop, daemon=True).start()
+        except Exception:
+            pass
+
+    def _read_loop(self):
+        while self.running and self.proc and self.proc.stdout:
+            try:
+                line = self.proc.stdout.readline()
+                if not line:
+                    break
+                parts = [p for p in line.strip().split(";") if p.isdigit()]
+                if len(parts) >= self.num_bars:
+                    self.levels = [int(p) for p in parts[:self.num_bars]]
+            except Exception:
+                break
+
+    def get_bars(self) -> List[int]:
+        return list(self.levels)
+
+    def stop(self):
+        self.running = False
+        if self.proc:
+            try:
+                self.proc.terminate()
+            except Exception:
+                pass
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MPRIS QUERY HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+def query_playerctl():
+    cmd = [
+        "playerctl",
+        "-p", "com.github.neithern.g4music",
+        "metadata",
+        "--format",
+        '{{status}}\t{{playerName}}\t{{title}}\t{{artist}}\t{{album}}\t{{position}}\t{{mpris:length}}\t{{xesam:url}}\t{{volume}}'
+    ]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.8)
+        if res.returncode == 0 and res.stdout.strip():
+            lines = res.stdout.strip().split("\n")
+            target = lines[0]
+            parts = target.split("\t")
+            if len(parts) >= 6:
+                status, player, title, artist, album, pos_str = parts[:6]
+                length_str = parts[6] if len(parts) > 6 else "0"
+                url = parts[7] if len(parts) > 7 else ""
+                vol_str = parts[8] if len(parts) > 8 else "1.0"
+
+                pos = float(pos_str) / 1000000.0 if pos_str.isdigit() and len(pos_str) > 7 else float(pos_str or 0)
+                length = float(length_str) / 1000000.0 if length_str.isdigit() and len(length_str) > 7 else float(length_str or 0)
+                vol = float(vol_str) if vol_str else 1.0
+
+                track_path = None
+                if url.startswith("file://"):
+                    from urllib.parse import unquote
+                    track_path = unquote(url[7:])
+
+                return {
+                    "status": status.strip(),
+                    "player": player.strip(),
+                    "title": title.strip(),
+                    "artist": artist.strip(),
+                    "album": album.strip(),
+                    "position": pos,
+                    "length": length,
+                    "volume": vol,
+                    "path": track_path
+                }
+    except Exception:
+        pass
+    return None
+
+def format_time(seconds: float) -> str:
+    m = int(seconds // 60)
+    s = int(seconds % 60)
+    return f"{m:02d}:{s:02d}"
+
+def is_favorited(title: str) -> bool:
+    if os.path.exists(FAVORITES_FILE):
+        try:
+            with open(FAVORITES_FILE, "r", encoding="utf-8", errors="ignore") as f:
+                return title.lower() in f.read().lower()
+        except Exception:
+            pass
+    return False
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CURSES HUD MAIN LOOP
+# ─────────────────────────────────────────────────────────────────────────────
+def curses_main(stdscr):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(40)  # ~25 FPS refresh
+    curses.start_color()
+    curses.use_default_colors()
+
+    theme_name = get_current_theme_name()
+    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["darkbrutalism"])
+
+    curses.init_pair(1, palette["accent"], -1)
+    curses.init_pair(2, palette["secondary"], -1)
+    curses.init_pair(3, curses.COLOR_WHITE, -1)
+    curses.init_pair(4, palette["accent"], -1)
+    curses.init_pair(5, palette["secondary"], -1)
+    curses.init_pair(6, palette["highlight"], -1)
+
+    cava = CavaReader(num_bars=30)
+    lyrics_mgr = LyricsManager(MUSIC_DIR)
+
+    current_title = ""
+    current_artist = ""
+    lyrics: List[Tuple[float, str]] = []
+    is_loading = False
+    last_poll_time = 0.0
+    cached_info = None
+
+    # New HUD state variables
+    lyrics_offset = 0.0     # seconds
+    loop_a: Optional[float] = None
+    loop_b: Optional[float] = None
+    audio_format_str = "LOSSLESS FLAC"
+
+    # Terminal kitty image clear on start
+    is_kitty = "KITTY_WINDOW_ID" in os.environ or os.environ.get("TERM") == "xterm-kitty"
+    if is_kitty:
+        subprocess.run(["kitten", "icat", "--clear"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    try:
+        while True:
+            now = time.time()
+            if now - last_poll_time > 0.25 or cached_info is None:
+                cached_info = query_playerctl()
+                last_poll_time = now
+
+                if cached_info and cached_info["title"]:
+                    if cached_info["title"] != current_title or cached_info["artist"] != current_artist:
+                        current_title = cached_info["title"]
+                        current_artist = cached_info["artist"]
+                        lyrics, is_loading = lyrics_mgr.get_lyrics(current_title, current_artist, cached_info.get("album"))
+                        audio_format_str = get_audio_format_info(cached_info.get("path"))
+                        # Reset loop on new track
+                        loop_a = None
+                        loop_b = None
+                else:
+                    current_title = ""
+                    current_artist = ""
+                    lyrics = []
+                    is_loading = False
+            elif current_title and is_loading:
+                lyrics, is_loading = lyrics_mgr.get_lyrics(current_title, current_artist, cached_info.get("album") if cached_info else None)
+
+            # ── A-B LOOP CHECK ──
+            if cached_info and loop_a is not None and loop_b is not None:
+                pos = cached_info.get("position", 0.0)
+                if pos >= loop_b or pos < (loop_a - 1.0):
+                    subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "position", str(loop_a)],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # ── USER INPUT HANDLING ──
+            key = stdscr.getch()
+            if key in (ord('q'), ord('Q'), 27):  # 'q' or Esc
+                break
+            elif key == ord(' '):  # Play/Pause
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "play-pause"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (ord('n'), ord('N')):  # Next
+                subprocess.run([QUEUE_BIN, "next"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (ord('p'), ord('P')):  # Previous
+                subprocess.run([QUEUE_BIN, "prev"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (curses.KEY_LEFT, ord('h')):  # Seek -5s
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "position", "5-"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (curses.KEY_RIGHT, ord('l')):  # Seek +5s
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "position", "5+"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (curses.KEY_UP, ord('k'), ord('+'), ord('=')):  # Volume +5%
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "volume", "0.05+"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (curses.KEY_DOWN, ord('j'), ord('-'), ord('_')):  # Volume -5%
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "volume", "0.05-"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (ord('s'), ord('S')):  # Toggle Shuffle
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "shuffle", "toggle"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (ord('r'), ord('R')):  # Toggle Repeat
+                subprocess.run(["playerctl", "-p", "com.github.neithern.g4music", "loop", "track"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key in (ord('f'), ord('F')):  # Toggle Favorite
+                subprocess.run([FAV_BIN, "toggle"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif key == ord('['):  # Nudge lyrics offset -0.25s
+                lyrics_offset -= 0.25
+            elif key == ord(']'):  # Nudge lyrics offset +0.25s
+                lyrics_offset += 0.25
+            elif key == ord('0'):  # Reset lyrics offset
+                lyrics_offset = 0.0
+            elif key in (ord('a'), ord('A')):  # Set loop point A
+                if cached_info:
+                    loop_a = cached_info.get("position", 0.0)
+            elif key in (ord('b'), ord('B')):  # Set loop point B
+                if cached_info and loop_a is not None:
+                    curr = cached_info.get("position", 0.0)
+                    if curr > loop_a:
+                        loop_b = curr
+            elif key in (ord('c'), ord('C')):  # Clear A-B Loop
+                loop_a = None
+                loop_b = None
+            elif key in (ord('L'),):  # Library Picker
+                try:
+                    curses.def_prog_mode()
+                    curses.endwin()
+                    rofi_cmd = os.path.expanduser("~/.local/bin/rofi-flac")
+                    subprocess.run([rofi_cmd])
+                except Exception:
+                    pass
+                finally:
+                    curses.reset_prog_mode()
+                    stdscr.clear()
+                    stdscr.refresh()
+
+            # ── RENDER SCREEN ──
+            stdscr.erase()
+            h, w = stdscr.getmaxyx()
+            if h < 18 or w < 60:
+                stdscr.addstr(0, 0, "Terminal window too small for Music HUD!", curses.color_pair(1))
+                stdscr.refresh()
+                continue
+
+            # ── 1. HEADER & NOW PLAYING ──
+            status_icon = "▶ PLAYING" if cached_info and cached_info["status"].lower() == "playing" else "⏸ PAUSED"
+            status_color = curses.color_pair(1) | curses.A_BOLD if "PLAYING" in status_icon else curses.color_pair(3)
+
+            title_display = cached_info["title"] if cached_info else "No Audio Playing"
+            artist_display = f" · {cached_info['artist']}" if cached_info and cached_info.get("artist") else ""
+            album_display = f" [{cached_info['album']}]" if cached_info and cached_info.get("album") else ""
+
+            # Check Favorite
+            fav_indicator = " ❤️" if is_favorited(title_display) else ""
+
+            header_left = f" 󰎆 {title_display}{artist_display}{album_display}{fav_indicator}"
+            if len(header_left) > w - 24:
+                header_left = header_left[:w - 27] + "..."
+
+            stdscr.addstr(1, 2, header_left, curses.color_pair(1) | curses.A_BOLD)
+            stdscr.addstr(1, max(2, w - len(status_icon) - 4), status_icon, status_color)
+
+            # Audio Format, Theme Badge & Optional Badges
+            vol_pct = int((cached_info.get("volume", 1.0) or 1.0) * 100) if cached_info else 100
+            badges = f" [{audio_format_str} · {palette['name']}]  Vol: {vol_pct}%"
+
+            if lyrics_offset != 0.0:
+                badges += f"  Sync: {lyrics_offset:+.2f}s"
+            if loop_a is not None and loop_b is not None:
+                badges += f"  🔁 A-B: [{format_time(loop_a)} ➔ {format_time(loop_b)}]"
+            elif loop_a is not None:
+                badges += f"  🔁 Point A: {format_time(loop_a)} (press [b] for end)"
+
+            stdscr.addstr(2, 2, badges[:w-4], curses.color_pair(2))
+
+            # Progress Bar & Time
+            pos = cached_info["position"] if cached_info else 0.0
+            length = cached_info["length"] if cached_info and cached_info["length"] > 0 else 180.0
+            progress_ratio = min(1.0, max(0.0, pos / length)) if length > 0 else 0.0
+
+            bar_width = max(20, w - 26)
+            filled = int(bar_width * progress_ratio)
+            empty = bar_width - filled
+            bar_str = "━" * filled + "●" + "─" * max(0, empty - 1)
+            time_str = f" {format_time(pos)} {bar_str} {format_time(length)} "
+            stdscr.addstr(3, 2, time_str[:w-4], curses.color_pair(3))
+
+            # Separator Line
+            sep = "═" * (w - 4)
+            stdscr.addstr(4, 2, sep, curses.color_pair(2) | curses.A_DIM)
+
+            # ── 2. MULTI-ROW CAVA SPECTRUM EQUALIZER (4 Vertical Rows) ──
+            cava_bars = cava.get_bars()
+            vis_y_start = 5
+            vis_height = 4
+            bar_step_chars = [" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+            num_bars_to_render = min(len(cava_bars), (w - 6) // 2)
+            vis_x = max(2, (w - num_bars_to_render * 2) // 2)
+
+            for row_idx in range(vis_height):
+                curr_row_y = vis_y_start + row_idx
+                # row 0 is top (levels 25-32), row 3 is bottom (levels 1-8)
+                level_base = (vis_height - 1 - row_idx) * 8
+                line_str = ""
+                for val in cava_bars[:num_bars_to_render]:
+                    val = max(0, min(32, val))
+                    sub_val = max(0, min(8, val - level_base))
+                    line_str += bar_step_chars[sub_val] + " "
+
+                color_attr = curses.color_pair(5) | (curses.A_BOLD if row_idx > 1 else curses.A_NORMAL)
+                stdscr.addstr(curr_row_y, vis_x, line_str[:w - vis_x - 2], color_attr)
+
+            # ── 3. SYNCED KARAOKE LYRICS ──
+            lyrics_start_y = 10
+            available_rows = max(4, h - lyrics_start_y - 3)
+            effective_pos = pos + lyrics_offset
+
+            if lyrics:
+                active_idx = 0
+                for idx, (t, txt) in enumerate(lyrics):
+                    if t <= effective_pos:
+                        active_idx = idx
+                    else:
+                        break
+
+                half = available_rows // 2
+                start_line = max(0, active_idx - half)
+                end_line = min(len(lyrics), start_line + available_rows)
+
+                for row, idx in enumerate(range(start_line, end_line)):
+                    curr_y = lyrics_start_y + row
+                    if curr_y >= h - 2:
+                        break
+                    _, text = lyrics[idx]
+                    if not text:
+                        text = "♪  ♪  ♪"
+
+                    if idx == active_idx:
+                        prefix = "▶  "
+                        line_str = f"{prefix}{text}"
+                        x_pos = max(2, (w - len(line_str)) // 2)
+                        stdscr.addstr(curr_y, x_pos, line_str[:w - x_pos - 2], curses.color_pair(4) | curses.A_BOLD | curses.A_STANDOUT)
+                    else:
+                        line_str = text
+                        x_pos = max(4, (w - len(line_str)) // 2)
+                        attr = curses.color_pair(3) | curses.A_DIM if idx < active_idx else curses.color_pair(2)
+                        stdscr.addstr(curr_y, x_pos, line_str[:w - x_pos - 2], attr)
+            elif is_loading:
+                load_msg = "󰎆 Fetching synced lyrics..."
+                stdscr.addstr(lyrics_start_y + 2, max(2, (w - len(load_msg)) // 2), load_msg, curses.color_pair(1) | curses.A_BOLD)
+            else:
+                empty_msg = "󰎆 No synced lyrics available for this track"
+                hint_msg = "(Press [L] to open Library Picker or run flac-doctor to download)"
+                stdscr.addstr(lyrics_start_y + 1, max(2, (w - len(empty_msg)) // 2), empty_msg, curses.color_pair(2))
+                stdscr.addstr(lyrics_start_y + 3, max(2, (w - len(hint_msg)) // 2), hint_msg, curses.color_pair(3) | curses.A_DIM)
+
+            # ── 4. FOOTER CONTROLS BAR ──
+            footer_text = " [Space] Play  [←/→] Seek  [↑/↓] Vol  [f] Fav  [s] Shuf  [r] Rep  [a/b] Loop  [L] Lib  [q] Quit "
+            foot_x = max(2, (w - len(footer_text)) // 2)
+            stdscr.addstr(h - 1, foot_x, footer_text[:w - foot_x - 2], curses.color_pair(1) | curses.A_REVERSE)
+
+            stdscr.refresh()
+    finally:
+        cava.stop()
+        if is_kitty:
+            try:
+                subprocess.run(["kitten", "icat", "--clear"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+def main():
+    try:
+        curses.wrapper(curses_main)
+    except KeyboardInterrupt:
+        pass
+
+if __name__ == "__main__":
+    main()

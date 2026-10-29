@@ -1,0 +1,126 @@
+{
+    "layer": "top",
+    "position": "bottom",
+    "height": 42,
+    "margin-bottom": 12,
+    "margin-left": 16,
+    "margin-right": 16,
+    "spacing": 10,
+
+    "modules-left": [
+        "custom/music",
+        "hyprland/workspaces"
+    ],
+
+    "modules-center": [
+        "clock",
+        "network"
+    ],
+
+    "modules-right": [
+        "custom/clipboard",
+        "pulseaudio",
+        "battery",
+        "tray"
+    ],
+
+    "custom/launcher": {
+        "format": "⚡ START",
+        "on-click": "rofi -show drun",
+        "tooltip": false
+    },
+
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": true,
+        "format": "{id}",
+        "on-click": "hyprctl dispatch workspace {id}"
+    },
+
+    "clock": {
+        "interval": 60,
+        "format": "⏰ {:%I:%M %p | %a, %d %b}",
+        "format-alt": "📅 {:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>",
+        "calendar": {
+            "mode"          : "month",
+            "mode-mon-col"  : 3,
+            "weeks-pos"     : "right",
+            "on-scroll"     : 1,
+            "format": {
+                "months":     "<span color='#ffffff'><b>{}</b></span>",
+                "days":       "<span color='#ffffff'><b>{}</b></span>",
+                "weeks":      "<span color='#ff006e'><b>W{}</b></span>",
+                "weekdays":   "<span color='#00f5d4'><b>{}</b></span>",
+                "today":      "<span background='#ffe600' color='#000000'><b>{}</b></span>"
+            }
+        }
+    },
+
+    "custom/music": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/waybar-music",
+        "interval": 2,
+        "on-click": "/home/baanbhaba/.local/bin/music-click --toggle",
+        "on-click-right": "/home/baanbhaba/.local/bin/music-click --library",
+        "on-click-middle": "playerctl -p com.github.neithern.g4music play-pause",
+        "on-scroll-up": "/home/baanbhaba/.local/bin/flac-queue next",
+        "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
+        "tooltip": true
+    },
+
+    "custom/weather": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.local/bin/waybar-weather",
+        "on-click": "~/.local/bin/toggle-space-weather",
+        "interval": 900,
+        "tooltip": true
+    },
+
+    "network": {
+        "format-wifi": "📶 {essid}",
+        "format-ethernet": "🌐 ETH",
+        "format-disconnected": "⚠️ OFFLINE",
+        "max-length": 20,
+        "interval": 5,
+        "on-click": "~/.local/bin/rofi-wifi",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | ⇡ {bandwidthUpBytes} ⇣ {bandwidthDownBytes}"
+    },
+
+    "custom/clipboard": {
+        "format": "📋 CLIP",
+        "on-click": "~/.local/bin/clipboard-menu",
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰝟 MUTED",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰏲",
+            "car": "󰄋",
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 5,
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n🖱️ Click: Audio Mixer\n🖱️ Right-Click: Mute Toggle\n📜 Scroll: Adjust Volume"
+    },
+
+    "battery": {
+        "states": { "warning": 20, "critical": 10 },
+        "format": "🔋 {capacity}%",
+        "format-charging": "⚡ {capacity}%"
+    },
+
+    "tray": {
+        "icon-size": 18,
+        "spacing": 8
+    }
+}

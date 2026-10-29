@@ -1,32 +1,32 @@
 /* -----------------------------------------------------
-   ROFI THEME - NEO-BRUTALISM (LIGHT MODE)
-   Hard black outlines, drop shadows, electric accent blocks
+   NEO-BRUTALISM THEME - Rofi
+   Floating Cream Paper Card & Bold Graphic Black Frame
    ----------------------------------------------------- */
 
 configuration {
     modi: "drun,run";
     show-icons: false;
     display-drun: "🚀 ";
-    display-run: "⚡ ";
+    display-run: " ";
     drun-display-format: "{name}";
-    font: "JetBrainsMono Nerd Font 10";
+    font: "Nunito 12";
 }
 
 * {
-    bg: #fffdf0;               /* Warm Off-White / Cream */
-    black: #000000;            /* Pitch Black */
-    accent-pink: #ff006e;      /* Hot Pink */
-    accent-cyan: #00f5d4;      /* Cyber Cyan */
-    accent-yellow: #ffbe0b;    /* Electric Yellow */
-    fg: #000000;
+    bg: #fffdf0;
+    fg: #555555;
+    highlight: #ffbe0b;
+    text-selected: #000000;
+    text-active: #000000;
+    border-color: #000000;
 }
 
 window {
     width: 680px;
     background-color: @bg;
-    border: 3px;
-    border-color: @black;
-    border-radius: 4px;
+    border: 2px;
+    border-color: @border-color;
+    border-radius: 10px;
     padding: 24px;
     location: center;
     anchor: center;
@@ -35,71 +35,53 @@ window {
 mainbox {
     background-color: transparent;
     children: [ inputbar, listview ];
-    spacing: 16px;
+    spacing: 12px;
 }
 
 inputbar {
-    background-color: @accent-yellow;
-    border: 3px;
-    border-color: @black;
-    border-radius: 4px;
-    padding: 10px 14px;
+    background-color: transparent;
     children: [ prompt, entry ];
+    border-bottom: 2px;
+    border-color: @border-color;
+    padding-bottom: 10px;
 }
 
 prompt {
     background-color: transparent;
-    text-color: @black;
-    font-weight: bold;
-    margin: 0 8px 0 0;
+    text-color: @text-active;
 }
 
 entry {
     background-color: transparent;
-    text-color: @black;
-    font-weight: bold;
-    placeholder: "TYPE TO LAUNCH...";
-    placeholder-color: #555555;
-    cursor-color: @accent-pink;
+    text-color: @text-active;
+    placeholder: "Launch application...";
+    placeholder-color: #888888;
 }
 
 listview {
     background-color: transparent;
     lines: 7;
-    spacing: 8px;
+    spacing: 4px;
     scrollbar: false;
 }
 
 element {
-    padding: 10px 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 6px;
     border: 2px;
-    border-color: @black;
-    border-radius: 4px;
-    background-color: #ffffff;
-    text-color: @black;
-}
-
-element normal.normal {
-    background-color: #ffffff;
-    text-color: @black;
-}
-
-element alternate.normal {
-    background-color: #ffffff;
-    text-color: @black;
-}
-
-/* Neo-Brutalist Hot Pink Selected Block with Black text */
-element selected.normal, element selected.active {
-    background-color: @accent-pink;
-    border-color: @black;
-    text-color: #ffffff;
+    border-color: @border-color;
 }
 
 element-text {
     background-color: transparent;
     text-color: inherit;
     font-weight: bold;
-    highlight: inherit;
-    cursor: inherit;
 }

@@ -1,0 +1,29 @@
+/* ==========================================================================
+   RETROBOY DMG - GAMEBOY 4-SHADE OBSIDIAN THEME
+   ========================================================================== */
+
+.theme-dark {
+  /* Core Base Colors */
+  --bg-color: #0f380f;
+  --background-primary: #0f380f;
+  --background-primary-alt: #0a250a;
+  --background-secondary: #0f380f;
+  --background-secondary-alt: #164616;
+  --background-modifier-border: #306230;
+  --background-modifier-border-hover: #8bac0f;
+  --background-modifier-border-focus: #9bbc0f;
+  
+  /* Text Colors */
+  --text-normal: #9bbc0f;
+  --text-muted: #8bac0f;
+  --text-faint: #306230;
+  --text-accent: #9bbc0f;
+  --text-accent-hover: #ffffff;
+  
+  /* Accent & Selection */
+  --color-accent: #8bac0f;
+  --interactive-accent: #8bac0f;
+  --interactive-accent-hover: #9bbc0f;
+  --text-selection: rgba(139, 172, 15, 0.35);
+  --interactive-hover: #306230;
+}

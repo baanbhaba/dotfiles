@@ -1,0 +1,92 @@
+/* ==========================================================================
+   FIREFOX NEW TAB: CHARCOAL (CRT PITCH-BLACK & AMBER GOLD)
+   ========================================================================== */
+
+@-moz-document url("about:newtab"), url("about:home"), url("about:blank") {
+  :root {
+    --newtab-background-color: #080808 !important;
+    --newtab-text-primary-color: #ffb000 !important;
+    --newtab-text-secondary-color: #8c9b32 !important;
+    --newtab-search-icon-color: #ffb000 !important;
+    --newtab-card-background-color: #121212 !important;
+    --newtab-primary-action-background: #ffb000 !important;
+    --newtab-element-hover-color: rgba(255, 176, 0, 0.15) !important;
+  }
+
+  body {
+    background-color: #080808 !important;
+    color: #ffb000 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Search Bar */
+  .search-wrapper .search-inner-wrapper {
+    background-color: #121212 !important;
+    border: 1px solid #262626 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .search-wrapper .search-inner-wrapper:hover,
+  .search-wrapper input:focus + .search-inner-wrapper,
+  .search-wrapper:has(input:focus) .search-inner-wrapper {
+    border-color: #ffb000 !important;
+    box-shadow: 0 0 12px rgba(255, 176, 0, 0.35) !important;
+  }
+
+  .search-wrapper input {
+    color: #ffb000 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Top Sites / Shortcuts */
+  .top-site-outer .tile {
+    background-color: #121212 !important;
+    border: 1px solid #262626 !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .top-site-outer:hover .tile {
+    border-color: #ffb000 !important;
+    box-shadow: 0 0 10px rgba(255, 176, 0, 0.3) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .top-site-outer .title {
+    color: #8c9b32 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  .top-site-outer:hover .title {
+    color: #ffb000 !important;
+  }
+
+  /* Logo / Wordmark */
+  .wordmark {
+    fill: #ffb000 !important;
+  }
+
+  .logo {
+    filter: drop-shadow(0 0 10px rgba(255, 176, 0, 0.5));
+  }
+}
+
+/* ==========================================================================
+   MONKEYTYPE THEME: CHARCOAL (CRT PITCH-BLACK & AMBER GOLD)
+   ========================================================================== */
+
+@-moz-document domain("monkeytype.com") {
+  :root {
+    --bg-color: #080808 !important;
+    --main-color: #ffb000 !important;
+    --caret-color: #ffb000 !important;
+    --sub-color: #636b28 !important;
+    --sub-alt-color: #121212 !important;
+    --text-color: #ffb000 !important;
+    --error-color: #ff3333 !important;
+    --error-extra-color: #7a1a1a !important;
+    --colorful-error-color: #ff5555 !important;
+    --colorful-error-extra-color: #992222 !important;
+  }
+}

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Check if quake-terminal is running
+if ! hyprctl clients | grep -q "class: quake-terminal"; then
+    hyprctl dispatch exec "[workspace special:scratchpad; float; size 80% 55%; move 10% 40] kitty --class quake-terminal"
+    sleep 0.1
+fi
+
+hyprctl dispatch togglespecialworkspace scratchpad

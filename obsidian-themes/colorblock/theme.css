@@ -1,0 +1,125 @@
+/* ==========================================================================
+   COLOR BLOCK - PASTEL EDITORIAL OBSIDIAN THEME
+   Warm paper tones, graphic block accents in marigold yellow and lavender.
+   ========================================================================== */
+
+.theme-light {
+  /* Core Base Colors */
+  --bg-primary: #f2ede4;
+  --bg-primary-alt: #e8e1d5;
+  --bg-secondary: #f2ede4;
+  --bg-secondary-alt: #ded5c5;
+
+  --background-primary: var(--bg-primary);
+  --background-primary-alt: var(--bg-primary-alt);
+  --background-secondary: var(--bg-secondary);
+  --background-secondary-alt: var(--bg-secondary-alt);
+
+  /* Subtle Borders */
+  --border-color: #ded3c0;
+  --background-modifier-border: var(--border-color);
+  --background-modifier-border-hover: #e5a93c;
+  --background-modifier-border-focus: #8e7ca8;
+  --divider-color: #ded3c0;
+
+  /* Text Colors */
+  --text-normal: #1e2022;
+  --text-muted: #5e646a;
+  --text-faint: #8e959c;
+  --text-accent: #e5a93c;
+  --text-accent-hover: #8e7ca8;
+
+  /* Accents & Selection */
+  --color-accent: #e5a93c;
+  --interactive-accent: #e5a93c;
+  --interactive-accent-hover: #8e7ca8;
+  --text-selection: rgba(229, 169, 60, 0.28);
+  --interactive-hover: #ded5c5;
+
+  /* Typography */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+
+  /* Headings */
+  --h1-color: #8e7ca8;
+  --h2-color: #e5a93c;
+  --h3-color: #1e2022;
+  --h4-color: #5c7c8a;
+  --h5-color: #c06c84;
+  --h6-color: #6c5b7b;
+
+  /* Tabs & Navigation */
+  --tab-text-color-focused-active: #1e2022;
+  --tab-background-active: #e5a93c;
+  --status-bar-background: #f2ede4;
+  --status-bar-text-color: #1e2022;
+  --status-bar-border-color: #ded3c0;
+
+  /* Code Blocks */
+  --code-normal: #1e2022;
+  --code-background: #e8e1d5;
+  --code-comment: #8e959c;
+  --code-keyword: #8e7ca8;
+  --code-string: #4a7c59;
+  --code-value: #e5a93c;
+
+  /* Links & Tags */
+  --link-color: #8e7ca8;
+  --link-color-hover: #e5a93c;
+  --link-decoration: underline;
+  --link-external-color: #e5a93c;
+  --link-external-color-hover: #8e7ca8;
+  --tag-color: #ffffff;
+  --tag-background: #8e7ca8;
+  --tag-background-hover: #e5a93c;
+  --tag-radius: 4px;
+
+  /* Tables */
+  --table-border-color: #ded3c0;
+  --table-header-background: #e8e1d5;
+  --table-header-color: #8e7ca8;
+  --table-row-even-background: #ebe5dc;
+}
+
+.nav-file-title.is-active {
+  background-color: #e5a93c !important;
+  color: #1e2022 !important;
+  font-weight: bold !important;
+  border-radius: 4px;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #ded5c5 !important;
+  color: #1e2022 !important;
+}
+
+.workspace-leaf-header-title {
+  color: #8e7ca8 !important;
+  font-weight: bold;
+}
+
+.markdown-rendered blockquote {
+  border-left: 4px solid #8e7ca8 !important;
+  background-color: #e8e1d5 !important;
+  color: #1e2022 !important;
+  padding: 8px 16px;
+  border-radius: 0 4px 4px 0;
+}
+
+.callout {
+  border: 1px solid #e5a93c !important;
+  background-color: #f7f3ec !important;
+  border-radius: 4px !important;
+}
+
+.callout-title {
+  color: #e5a93c !important;
+  font-weight: bold !important;
+}
+
+.markdown-rendered hr {
+  border: none !important;
+  height: 2px !important;
+  background: #ded3c0 !important;
+}

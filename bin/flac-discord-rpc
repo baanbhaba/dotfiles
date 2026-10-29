@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""
+flac-discord-rpc - Native Discord Rich Presence for Lossless FLAC Player
+Connects to Discord IPC Unix Domain Socket directly with zero external dependencies.
+Displays current song, artist, album, elapsed time, and lossless audio indicator.
+"""
+
+import os
+import sys
+import time
+import json
+import struct
+import socket
+import uuid
+import glob
+import subprocess
+from typing import Optional, Dict
+
+CLIENT_ID = "1208031580244746280"  # Music Rich Presence Client ID
+
+def get_discord_socket_path() -> Optional[str]:
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    patterns = [
+        f"{runtime_dir}/discord-ipc-*",
+        f"{runtime_dir}/app/dev.vencord.Vesktop/discord-ipc-*",
+        f"{runtime_dir}/app/com.discordapp.Discord/discord-ipc-*",
+        "/tmp/discord-ipc-*"
+    ]
+    for pat in patterns:
+        matches = sorted(glob.glob(pat))
+        if matches:
+            return matches[0]
+    return None
+
+class DiscordIPC:
+    def __init__(self, client_id: str):
+        self.client_id = client_id
+        self.sock: Optional[socket.socket] = None
+        self.connected = False
+
+    def connect(self) -> bool:
+        path = get_discord_socket_path()
+        if not path:
+            return False
+        try:
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.sock.connect(path)
+            # Handshake (Opcode 0)
+            payload = json.dumps({"v": 1, "client_id": self.client_id}).encode("utf-8")
+            header = struct.pack("<II", 0, len(payload))
+            self.sock.sendall(header + payload)
+            # Read handshake response
+            resp_header = self.sock.recv(8)
+            if len(resp_header) == 8:
+                op, length = struct.unpack("<II", resp_header)
+                _ = self.sock.recv(length)
+                self.connected = True
+                return True
+        except Exception:
+            self.close()
+        return False
+
+    def set_activity(self, activity: Optional[Dict]) -> bool:
+        if not self.connected or not self.sock:
+            return False
+        try:
+            payload = {
+                "cmd": "SET_ACTIVITY",
+                "args": {
+                    "pid": os.getpid(),
+                    "activity": activity
+                },
+                "nonce": str(uuid.uuid4())
+            }
+            data = json.dumps(payload).encode("utf-8")
+            header = struct.pack("<II", 1, len(data))
+            self.sock.sendall(header + data)
+            # Drain response
+            self.sock.settimeout(0.5)
+            try:
+                resp_h = self.sock.recv(8)
+                if len(resp_h) == 8:
+                    _, l = struct.unpack("<II", resp_h)
+                    self.sock.recv(l)
+            except socket.timeout:
+                pass
+            return True
+        except Exception:
+            self.close()
+            return False
+
+    def close(self):
+        self.connected = False
+        if self.sock:
+            try:
+                self.sock.close()
+            except Exception:
+                pass
+            self.sock = None
+
+def get_current_track_info():
+    cmd = [
+        "playerctl",
+        "-p", "com.github.neithern.g4music",
+        "metadata",
+        "--format",
+        '{{status}}\t{{title}}\t{{artist}}\t{{album}}\t{{position}}\t{{mpris:length}}'
+    ]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.8)
+        if res.returncode == 0 and res.stdout.strip():
+            parts = res.stdout.strip().split("\t")
+            if len(parts) >= 4:
+                status, title, artist, album = parts[0].strip(), parts[1].strip(), parts[2].strip(), parts[3].strip()
+                pos_str = parts[4].strip() if len(parts) > 4 else "0"
+                len_str = parts[5].strip() if len(parts) > 5 else "0"
+                pos = float(pos_str) / 1000000.0 if pos_str.isdigit() and len(pos_str) > 7 else float(pos_str or 0)
+                length = float(len_str) / 1000000.0 if len_str.isdigit() and len(len_str) > 7 else float(len_str or 0)
+                return {
+                    "status": status,
+                    "title": title,
+                    "artist": artist,
+                    "album": album,
+                    "position": pos,
+                    "length": length
+                }
+    except Exception:
+        pass
+    return None
+
+def main():
+    ipc = DiscordIPC(CLIENT_ID)
+    last_title = ""
+    last_status = ""
+
+    while True:
+        track = get_current_track_info()
+
+        if track and track["title"] and track["status"].lower() == "playing":
+            if not ipc.connected:
+                ipc.connect()
+
+            if ipc.connected:
+                now = int(time.time())
+                start_time = int(now - track["position"])
+                end_time = int(start_time + track["length"]) if track["length"] > 0 else None
+
+                activity = {
+                    "details": track["title"][:128],
+                    "state": f"by {track['artist'] or 'Unknown'}"[:128],
+                    "assets": {
+                        "large_image": "music_disk",
+                        "large_text": track["album"][:128] if track["album"] else "FLAC Audio",
+                        "small_image": "play",
+                        "small_text": "Lossless FLAC"
+                    },
+                    "timestamps": {
+                        "start": start_time
+                    }
+                }
+                if end_time:
+                    activity["timestamps"]["end"] = end_time
+
+                ipc.set_activity(activity)
+                last_title = track["title"]
+                last_status = track["status"]
+        else:
+            if ipc.connected and (last_title or last_status == "Playing"):
+                ipc.set_activity(None)
+                last_title = ""
+                last_status = "Paused"
+
+        time.sleep(3.0)
+
+if __name__ == "__main__":
+    main()

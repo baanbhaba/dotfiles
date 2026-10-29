@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+
+# -----------------------------------------------------
+# DELUXE SCREENSHOT ENGINE (Theme-Adaptive & Multi-Mode)
+# Supports: full, area, window, delay, menu
+# -----------------------------------------------------
+
+THEME=$(cat "$HOME/.config/hypr/.theme_current" 2>/dev/null || echo "charcoal")
+DIR="$HOME/Pictures/Screenshots"
+mkdir -p "$DIR"
+FILE="$DIR/Screenshot_$(date +'%Y-%m-%d_%H-%M-%S').png"
+
+# Color theme variables for slurp
+case "$THEME" in
+    "darkbrutalism")
+        BORDER="#ffe600"
+        SELECTION="#00f5d433"
+        BG="#00000099"
+        WEIGHT=3
+        ;;
+    "neobrutalism")
+        BORDER="#000000"
+        SELECTION="#ff006e33"
+        BG="#00000066"
+        WEIGHT=4
+        ;;
+    "charcoal")
+        BORDER="#ffb000"
+        SELECTION="#ffb00033"
+        BG="#050403aa"
+        WEIGHT=2
+        ;;
+    "jaipur")
+        BORDER="#f48c06"
+        SELECTION="#e5989b33"
+        BG="#1a0e0aaa"
+        WEIGHT=2
+        ;;
+    "colorblock")
+        BORDER="#a78bfa"
+        SELECTION="#6ee7b733"
+        BG="#13111caa"
+        WEIGHT=2
+        ;;
+    "sketchbook")
+        BORDER="#18181b"
+        SELECTION="#18181b22"
+        BG="#00000044"
+        WEIGHT=2
+        ;;
+    "retroboy")
+        BORDER="#8bac0f"
+        SELECTION="#9bbc0f44"
+        BG="#0f380faa"
+        WEIGHT=4
+        ;;
+    *)
+        BORDER="#ffe600"
+        SELECTION="#ffe60033"
+        BG="#00000088"
+        WEIGHT=2
+        ;;
+esac
+
+MODE="${1:-area}"
+
+# Handle delay if requested (e.g. "screenshot 3 full" or "screenshot delay 3 full")
+if [[ "$MODE" =~ ^[0-9]+$ ]]; then
+    sleep "$MODE"
+    MODE="${2:-full}"
+elif [[ "$MODE" == "delay" ]]; then
+    DELAY="${2:-3}"
+    MODE="${3:-full}"
+    notify-send -t "$((DELAY * 1000))" -a "Screenshot" "📸 Capturing in ${DELAY}s..." "Prepare your screen!" 2>/dev/null
+    sleep "$DELAY"
+fi
+
+# Interactive Rofi Menu
+if [[ "$MODE" == "menu" || "$MODE" == "-m" || "$MODE" == "--menu" ]]; then
+    ROFI_THEME="$HOME/.config/rofi/config.rasi"
+    opt_full="🖥️  Full Screen"
+    opt_area="✂️  Selected Area"
+    opt_win="🪟  Active Window"
+    opt_del3="⏱️  Full Screen (3s Delay)"
+    opt_del5="⏱️  Full Screen (5s Delay)"
+
+    options="$opt_full\n$opt_area\n$opt_win\n$opt_del3\n$opt_del5"
+    chosen=$(echo -e "$options" | rofi -dmenu -i -p "Screenshot" -theme "$ROFI_THEME" 2>/dev/null)
+
+    case "$chosen" in
+        "$opt_full") MODE="full" ;;
+        "$opt_area") MODE="area" ;;
+        "$opt_win")  MODE="window" ;;
+        "$opt_del3") sleep 3; MODE="full" ;;
+        "$opt_del5") sleep 5; MODE="full" ;;
+        *) exit 0 ;;
+    esac
+fi
+
+# Perform capture based on selected mode
+case "$MODE" in
+    "full"|"screen"|"-f"|"--full")
+        grim "$FILE" || exit 1
+        ;;
+
+    "window"|"active"|"-w"|"--window")
+        GEOM=$(hyprctl activewindow -j 2>/dev/null | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' 2>/dev/null)
+        if [[ -z "$GEOM" || "$GEOM" == "null" || "$GEOM" == *"null"* ]]; then
+            # Fallback to slurp if active window not detected
+            GEOM=$(slurp -d -b "$BG" -c "$BORDER" -s "$SELECTION" -w "$WEIGHT" 2>/dev/null)
+        fi
+        if [[ -z "$GEOM" ]]; then
+            exit 0
+        fi
+        grim -g "$GEOM" "$FILE" || exit 1
+        ;;
+
+    "area"|"select"|"region"|"-s"|"--area"|*)
+        GEOM=$(slurp -d -b "$BG" -c "$BORDER" -s "$SELECTION" -w "$WEIGHT" 2>/dev/null)
+        if [[ -z "$GEOM" ]]; then
+            exit 0
+        fi
+        grim -g "$GEOM" "$FILE" || exit 1
+        ;;
+esac
+
+# Ensure file was created successfully
+if [[ ! -s "$FILE" ]]; then
+    exit 1
+fi
+
+# Copy to clipboard with explicit MIME type for instant cross-app pasting
+wl-copy --type image/png < "$FILE"
+
+# Play shutter audio effect
+SHUTTER_SND="$HOME/.config/hypr/sounds/current/shutter.wav"
+[ -f "$SHUTTER_SND" ] || SHUTTER_SND="$HOME/.config/hypr/sounds/shutter.oga"
+paplay "$SHUTTER_SND" 2>/dev/null &
+
+# Non-blocking notification with action callbacks
+(
+    ACTION=$(notify-send -t 5000 -i "$FILE" -a "Screenshot" \
+        "📸 Screenshot Captured!" \
+        "Copied to clipboard and saved to Pictures" \
+        --action="open=Open" \
+        --action="delete=Delete" 2>/dev/null)
+
+    case "$ACTION" in
+        "open")
+            xdg-open "$FILE" 2>/dev/null &
+            ;;
+        "delete")
+            rm -f "$FILE"
+            notify-send -t 1500 -a "Screenshot" "Deleted" "Screenshot removed." 2>/dev/null
+            ;;
+    esac
+) &
+
+exit 0

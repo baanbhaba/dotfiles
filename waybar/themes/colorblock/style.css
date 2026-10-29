@@ -1,11 +1,12 @@
-/* -----------------------------------------------------
-   COLORBLOCK WAYBAR (FLOATING PASTEL CAPSULE ISLANDS)
-   ----------------------------------------------------- */
+/* ─────────────────────────────────────────────────────
+   COLORBLOCK WAYBAR (MODERN MINIMALIST FLOATING ISLANDS)
+   Warm linen canvas with Ochre, Lavender & Sage block accents
+   ───────────────────────────────────────────────────── */
 
 * {
-    font-family: "JetBrainsMono Nerd Font";
+    font-family: "Space Grotesk", sans-serif;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 700;
     border: none;
     border-radius: 0;
     margin: 0;
@@ -14,71 +15,202 @@
 
 window#waybar {
     background-color: transparent;
-    color: #2d2d2d;
+    color: #1e2022;
 }
 
-/* Island Capsules */
+/* ── LEFT CAPSULE: BADGE & WORKSPACES ── */
+#custom-block {
+    background: #e5a93c;
+    color: #1e2022;
+    padding: 4px 14px;
+    border-radius: 14px;
+    margin-right: 6px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(229, 169, 60, 0.3);
+}
+
 #workspaces {
     background: #ffffff;
-    border-radius: 18px;
-    padding: 2px 8px;
-    border: 1px solid #e0d8cc;
-    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    padding: 2px 6px;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
 }
 
 #workspaces button {
-    padding: 0 10px;
+    padding: 2px 10px;
     margin: 2px 2px;
-    color: #777777;
+    color: #7a7065;
     background: transparent;
-    border-radius: 12px;
-    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    border-radius: 8px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 #workspaces button.active {
-    background: #c4a35a;
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(196, 163, 90, 0.4);
+    background: #e5a93c;
+    color: #1e2022;
+    font-weight: 800;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(229, 169, 60, 0.35);
 }
 
+#workspaces button:hover {
+    background: #f4ede3;
+    color: #1e2022;
+}
+
+#workspaces button.active:hover {
+    background: #f0b54d;
+    color: #1e2022;
+}
+
+#workspaces button.urgent {
+    background: #d96b52;
+    color: #ffffff;
+}
+
+/* ── CENTER CAPSULE: CLOCK ── */
 #clock {
     background: #ffffff;
-    color: #2d2d2d;
-    padding: 3px 20px;
-    border-radius: 18px;
-    border: 1px solid #e0d8cc;
-    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
+    color: #1e2022;
+    padding: 4px 22px;
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
+    transition: all 0.2s ease;
 }
 
 #clock:hover {
-    background: #f7f4ee;
-    color: #c4a35a;
+    background: #fdfbf7;
+    color: #e5a93c;
 }
 
-#custom-clipboard, #pulseaudio, #battery, #tray {
+#custom-weather {
     background: #ffffff;
-    padding: 3px 12px;
-    margin: 0 2px;
-    color: #4a4a4a;
-    border-radius: 18px;
-    border: 1px solid #e0d8cc;
-    box-shadow: 0 4px 12px rgba(168, 154, 181, 0.25);
+    color: #1e2022;
+    padding: 4px 14px;
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
+    transition: all 0.2s ease;
 }
 
-#battery.warning { color: #c4a35a; }
-#battery.critical { color: #b58d8d; }
+#custom-weather:hover {
+    background: #fdfbf7;
+    color: #e5a93c;
+}
 
+#network {
+    background: #ffffff;
+    color: #1e2022;
+    padding: 4px 14px;
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
+    transition: all 0.2s ease;
+}
+
+#network:hover {
+    background: #fdfbf7;
+    color: #5b8e7d;
+}
+
+#network.disconnected {
+    color: #d96b52;
+}
+
+
+#custom-music {
+    background: #ffffff;
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    padding: 4px 14px;
+    margin: 0 2px;
+    color: #8e7ca8;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
+    transition: all 0.2s ease;
+}
+
+#custom-music:hover {
+    background: #f4ede3;
+    color: #5c7c64;
+}
+
+#custom-music.paused {
+    color: #8f8576;
+}
+
+/* ── RIGHT CAPSULES: HARDWARE & SYSTEM MODULES ── */
+#custom-clipboard,
+#pulseaudio,
+#battery,
+#tray {
+    background: #ffffff;
+    border: 1px solid #e2dacd;
+    border-radius: 14px;
+    padding: 4px 14px;
+    margin: 0 2px;
+    color: #1e2022;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(30, 32, 34, 0.08);
+    transition: all 0.2s ease;
+}
+
+#pulseaudio {
+    color: #8e7ca8;
+}
+
+#pulseaudio:hover {
+    background: #f4ede3;
+    color: #e5a93c;
+}
+
+#custom-clipboard:hover {
+    background: #f4ede3;
+    color: #8e7ca8;
+}
+
+#pulseaudio.muted {
+    background: #f4ede3;
+    color: #c96a5b;
+}
+
+#battery {
+    color: #5c7c64;
+}
+
+#battery.warning {
+    color: #e5a93c;
+    border-color: #e5a93c;
+}
+
+#battery.critical {
+    background: #fdf2f0;
+    color: #d96b52;
+    border-color: #d96b52;
+}
+
+#tray {
+    padding: 4px 12px;
+}
+
+/* ── TOOLTIPS ── */
 tooltip {
     background: #ffffff;
-    border: 1px solid #c4a35a;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(168, 154, 181, 0.3);
-    padding: 16px 20px;
+    border: 1px solid #e5a93c;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(30, 32, 34, 0.12);
+    padding: 12px 16px;
 }
 
 tooltip label {
-    color: #2d2d2d;
-    font-family: "JetBrainsMono Nerd Font", monospace;
-    font-size: 15px;
-    font-weight: bold;
+    color: #1e2022;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
 }

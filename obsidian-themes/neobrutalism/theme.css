@@ -1,0 +1,136 @@
+/* ==========================================================================
+   NEO BRUTALISM - VIBRANT POP RETRO-BRUTALIST OBSIDIAN THEME
+   Warm cream background, electric pink/yellow accents, hard black borders.
+   ========================================================================== */
+
+.theme-light {
+  /* Core Base Colors */
+  --bg-primary: #fffdf0;
+  --bg-primary-alt: #f7f4dc;
+  --bg-secondary: #fffdf0;
+  --bg-secondary-alt: #ede8c4;
+
+  --background-primary: var(--bg-primary);
+  --background-primary-alt: var(--bg-primary-alt);
+  --background-secondary: var(--bg-secondary);
+  --background-secondary-alt: var(--bg-secondary-alt);
+
+  /* Hard Black Borders */
+  --border-color: #000000;
+  --background-modifier-border: #000000;
+  --background-modifier-border-hover: #ff006e;
+  --background-modifier-border-focus: #3a86ff;
+  --divider-color: #000000;
+
+  /* Text Colors */
+  --text-normal: #000000;
+  --text-muted: #333333;
+  --text-faint: #555555;
+  --text-accent: #ff006e;
+  --text-accent-hover: #3a86ff;
+
+  /* Accents & Selection */
+  --color-accent: #ff006e;
+  --interactive-accent: #ff006e;
+  --interactive-accent-hover: #ffbe0b;
+  --text-selection: rgba(255, 0, 110, 0.28);
+  --interactive-hover: #ede8c4;
+
+  /* Typography */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+
+  /* Headings */
+  --h1-color: #ff006e;
+  --h2-color: #3a86ff;
+  --h3-color: #000000;
+  --h4-color: #ff006e;
+  --h5-color: #059669;
+  --h6-color: #4b5563;
+
+  /* Tabs & Navigation */
+  --tab-text-color-focused-active: #ffffff;
+  --tab-background-active: #ff006e;
+  --status-bar-background: #fffdf0;
+  --status-bar-text-color: #000000;
+  --status-bar-border-color: #000000;
+
+  /* Code Blocks */
+  --code-normal: #000000;
+  --code-background: #f7f4dc;
+  --code-comment: #71717a;
+  --code-keyword: #ff006e;
+  --code-string: #059669;
+  --code-value: #3a86ff;
+
+  /* Links & Tags */
+  --link-color: #ff006e;
+  --link-color-hover: #3a86ff;
+  --link-decoration: underline;
+  --link-external-color: #3a86ff;
+  --link-external-color-hover: #ff006e;
+  --tag-color: #000000;
+  --tag-background: #ffbe0b;
+  --tag-background-hover: #ff006e;
+  --tag-radius: 0px;
+
+  /* Tables */
+  --table-border-color: #000000;
+  --table-header-background: #ffbe0b;
+  --table-header-color: #000000;
+  --table-row-even-background: #f7f4dc;
+}
+
+/* Hard Shadows & Brutalist Box Outlines */
+.nav-file-title.is-active {
+  background-color: #ffbe0b !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #f7f4dc !important;
+  color: #000000 !important;
+}
+
+.workspace-leaf-header-title {
+  color: #ff006e !important;
+  font-weight: 900;
+}
+
+.markdown-rendered blockquote {
+  border: 2px solid #000000 !important;
+  border-left: 6px solid #ff006e !important;
+  background-color: #f7f4dc !important;
+  color: #000000 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+  padding: 10px 16px;
+}
+
+.callout {
+  border: 2px solid #000000 !important;
+  background-color: #fffdf0 !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+.callout-title {
+  color: #ff006e !important;
+  font-weight: 900 !important;
+}
+
+.markdown-rendered hr {
+  border: none !important;
+  height: 3px !important;
+  background: #000000 !important;
+}
+
+button.mod-cta {
+  background-color: #ff006e !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}

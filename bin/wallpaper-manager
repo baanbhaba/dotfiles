@@ -1,0 +1,676 @@
+#!/usr/bin/env python3
+"""
+Wallpaper Manager (wallpaper-manager)
+A modern, sleek GUI to manage, preview, blur, and switch wallpapers across Hyprland themes.
+"""
+
+import sys
+import os
+import shutil
+import subprocess
+from pathlib import Path
+from PIL import Image, ImageFilter
+
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QFileDialog, QScrollArea, QGridLayout,
+    QFrame, QMessageBox, QDialog, QSlider, QSizePolicy, QGraphicsDropShadowEffect
+)
+from PyQt5.QtGui import QPixmap, QImage, QFont, QColor, QCursor, QPainter, QPainterPath
+from PyQt5.QtCore import Qt, QSize, pyqtSignal
+
+HOME = Path.home()
+THEMES_DIR = HOME / ".config" / "hypr" / "themes"
+CURRENT_THEME_FILE = HOME / ".config" / "hypr" / ".theme_current"
+HYPRPAPER_CONF = HOME / ".config" / "hypr" / "hyprpaper.conf"
+THUMB_CACHE_DIR = Path("/tmp/wallpaper_manager_thumbs")
+THUMB_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def get_current_theme():
+    if CURRENT_THEME_FILE.is_file():
+        return CURRENT_THEME_FILE.read_text().strip()
+    return "charcoal"
+
+
+def get_active_wallpaper():
+    try:
+        res = subprocess.run(["hyprctl", "hyprpaper", "listactive"], capture_output=True, text=True, timeout=2)
+        if res.returncode == 0:
+            lines = res.stdout.strip().splitlines()
+            for line in lines:
+                if ":" in line:
+                    return line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return ""
+
+
+def apply_wallpaper(image_path: Path):
+    if not image_path.is_file():
+        return False
+    path_str = str(image_path.resolve())
+
+    # Update hyprpaper.conf
+    conf_content = f"splash = false\n\nwallpaper {{\n    monitor = \n    path = {path_str}\n}}\n"
+    HYPRPAPER_CONF.write_text(conf_content)
+
+    # Apply live via hyprctl
+    try:
+        mon_res = subprocess.run(["hyprctl", "monitors", "-j"], capture_output=True, text=True, timeout=2)
+        import json
+        monitors = []
+        if mon_res.returncode == 0:
+            mon_data = json.loads(mon_res.stdout)
+            monitors = [m.get("name") for m in mon_data if m.get("name")]
+
+        applied = False
+        if monitors:
+            for mon in monitors:
+                r = subprocess.run(["hyprctl", "hyprpaper", "wallpaper", f"{mon},{path_str}"], capture_output=True, text=True)
+                if r.returncode == 0:
+                    applied = True
+
+        if not applied:
+            subprocess.run(["hyprctl", "hyprpaper", "wallpaper", f",{path_str}"], capture_output=True, text=True)
+
+        # Notify
+        subprocess.run(["notify-send", "Wallpaper Manager", f"Applied: {image_path.name}", "-i", "preferences-desktop-wallpaper"], check=False)
+        return True
+    except Exception as e:
+        print("Error applying wallpaper:", e)
+        return False
+
+
+def get_thumbnail(image_path: Path, thumb_size=(240, 135)) -> QPixmap:
+    cache_name = f"{image_path.stem}_{image_path.stat().st_mtime}_{thumb_size[0]}x{thumb_size[1]}.jpg"
+    cached_file = THUMB_CACHE_DIR / cache_name
+
+    if cached_file.is_file():
+        return QPixmap(str(cached_file))
+
+    try:
+        with Image.open(image_path) as img:
+            img = img.convert("RGB")
+            img.thumbnail(thumb_size, Image.Resampling.LANCZOS)
+            # Create a cropped centered thumb
+            thumb = Image.new("RGB", thumb_size, (20, 20, 24))
+            offset = ((thumb_size[0] - img.width) // 2, (thumb_size[1] - img.height) // 2)
+            thumb.paste(img, offset)
+            thumb.save(cached_file, "JPEG", quality=85)
+            return QPixmap(str(cached_file))
+    except Exception as e:
+        print(f"Error loading thumb for {image_path}: {e}")
+        pm = QPixmap(*thumb_size)
+        pm.fill(QColor(30, 30, 35))
+        return pm
+
+
+class BlurDialog(QDialog):
+    def __init__(self, parent, image_path: Path):
+        super().__init__(parent)
+        self.image_path = image_path
+        self.setWindowTitle(f"Blur Wallpaper - {image_path.name}")
+        self.setFixedSize(540, 480)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #121216;
+                color: #e4e4e7;
+            }
+            QLabel {
+                color: #e4e4e7;
+                font-family: "JetBrainsMono Nerd Font", sans-serif;
+            }
+            QSlider::groove:horizontal {
+                height: 6px;
+                background: #27272a;
+                border-radius: 3px;
+            }
+            QSlider::sub-page:horizontal {
+                background: #ffb000;
+                border-radius: 3px;
+            }
+            QSlider::handle:horizontal {
+                background: #ffffff;
+                width: 16px;
+                margin-top: -5px;
+                margin-bottom: -5px;
+                border-radius: 8px;
+            }
+            QPushButton {
+                background-color: #27272a;
+                color: #ffffff;
+                border-radius: 8px;
+                padding: 10px 18px;
+                font-weight: bold;
+                border: 1px solid #3f3f46;
+            }
+            QPushButton:hover {
+                background-color: #3f3f46;
+            }
+            QPushButton#primaryBtn {
+                background-color: #ffb000;
+                color: #09090b;
+                border: none;
+            }
+            QPushButton#primaryBtn:hover {
+                background-color: #ffd166;
+            }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(16)
+
+        title = QLabel(f"Create Blurred Version of:\n{image_path.name}")
+        title.setFont(QFont("JetBrainsMono Nerd Font", 12, QFont.Bold))
+        layout.addWidget(title)
+
+        # Preview Label
+        self.preview_lbl = QLabel()
+        self.preview_lbl.setFixedSize(492, 260)
+        self.preview_lbl.setStyleSheet("border-radius: 10px; background-color: #18181c; border: 1px solid #27272a;")
+        self.preview_lbl.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.preview_lbl)
+
+        # Slider Layout
+        slider_box = QHBoxLayout()
+        slider_box.addWidget(QLabel("Blur Strength:"))
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setRange(4, 40)
+        self.slider.setValue(15)
+        self.slider.valueChanged.connect(self.update_preview)
+        slider_box.addWidget(self.slider)
+
+        self.val_lbl = QLabel("15 px")
+        self.val_lbl.setFixedWidth(50)
+        slider_box.addWidget(self.val_lbl)
+        layout.addLayout(slider_box)
+
+        # Buttons
+        btn_box = QHBoxLayout()
+        btn_box.addStretch()
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        btn_box.addWidget(cancel_btn)
+
+        self.save_btn = QPushButton("Save Blurred Copy")
+        self.save_btn.setObjectName("primaryBtn")
+        self.save_btn.clicked.connect(self.save_blurred)
+        btn_box.addWidget(self.save_btn)
+        layout.addLayout(btn_box)
+
+        # Load initial preview
+        self.original_thumb = None
+        self.load_original_thumb()
+        self.update_preview()
+
+    def load_original_thumb(self):
+        try:
+            with Image.open(self.image_path) as img:
+                img = img.convert("RGB")
+                img.thumbnail((492, 260), Image.Resampling.LANCZOS)
+                self.original_thumb = img
+        except Exception as e:
+            print("Preview error:", e)
+
+    def update_preview(self):
+        val = self.slider.value()
+        self.val_lbl.setText(f"{val} px")
+        if self.original_thumb:
+            blurred = self.original_thumb.filter(ImageFilter.GaussianBlur(radius=val * 0.5))
+            # Convert PIL to QPixmap
+            qim = QImage(blurred.tobytes(), blurred.width, blurred.height, blurred.width * 3, QImage.Format_RGB888)
+            self.preview_lbl.setPixmap(QPixmap.fromImage(qim))
+
+    def save_blurred(self):
+        radius = self.slider.value()
+        dest_name = f"{self.image_path.stem}_blurred.jpg"
+        dest_path = self.image_path.parent / dest_name
+
+        try:
+            with Image.open(self.image_path) as img:
+                img = img.convert("RGB")
+                blurred = img.filter(ImageFilter.GaussianBlur(radius=radius))
+                blurred.save(dest_path, "JPEG", quality=95)
+            QMessageBox.information(self, "Success", f"Saved blurred copy:\n{dest_name}")
+            self.accept()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to blur image:\n{e}")
+
+
+class WallpaperCard(QFrame):
+    clicked = pyqtSignal(Path)
+
+    def __init__(self, image_path: Path, is_active=False):
+        super().__init__()
+        self.image_path = image_path
+        self.is_active = is_active
+        self.setFixedSize(256, 210)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+
+        border_color = "#ffb000" if is_active else "#27272a"
+        bg_color = "#18181c"
+        self.setStyleSheet(f"""
+            WallpaperCard {{
+                background-color: {bg_color};
+                border: 2px solid {border_color};
+                border-radius: 12px;
+            }}
+            WallpaperCard:hover {{
+                border: 2px solid #ffb000;
+                background-color: #202026;
+            }}
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
+
+        # Image Label
+        self.img_lbl = QLabel()
+        self.img_lbl.setFixedSize(240, 135)
+        self.img_lbl.setStyleSheet("border-radius: 8px; background-color: #0f0f12;")
+        self.img_lbl.setAlignment(Qt.AlignCenter)
+
+        thumb_pm = get_thumbnail(image_path)
+        self.img_lbl.setPixmap(thumb_pm)
+        layout.addWidget(self.img_lbl)
+
+        # Title & Info
+        info_layout = QHBoxLayout()
+        info_layout.setContentsMargins(4, 0, 4, 0)
+
+        name_lbl = QLabel(image_path.stem[:18] + ("…" if len(image_path.stem) > 18 else ""))
+        name_lbl.setStyleSheet("color: #f4f4f5; font-weight: bold; font-size: 12px; border: none;")
+        name_lbl.setToolTip(image_path.name)
+        info_layout.addWidget(name_lbl)
+
+        info_layout.addStretch()
+
+        if is_active:
+            badge = QLabel("ACTIVE")
+            badge.setStyleSheet("background-color: #22c55e; color: #052e16; font-size: 10px; font-weight: 800; border-radius: 4px; padding: 2px 6px; border: none;")
+            info_layout.addWidget(badge)
+        else:
+            ext_badge = QLabel(image_path.suffix.upper().replace(".", ""))
+            ext_badge.setStyleSheet("color: #71717a; font-size: 10px; font-weight: bold; border: none;")
+            info_layout.addWidget(ext_badge)
+
+        layout.addLayout(info_layout)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.image_path)
+        super().mousePressEvent(event)
+
+
+class WallpaperManager(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Wallpaper Manager — Hyprland")
+        self.resize(1180, 760)
+        self.setMinimumSize(900, 600)
+
+        self.current_theme = get_current_theme()
+        self.selected_theme = self.current_theme
+        self.active_wp_path = get_active_wallpaper()
+        self.selected_wp = None
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #0b0b0e;
+            }
+            QWidget {
+                color: #e4e4e7;
+                font-family: "JetBrainsMono Nerd Font", sans-serif;
+            }
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                background: #121216;
+                width: 8px;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical {
+                background: #27272a;
+                border-radius: 4px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #ffb000;
+            }
+            QPushButton {
+                background-color: #18181c;
+                color: #e4e4e7;
+                border: 1px solid #27272a;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-weight: 600;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background-color: #27272a;
+                border-color: #3f3f46;
+                color: #ffffff;
+            }
+            QPushButton#primaryAction {
+                background-color: #ffb000;
+                color: #09090b;
+                border: none;
+                font-weight: 800;
+            }
+            QPushButton#primaryAction:hover {
+                background-color: #ffd166;
+            }
+            QPushButton#dangerBtn:hover {
+                background-color: #e11d48;
+                border-color: #e11d48;
+                color: #ffffff;
+            }
+        """)
+
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(16)
+
+        # ─── LEFT SIDEBAR (Themes) ───────────────────────────
+        sidebar = QFrame()
+        sidebar.setFixedWidth(230)
+        sidebar.setStyleSheet("background-color: #121216; border-radius: 14px; border: 1px solid #1f1f23;")
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(14, 16, 14, 16)
+        sidebar_layout.setSpacing(10)
+
+        header_lbl = QLabel("🎨 THEMES")
+        header_lbl.setFont(QFont("JetBrainsMono Nerd Font", 12, QFont.Bold))
+        header_lbl.setStyleSheet("color: #ffb000; border: none; padding-bottom: 6px;")
+        sidebar_layout.addWidget(header_lbl)
+
+        self.theme_buttons = {}
+        themes = self.get_available_themes()
+
+        for th in themes:
+            btn = QPushButton(th.capitalize())
+            btn.setCheckable(True)
+            btn.setFixedHeight(44)
+            btn.setCursor(QCursor(Qt.PointingHandCursor))
+            is_active_sys = (th == self.current_theme)
+            badge_text = " (ACTIVE)" if is_active_sys else ""
+            btn.setText(f"{th.capitalize()}{badge_text}")
+
+            btn.clicked.connect(lambda checked, t=th: self.switch_theme_view(t))
+            sidebar_layout.addWidget(btn)
+            self.theme_buttons[th] = btn
+
+        sidebar_layout.addStretch()
+
+        # Theme Switcher action
+        self.apply_theme_btn = QPushButton("Apply System Theme")
+        self.apply_theme_btn.setFixedHeight(38)
+        self.apply_theme_btn.setStyleSheet("border-color: #3f3f46;")
+        self.apply_theme_btn.clicked.connect(self.apply_selected_theme_system)
+        sidebar_layout.addWidget(self.apply_theme_btn)
+
+        main_layout.addWidget(sidebar)
+
+        # ─── RIGHT CONTENT (Gallery & Actions) ───────────────
+        content_area = QWidget()
+        content_layout = QVBoxLayout(content_area)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(14)
+
+        # Top Action Bar
+        action_bar = QFrame()
+        action_bar.setFixedHeight(64)
+        action_bar.setStyleSheet("background-color: #121216; border-radius: 14px; border: 1px solid #1f1f23;")
+        action_layout = QHBoxLayout(action_bar)
+        action_layout.setContentsMargins(16, 12, 16, 12)
+        action_layout.setSpacing(10)
+
+        self.title_lbl = QLabel()
+        self.title_lbl.setFont(QFont("JetBrainsMono Nerd Font", 13, QFont.Bold))
+        self.title_lbl.setStyleSheet("color: #f4f4f5; border: none;")
+        action_layout.addWidget(self.title_lbl)
+
+        action_layout.addStretch()
+
+        # Action Buttons
+        self.set_wp_btn = QPushButton("✓ Set As Wallpaper")
+        self.set_wp_btn.setObjectName("primaryAction")
+        self.set_wp_btn.setFixedHeight(38)
+        self.set_wp_btn.setEnabled(False)
+        self.set_wp_btn.clicked.connect(self.set_current_wallpaper)
+        action_layout.addWidget(self.set_wp_btn)
+
+        self.blur_btn = QPushButton("🪄 Blur...")
+        self.blur_btn.setFixedHeight(38)
+        self.blur_btn.setEnabled(False)
+        self.blur_btn.clicked.connect(self.open_blur_dialog)
+        action_layout.addWidget(self.blur_btn)
+
+        add_btn = QPushButton("+ Add Image")
+        add_btn.setFixedHeight(38)
+        add_btn.clicked.connect(self.add_wallpaper)
+        action_layout.addWidget(add_btn)
+
+        cycle_btn = QPushButton("🔄 Cycle")
+        cycle_btn.setFixedHeight(38)
+        cycle_btn.clicked.connect(self.cycle_wallpaper)
+        action_layout.addWidget(cycle_btn)
+
+        folder_btn = QPushButton("📁 Folder")
+        folder_btn.setFixedHeight(38)
+        folder_btn.clicked.connect(self.open_folder)
+        action_layout.addWidget(folder_btn)
+
+        self.del_btn = QPushButton("🗑️")
+        self.del_btn.setObjectName("dangerBtn")
+        self.del_btn.setFixedSize(38, 38)
+        self.del_btn.setEnabled(False)
+        self.del_btn.clicked.connect(self.delete_selected_wallpaper)
+        action_layout.addWidget(self.del_btn)
+
+        content_layout.addWidget(action_bar)
+
+        # Wallpaper Grid Scroll Area
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.grid_container = QWidget()
+        self.grid_layout = QGridLayout(self.grid_container)
+        self.grid_layout.setSpacing(16)
+        self.grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.scroll.setWidget(self.grid_container)
+
+        content_layout.addWidget(self.scroll)
+        main_layout.addWidget(content_area)
+
+        # Initial view
+        self.switch_theme_view(self.current_theme)
+
+    def get_available_themes(self):
+        if not THEMES_DIR.is_dir():
+            return ["charcoal", "jaipur", "sketchbook", "colorblock", "neobrutalism"]
+        themes = [d.name for d in THEMES_DIR.iterdir() if d.is_dir()]
+        order = ["charcoal", "jaipur", "sketchbook", "colorblock", "neobrutalism", "darkbrutalism", "retroboy"]
+        res = [t for t in order if t in themes]
+        for t in sorted(themes):
+            if t not in res:
+                res.append(t)
+        return res
+
+    def switch_theme_view(self, theme_name: str):
+        self.selected_theme = theme_name
+        self.selected_wp = None
+        self.set_wp_btn.setEnabled(False)
+        self.blur_btn.setEnabled(False)
+        self.del_btn.setEnabled(False)
+
+        # Update theme buttons style
+        for th, btn in self.theme_buttons.items():
+            if th == theme_name:
+                btn.setChecked(True)
+                btn.setStyleSheet("background-color: #27272a; border: 1px solid #ffb000; color: #ffffff; font-weight: bold;")
+            else:
+                btn.setChecked(False)
+                btn.setStyleSheet("background-color: #18181c; border: 1px solid #27272a; color: #a1a1aa;")
+
+        # Update theme apply button
+        if theme_name == self.current_theme:
+            self.apply_theme_btn.setText("Current Active Theme")
+            self.apply_theme_btn.setEnabled(False)
+        else:
+            self.apply_theme_btn.setText(f"Switch to {theme_name.capitalize()}")
+            self.apply_theme_btn.setEnabled(True)
+
+        self.title_lbl.setText(f"Theme: {theme_name.capitalize()}")
+        self.refresh_grid()
+
+    def refresh_grid(self):
+        # Clear existing items
+        while self.grid_layout.count():
+            item = self.grid_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        wp_dir = THEMES_DIR / self.selected_theme / "wallpapers"
+        wp_dir.mkdir(parents=True, exist_ok=True)
+
+        valid_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+        files = sorted([f for f in wp_dir.iterdir() if f.is_file() and f.suffix.lower() in valid_exts])
+
+        self.active_wp_path = get_active_wallpaper()
+
+        if not files:
+            empty_lbl = QLabel(f"No wallpapers found in {wp_dir.name}/\nClick '+ Add Image' to add some!")
+            empty_lbl.setStyleSheet("color: #71717a; font-size: 14px; padding: 40px;")
+            self.grid_layout.addWidget(empty_lbl, 0, 0)
+            return
+
+        columns = 3
+        for idx, f in enumerate(files):
+            is_active = (str(f.resolve()) == self.active_wp_path)
+            card = WallpaperCard(f, is_active=is_active)
+            card.clicked.connect(self.on_wallpaper_selected)
+            row = idx // columns
+            col = idx % columns
+            self.grid_layout.addWidget(card, row, col)
+
+    def on_wallpaper_selected(self, image_path: Path):
+        self.selected_wp = image_path
+        self.set_wp_btn.setEnabled(True)
+        self.blur_btn.setEnabled(True)
+        self.del_btn.setEnabled(True)
+
+        # Highlight selected card
+        for i in range(self.grid_layout.count()):
+            widget = self.grid_layout.itemAt(i).widget()
+            if isinstance(widget, WallpaperCard):
+                if widget.image_path == image_path:
+                    widget.setStyleSheet("""
+                        WallpaperCard {
+                            background-color: #24242e;
+                            border: 2px solid #ffd166;
+                            border-radius: 12px;
+                        }
+                    """)
+                else:
+                    border = "#ffb000" if widget.is_active else "#27272a"
+                    widget.setStyleSheet(f"""
+                        WallpaperCard {{
+                            background-color: #18181c;
+                            border: 2px solid {border};
+                            border-radius: 12px;
+                        }}
+                        WallpaperCard:hover {{
+                            border: 2px solid #ffb000;
+                            background-color: #202026;
+                        }}
+                    """)
+
+    def set_current_wallpaper(self):
+        if self.selected_wp and self.selected_wp.is_file():
+            ok = apply_wallpaper(self.selected_wp)
+            if ok:
+                self.refresh_grid()
+                # Re-select the card
+                self.on_wallpaper_selected(self.selected_wp)
+
+    def open_blur_dialog(self):
+        if self.selected_wp and self.selected_wp.is_file():
+            dlg = BlurDialog(self, self.selected_wp)
+            if dlg.exec_() == QDialog.Accepted:
+                self.refresh_grid()
+
+    def add_wallpaper(self):
+        wp_dir = THEMES_DIR / self.selected_theme / "wallpapers"
+        wp_dir.mkdir(parents=True, exist_ok=True)
+
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            f"Add Wallpapers to {self.selected_theme.capitalize()}",
+            str(HOME / "Pictures"),
+            "Images (*.png *.jpg *.jpeg *.webp *.gif)"
+        )
+        if files:
+            for f in files:
+                src = Path(f)
+                dst = wp_dir / src.name
+                shutil.copy2(src, dst)
+            self.refresh_grid()
+
+    def delete_selected_wallpaper(self):
+        if not self.selected_wp or not self.selected_wp.is_file():
+            return
+        reply = QMessageBox.question(
+            self,
+            "Delete Wallpaper",
+            f"Are you sure you want to delete '{self.selected_wp.name}' from theme '{self.selected_theme}'?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            try:
+                self.selected_wp.unlink()
+                self.selected_wp = None
+                self.set_wp_btn.setEnabled(False)
+                self.blur_btn.setEnabled(False)
+                self.del_btn.setEnabled(False)
+                self.refresh_grid()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete:\n{e}")
+
+    def cycle_wallpaper(self):
+        subprocess.run([str(HOME / ".config" / "hypr" / "scripts" / "wallpaper.sh")], check=False)
+        self.refresh_grid()
+
+    def open_folder(self):
+        wp_dir = THEMES_DIR / self.selected_theme / "wallpapers"
+        wp_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["xdg-open", str(wp_dir)], check=False)
+
+    def apply_selected_theme_system(self):
+        switcher_script = HOME / ".config" / "hypr" / "scripts" / "theme_switcher.sh"
+        if switcher_script.is_file():
+            subprocess.run([str(switcher_script), "--set", self.selected_theme], check=False)
+            self.current_theme = self.selected_theme
+            self.switch_theme_view(self.selected_theme)
+
+
+def main():
+    app = QApplication(sys.argv)
+    app.setApplicationName("WallpaperManager")
+    win = WallpaperManager()
+    win.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()

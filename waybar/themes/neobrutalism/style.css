@@ -3,7 +3,7 @@
    ----------------------------------------------------- */
 
 * {
-    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-family: "Nunito", "JetBrainsMono Nerd Font", sans-serif;
     font-size: 13px;
     font-weight: 900;
     border: none;
@@ -26,7 +26,7 @@ window#waybar {
     box-shadow: 4px 4px 0px #000000;
 }
 
-#custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5, #custom-ws6, #custom-ws7, #custom-ws8, #custom-ws9 {
+#workspaces button {
     padding: 4px 12px;
     margin: 0 2px;
     background: #ffffff;
@@ -34,21 +34,26 @@ window#waybar {
     border: 3px solid #000000;
     border-radius: 6px;
     box-shadow: 3px 3px 0px #000000;
+    transition: all 0.15s ease;
 }
 
-#custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active, #custom-ws6.active, #custom-ws7.active, #custom-ws8.active, #custom-ws9.active {
+#workspaces button.active {
     background: #ffbe0b;
     color: #000000;
     border: 3px solid #000000;
     box-shadow: 4px 4px 0px #000000;
 }
 
-#custom-ws1.hidden, #custom-ws2.hidden, #custom-ws3.hidden, #custom-ws4.hidden, #custom-ws5.hidden, #custom-ws6.hidden, #custom-ws7.hidden, #custom-ws8.hidden, #custom-ws9.hidden {
-    padding: 0;
-    margin: 0;
-    border: none;
-    box-shadow: none;
-    min-width: 0;
+#workspaces button:hover {
+    background: #ffbe0b;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#workspaces button.urgent {
+    background: #ff006e;
+    color: #ffffff;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
 }
 
 #clock {
@@ -64,6 +69,59 @@ window#waybar {
     background: #ffbe0b;
 }
 
+#custom-music {
+    background: #ff006e;
+    color: #ffffff;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#custom-music:hover {
+    background: #00f5d4;
+    color: #000000;
+}
+
+#custom-music.paused {
+    background: #ffffff;
+    color: #8c90a4;
+}
+
+#custom-weather {
+    background: #ffbe0b;
+    color: #000000;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#custom-weather:hover {
+    background: #ff006e;
+    color: #ffffff;
+}
+
+#network {
+    background: #00f5d4;
+    color: #000000;
+    padding: 4px 14px;
+    border: 3px solid #000000;
+    border-radius: 6px;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#network:hover {
+    background: #ffe600;
+    color: #000000;
+}
+
+#network.disconnected {
+    background: #ff006e;
+    color: #ffffff;
+}
+
+
 #custom-clipboard {
     background: #ffbe0b;
     color: #000000;
@@ -76,23 +134,28 @@ window#waybar {
 #pulseaudio {
     background: #8338ec;
     color: #ffffff;
-    padding: 4px 12px;
+    font-weight: 900;
+    padding: 4px 14px;
     border: 3px solid #000000;
     border-radius: 6px;
     box-shadow: 3px 3px 0px #000000;
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+#pulseaudio:hover {
+    background: #ffe600;
+    color: #000000;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+#pulseaudio.muted {
+    background: #ff006e;
+    color: #ffffff;
+    border-color: #000000;
 }
 
 #battery {
     background: #3a86ff;
-    color: #ffffff;
-    padding: 4px 12px;
-    border: 3px solid #000000;
-    border-radius: 6px;
-    box-shadow: 3px 3px 0px #000000;
-}
-
-#custom-power {
-    background: #ff006e;
     color: #ffffff;
     padding: 4px 12px;
     border: 3px solid #000000;
@@ -108,6 +171,26 @@ window#waybar {
     box-shadow: 3px 3px 0px #000000;
 }
 
+#workspaces button,
+#custom-music,
+#clock,
+#network,
+#custom-clipboard,
+#group-hardware,
+#battery,
+#tray {
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+#custom-music:hover,
+#clock:hover,
+#network:hover,
+#custom-clipboard:hover,
+#group-hardware:hover,
+#battery:hover {
+    box-shadow: 1px 1px 0px #000000;
+}
+
 tooltip {
     background: #fffdf0;
     border: 4px solid #000000;
@@ -118,7 +201,7 @@ tooltip {
 
 tooltip label {
     color: #000000;
-    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-family: "Nunito", "JetBrainsMono Nerd Font", sans-serif;
     font-size: 15px;
     font-weight: 900;
 }

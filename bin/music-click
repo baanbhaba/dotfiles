@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# WAYBAR MUSIC CLICK ROUTER
+# Routes left/right/middle/scroll clicks for FLAC player
+# -----------------------------------------------------
+
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:$PATH"
+
+ACTION="${1:---toggle}"
+
+case "$ACTION" in
+    --toggle)
+        status=$(playerctl -p com.github.neithern.g4music status 2>/dev/null)
+        if [[ "$status" == "Playing" || "$status" == "Paused" ]]; then
+            # Toggle Visualizer & Lyrics HUD
+            "$HOME/.local/bin/toggle-music-hud"
+        else
+            # Open FLAC Library Picker
+            "$HOME/.local/bin/rofi-flac"
+        fi
+        ;;
+    --library)
+        "$HOME/.local/bin/rofi-flac"
+        ;;
+    --play-pause)
+        status=$(playerctl -p com.github.neithern.g4music status 2>/dev/null)
+        if [[ -n "$status" ]]; then
+            playerctl -p com.github.neithern.g4music play-pause 2>/dev/null
+        else
+            "$HOME/.local/bin/rofi-flac"
+        fi
+        ;;
+    --next)
+        "$HOME/.local/bin/flac-queue" next
+        ;;
+    --prev)
+        "$HOME/.local/bin/flac-queue" prev
+        ;;
+    --fav)
+        "$HOME/.local/bin/flac-fav" toggle
+        ;;
+    *)
+        "$HOME/.local/bin/toggle-music-hud"
+        ;;
+esac

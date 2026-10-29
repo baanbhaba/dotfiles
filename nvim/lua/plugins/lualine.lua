@@ -65,6 +65,29 @@ return {
                     c = { fg = "#666666", bg = "#e5e5e5" },
                 },
             }
+        elseif current_theme == "darkbrutalism" then
+            custom_theme = {
+                normal = {
+                    a = { fg = "#000000", bg = "#ffe600", gui = "bold" },
+                    b = { fg = "#ffffff", bg = "#1c1f28" },
+                    c = { fg = "#00f5d4", bg = "#0c0d12" },
+                },
+                insert = {
+                    a = { fg = "#000000", bg = "#00f5d4", gui = "bold" },
+                    b = { fg = "#ffffff", bg = "#1c1f28" },
+                    c = { fg = "#ffe600", bg = "#0c0d12" },
+                },
+                visual = {
+                    a = { fg = "#ffffff", bg = "#ff006e", gui = "bold" },
+                    b = { fg = "#ffffff", bg = "#1c1f28" },
+                    c = { fg = "#ffe600", bg = "#0c0d12" },
+                },
+                inactive = {
+                    a = { fg = "#555b6e", bg = "#0c0d12" },
+                    b = { fg = "#555b6e", bg = "#0c0d12" },
+                    c = { fg = "#555b6e", bg = "#0c0d12" },
+                },
+            }
         elseif current_theme == "jaipur" then
             custom_theme = {
                 normal = {
@@ -109,6 +132,39 @@ return {
                     a = { fg = "#999999", bg = "#f0ebe3" },
                     b = { fg = "#999999", bg = "#f0ebe3" },
                     c = { fg = "#999999", bg = "#f0ebe3" },
+                },
+            }
+        elseif current_theme == "retroboy" then
+            custom_theme = {
+                normal = {
+                    a = { fg = "#0f380f", bg = "#8bac0f", gui = "bold" },
+                    b = { fg = "#9bbc0f", bg = "#306230" },
+                    c = { fg = "#8bac0f", bg = "#0f380f" },
+                },
+                insert = {
+                    a = { fg = "#0f380f", bg = "#9bbc0f", gui = "bold" },
+                    b = { fg = "#8bac0f", bg = "#306230" },
+                    c = { fg = "#9bbc0f", bg = "#0f380f" },
+                },
+                visual = {
+                    a = { fg = "#0f380f", bg = "#9bbc0f", gui = "bold" },
+                    b = { fg = "#9bbc0f", bg = "#306230" },
+                    c = { fg = "#8bac0f", bg = "#0f380f" },
+                },
+                replace = {
+                    a = { fg = "#0f380f", bg = "#8bac0f", gui = "bold" },
+                    b = { fg = "#9bbc0f", bg = "#306230" },
+                    c = { fg = "#8bac0f", bg = "#0f380f" },
+                },
+                command = {
+                    a = { fg = "#0f380f", bg = "#8bac0f", gui = "bold" },
+                    b = { fg = "#9bbc0f", bg = "#306230" },
+                    c = { fg = "#8bac0f", bg = "#0f380f" },
+                },
+                inactive = {
+                    a = { fg = "#306230", bg = "#0f380f" },
+                    b = { fg = "#306230", bg = "#0f380f" },
+                    c = { fg = "#306230", bg = "#0f380f" },
                 },
             }
         end

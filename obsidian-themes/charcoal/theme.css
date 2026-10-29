@@ -1,0 +1,115 @@
+/* ==========================================================================
+   CHARCOAL AMBER - CRT BLACK & AMBER GOLD OBSIDIAN THEME
+   Bespoke theme matching Hyprland, Waybar, and Kitty CRT Amber aesthetic.
+   ========================================================================== */
+
+.theme-dark {
+  /* Core Base Colors */
+  --bg-color: #080808;
+  --background-primary: #080808;
+  --background-primary-alt: #0d0d0d;
+  --background-secondary: #080808;
+  --background-secondary-alt: #121212;
+  --background-modifier-border: #1f1f1f;
+  --background-modifier-border-hover: #ffb000;
+  --background-modifier-border-focus: #ffb000;
+  
+  /* Text Colors */
+  --text-normal: #d6d6d6;
+  --text-muted: #8c9b32;
+  --text-faint: #555555;
+  --text-accent: #ffb000;
+  --text-accent-hover: #ffd166;
+  
+  /* Accent & Selection */
+  --color-accent: #ffb000;
+  --interactive-accent: #ffb000;
+  --interactive-accent-hover: #ffd166;
+  --text-selection: rgba(255, 176, 0, 0.28);
+  --interactive-hover: #181818;
+  
+  /* Typography & Headings */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  
+  --h1-color: #ffb000;
+  --h2-color: #ffd166;
+  --h3-color: #8c9b32;
+  --h4-color: #d4a847;
+  --h5-color: #e6ccb2;
+  --h6-color: #cdd6f4;
+  
+  /* UI Elements */
+  --tab-text-color-focused-active: #ffb000;
+  --tab-background-active: #141414;
+  --divider-color: #1a1a1a;
+  --status-bar-background: #080808;
+  --status-bar-text-color: #ffb000;
+  --status-bar-border-color: #1f1f1f;
+  
+  /* Code & Syntax */
+  --code-normal: #ffd166;
+  --code-background: #111111;
+  --code-comment: #666666;
+  --code-keyword: #ffb000;
+  --code-string: #8c9b32;
+  --code-value: #ff5c00;
+  
+  /* Links & Tags */
+  --link-color: #ffb000;
+  --link-color-hover: #ffffff;
+  --link-decoration: none;
+  --link-external-color: #8c9b32;
+  --link-external-color-hover: #ffd166;
+  --tag-color: #080808;
+  --tag-background: #ffb000;
+  --tag-background-hover: #ffd166;
+  --tag-radius: 3px;
+  
+  /* Tables */
+  --table-border-color: #262626;
+  --table-header-background: #141414;
+  --table-header-color: #ffb000;
+  --table-row-even-background: #0d0d0d;
+}
+
+/* Crisp Retro CRT Scanline Accent Bars & Active Highlights */
+.workspace-leaf-header-title {
+  color: #ffb000 !important;
+  font-weight: bold;
+}
+
+.nav-file-title.is-active {
+  background-color: #ffb000 !important;
+  color: #080808 !important;
+  font-weight: bold;
+  border-radius: 3px;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #1a1a1a !important;
+  color: #ffb000 !important;
+}
+
+.markdown-rendered blockquote {
+  border-left: 3px solid #ffb000;
+  background-color: #0f0f0f;
+  color: #d6d6d6;
+  padding: 8px 16px;
+}
+
+.markdown-rendered hr {
+  border-color: #ffb000 !important;
+}
+
+/* Callout Styling */
+.callout {
+  border: 1px solid #ffb000 !important;
+  background-color: #0f0f0f !important;
+}
+
+.callout-title {
+  color: #ffb000 !important;
+  font-weight: bold;
+}

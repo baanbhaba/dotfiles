@@ -1,0 +1,123 @@
+/* ==========================================================================
+   JAIPUR TERRACOTTA - WARM BURGUNDY & RAJASTHANI GOLD OBSIDIAN THEME
+   Deep terracotta burgundy background, sand text, rich golden accents.
+   ========================================================================== */
+
+.theme-dark {
+  /* Core Base Colors */
+  --bg-primary: #250707;
+  --bg-primary-alt: #310c0c;
+  --bg-secondary: #250707;
+  --bg-secondary-alt: #3b1010;
+
+  --background-primary: var(--bg-primary);
+  --background-primary-alt: var(--bg-primary-alt);
+  --background-secondary: var(--bg-secondary);
+  --background-secondary-alt: var(--bg-secondary-alt);
+
+  /* Terracotta Borders */
+  --border-color: #4a1515;
+  --background-modifier-border: var(--border-color);
+  --background-modifier-border-hover: #d4a847;
+  --background-modifier-border-focus: #c45a3c;
+  --divider-color: #4a1515;
+
+  /* Text Colors */
+  --text-normal: #f5ede3;
+  --text-muted: #c2aa91;
+  --text-faint: #785a5a;
+  --text-accent: #d4a847;
+  --text-accent-hover: #f5ede3;
+
+  /* Accents & Selection */
+  --color-accent: #d4a847;
+  --interactive-accent: #c45a3c;
+  --interactive-accent-hover: #d4a847;
+  --text-selection: rgba(212, 168, 71, 0.32);
+  --interactive-hover: #3b1010;
+
+  /* Typography */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+
+  /* Headings */
+  --h1-color: #d4a847;
+  --h2-color: #c45a3c;
+  --h3-color: #f5ede3;
+  --h4-color: #e29578;
+  --h5-color: #ddb892;
+  --h6-color: #b08968;
+
+  /* Tabs & Navigation */
+  --tab-text-color-focused-active: #f5ede3;
+  --tab-background-active: #c45a3c;
+  --status-bar-background: #250707;
+  --status-bar-text-color: #d4a847;
+  --status-bar-border-color: #4a1515;
+
+  /* Code Blocks */
+  --code-normal: #f5ede3;
+  --code-background: #1c0505;
+  --code-comment: #785a5a;
+  --code-keyword: #d4a847;
+  --code-string: #8cb369;
+  --code-value: #f28482;
+
+  /* Links & Tags */
+  --link-color: #d4a847;
+  --link-color-hover: #f5ede3;
+  --link-decoration: underline;
+  --link-external-color: #c45a3c;
+  --link-external-color-hover: #d4a847;
+  --tag-color: #250707;
+  --tag-background: #d4a847;
+  --tag-background-hover: #c45a3c;
+  --tag-radius: 3px;
+
+  /* Tables */
+  --table-border-color: #4a1515;
+  --table-header-background: #310c0c;
+  --table-header-color: #d4a847;
+  --table-row-even-background: #1f0606;
+}
+
+.nav-file-title.is-active {
+  background-color: #c45a3c !important;
+  color: #f5ede3 !important;
+  font-weight: bold !important;
+  border-radius: 3px;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #3b1010 !important;
+  color: #d4a847 !important;
+}
+
+.workspace-leaf-header-title {
+  color: #d4a847 !important;
+  font-weight: bold;
+}
+
+.markdown-rendered blockquote {
+  border-left: 3px solid #d4a847 !important;
+  background-color: #310c0c !important;
+  color: #f5ede3 !important;
+  padding: 8px 16px;
+}
+
+.callout {
+  border: 1px solid #d4a847 !important;
+  background-color: #1f0606 !important;
+}
+
+.callout-title {
+  color: #d4a847 !important;
+  font-weight: bold !important;
+}
+
+.markdown-rendered hr {
+  border: none !important;
+  height: 1px !important;
+  background: #d4a847 !important;
+}

@@ -1,0 +1,87 @@
+/* ==========================================================================
+   FIREFOX NEW TAB: NEO-BRUTALISM (LOUD RETRO-GRAPHIC POP)
+   ========================================================================== */
+
+@-moz-document url("about:newtab"), url("about:home"), url("about:blank") {
+  :root {
+    --newtab-background-color: #fffdf0 !important;
+    --newtab-text-primary-color: #000000 !important;
+    --newtab-text-secondary-color: #333333 !important;
+    --newtab-search-icon-color: #000000 !important;
+    --newtab-card-background-color: #ffffff !important;
+    --newtab-primary-action-background: #ff006e !important;
+    --newtab-element-hover-color: #ffbe0b !important;
+  }
+
+  body {
+    background-color: #fffdf0 !important;
+    color: #000000 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+  }
+
+  /* Search Bar */
+  .search-wrapper .search-inner-wrapper {
+    background-color: #ffffff !important;
+    border: 3px solid #000000 !important;
+    border-radius: 8px !important;
+    box-shadow: 5px 5px 0px #000000 !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+  }
+
+  .search-wrapper .search-inner-wrapper:hover,
+  .search-wrapper:has(input:focus) .search-inner-wrapper {
+    box-shadow: 7px 7px 0px #000000 !important;
+    transform: translate(-2px, -2px) !important;
+  }
+
+  .search-wrapper input {
+    color: #000000 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+    font-weight: 700 !important;
+  }
+
+  /* Top Sites / Shortcuts */
+  .top-site-outer .tile {
+    background-color: #ffffff !important;
+    border: 2px solid #000000 !important;
+    border-radius: 8px !important;
+    box-shadow: 3px 3px 0px #000000 !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+  }
+
+  .top-site-outer:hover .tile {
+    background-color: #ffbe0b !important;
+    box-shadow: 5px 5px 0px #000000 !important;
+    transform: translate(-2px, -2px) !important;
+  }
+
+  .top-site-outer .title {
+    color: #000000 !important;
+    font-family: "JetBrainsMono Nerd Font", monospace !important;
+    font-weight: 800 !important;
+  }
+
+  /* Logo / Wordmark */
+  .wordmark {
+    fill: #ff006e !important;
+  }
+}
+
+/* ==========================================================================
+   MONKEYTYPE THEME: NEO-BRUTALISM (LOUD GRAPHIC POP LIGHT)
+   ========================================================================== */
+
+@-moz-document domain("monkeytype.com") {
+  :root {
+    --bg-color: #fffdf0 !important;
+    --main-color: #ffbe0b !important;
+    --caret-color: #ff006e !important;
+    --sub-color: #71717a !important;
+    --sub-alt-color: #ffffff !important;
+    --text-color: #000000 !important;
+    --error-color: #ff006e !important;
+    --error-extra-color: #99003f !important;
+    --colorful-error-color: #00f5d4 !important;
+    --colorful-error-extra-color: #008f7a !important;
+  }
+}

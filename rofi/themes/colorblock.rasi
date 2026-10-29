@@ -1,31 +1,34 @@
 /* -----------------------------------------------------
-   COLOR BLOCK THEME - Rofi (Muted)
+   COLORBLOCK THEME - Rofi
+   Floating Warm Linen Card & Pastel Ochre Highlights
    ----------------------------------------------------- */
 
 configuration {
     modi: "drun,run";
     show-icons: false;
-    display-drun: " ";
+    display-drun: "󰄯 ";
     display-run: " ";
     drun-display-format: "{name}";
-    font: "JetBrainsMono Nerd Font 10";
+    font: "Space Grotesk 11";
 }
 
 * {
-    bg: #f0ebe3;
-    fg: #2d2d2d;
-    highlight: #c4a35a;
-    text-selected: #f0ebe3;
-    text-active: #2d2d2d;
+    bg: #f2ede4;
+    fg: #7a7065;
+    highlight: #ffffff;
+    text-selected: #1e2022;
+    text-active: #1e2022;
+    border-subtle: #ded3c0;
+    accent-ochre: #e5a93c;
 }
 
 window {
-    width: 700px;
+    width: 680px;
     background-color: @bg;
-    border: 2px;
-    border-color: #a89ab5;
-    border-radius: 8px;
-    padding: 25px;
+    border: 1px;
+    border-color: @border-subtle;
+    border-radius: 12px;
+    padding: 24px;
     location: center;
     anchor: center;
 }
@@ -33,39 +36,39 @@ window {
 mainbox {
     background-color: transparent;
     children: [ inputbar, listview ];
+    spacing: 12px;
 }
 
 inputbar {
     background-color: transparent;
-    margin: 0 0 15px 0;
     children: [ prompt, entry ];
-    border-bottom: 2px;
-    border-color: #7a8fa0;
+    border-bottom: 1px;
+    border-color: @border-subtle;
     padding-bottom: 10px;
 }
 
 prompt {
     background-color: transparent;
-    text-color: @text-active;
+    text-color: @accent-ochre;
 }
 
 entry {
     background-color: transparent;
     text-color: @text-active;
-    placeholder: "Search...";
-    placeholder-color: #999999;
+    placeholder: "Search applications & commands...";
+    placeholder-color: #a39788;
 }
 
 listview {
     background-color: transparent;
     lines: 7;
-    spacing: 5;
+    spacing: 4px;
     scrollbar: false;
 }
 
 element {
-    padding: 12px;
-    border-radius: 4px;
+    padding: 10px 14px;
+    border-radius: 8px;
     background-color: transparent;
     text-color: @fg;
 }
@@ -73,10 +76,13 @@ element {
 element selected {
     background-color: @highlight;
     text-color: @text-selected;
-    border-radius: 4px;
+    border-radius: 8px;
+    border: 1px;
+    border-color: @accent-ochre;
 }
 
 element-text {
     background-color: transparent;
     text-color: inherit;
+    font-weight: bold;
 }

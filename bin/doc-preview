@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+import sys
+import os
+
+def render():
+    if len(sys.argv) < 3:
+        sys.stderr.write("Usage: doc-preview <input_path> <output_image_path> [page_index]\n")
+        sys.exit(1)
+
+    src = sys.argv[1]
+    dst = sys.argv[2]
+    page_idx = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+
+    if not os.path.exists(src):
+        sys.stderr.write(f"File not found: {src}\n")
+        sys.exit(1)
+
+    ext = os.path.splitext(src)[1].lower()
+
+    # Check for high-res embedded thumbnail
+    if ext == '.pptx' and page_idx == 0:
+        try:
+            import zipfile
+            from PIL import Image
+            import io
+            with zipfile.ZipFile(src, 'r') as z:
+                for name in ('docProps/thumbnail.jpeg', 'docProps/thumbnail.png', 'docprops/thumbnail.jpeg'):
+                    if name in z.namelist():
+                        data = z.read(name)
+                        im = Image.open(io.BytesIO(data))
+                        if im.width >= 800:
+                            with open(dst, 'wb') as f:
+                                f.write(data)
+                            try:
+                                import pymupdf
+                                doc = pymupdf.open(src)
+                                print(f"PAGES:{len(doc)}")
+                            except Exception:
+                                print("PAGES:1")
+                            sys.exit(0)
+        except Exception:
+            pass
+
+    try:
+        import pymupdf
+        doc = pymupdf.open(src)
+        total = len(doc)
+        if total == 0:
+            sys.stderr.write("Empty document\n")
+            sys.exit(1)
+
+        # For presentations, format in 16:9 widescreen layout
+        if ext in ('.pptx', '.ppt', '.odp'):
+            try:
+                doc.layout(width=960, height=540, fontsize=16)
+                total = len(doc)
+            except Exception:
+                pass
+
+        if page_idx >= total:
+            page_idx = total - 1
+        elif page_idx < 0:
+            page_idx = 0
+
+        page = doc.load_page(page_idx)
+        # Render high quality 150 DPI preview
+        pix = page.get_pixmap(dpi=150)
+        pix.save(dst)
+        print(f"PAGES:{total}")
+        sys.exit(0)
+    except Exception as e:
+        sys.stderr.write(f"Render failed: {e}\n")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    render()

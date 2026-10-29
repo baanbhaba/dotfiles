@@ -1,0 +1,77 @@
+* {
+    background-image: none;
+    box-shadow: none;
+    font-family: "JetBrainsMono Nerd Font", monospace;
+}
+
+window {
+    background-color: rgba(12, 13, 18, 0.94);
+}
+
+button {
+    border-radius: 8px;
+    border: 3px solid #000000;
+    color: #ffffff;
+    background-color: #171922;
+    margin: 14px;
+    font-size: 16px;
+    font-weight: 900;
+    box-shadow: 5px 5px 0px #000000;
+    background-repeat: no-repeat;
+    background-position: center 35%;
+    background-size: 28%;
+    transition: all 0.12s ease;
+}
+
+button:focus, button:active, button:hover {
+    outline-style: none;
+}
+
+#lock:hover {
+    background-color: #ffe600;
+    color: #000000;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#logout:hover {
+    background-color: #ff006e;
+    color: #ffffff;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#suspend:hover {
+    background-color: #00f5d4;
+    color: #000000;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#hibernate:hover {
+    background-color: #a855f7;
+    color: #ffffff;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#reboot:hover {
+    background-color: #38bdf8;
+    color: #000000;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#shutdown:hover {
+    background-color: #ef4444;
+    color: #ffffff;
+    border-color: #000000;
+    box-shadow: 7px 7px 0px #000000;
+}
+
+#lock { background-image: image(url("/usr/share/wlogout/icons/lock.png")); }
+#logout { background-image: image(url("/usr/share/wlogout/icons/logout.png")); }
+#suspend { background-image: image(url("/usr/share/wlogout/icons/suspend.png")); }
+#hibernate { background-image: image(url("/usr/share/wlogout/icons/hibernate.png")); }
+#shutdown { background-image: image(url("/usr/share/wlogout/icons/shutdown.png")); }
+#reboot { background-image: image(url("/usr/share/wlogout/icons/reboot.png")); }

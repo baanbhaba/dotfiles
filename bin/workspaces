@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-VAULT="/run/media/$USER/External/6. Common/workspaces"
+VAULT="/run/media/$USER/MEHH/6. Common/workspaces"
 
 if [[ ! -d "$VAULT" ]]; then
     echo "Workspace drive not mounted"

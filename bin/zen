@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+# Zen Mode Screensaver
+kitty --class zen-screensaver --title "Zen Mode" -e cbonsai -S -m "  🌱 Stay Calm & Code On  "

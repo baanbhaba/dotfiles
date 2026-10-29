@@ -1,21 +1,21 @@
 -- Color Block
--- Muted light minimalist colorscheme
+-- Vibrant geometric minimalist colorscheme
 
 local colors = {
-    bg = "#f0ebe3",
-    bg_alt = "#e4ded4",
-    surface = "#f7f4ee",
+    bg = "#f2ede4",
+    bg_alt = "#e5decf",
+    surface = "#faf7f2",
 
-    fg = "#2d2d2d",
-    fg_dim = "#666666",
+    fg = "#1e2022",
+    fg_dim = "#7a7065",
 
-    accent = "#c4a35a",
-    blue = "#7a8fa0",
-    lavender = "#a89ab5",
-    rose = "#b58d8d",
-    olive = "#8a9675",
+    accent = "#e5a93c",
+    blue = "#4d7c8a",
+    lavender = "#8e7ca8",
+    rose = "#d96b52",
+    olive = "#5c7c64",
 
-    border = "#a89ab5",
+    border = "#e5a93c",
 }
 
 vim.cmd("highlight clear")
@@ -39,7 +39,7 @@ set(0, "LineNr", { fg = colors.fg_dim })
 
 -- Selection
 set(0, "Visual", { bg = "#ded4c3" })
-set(0, "Search", { fg = "#ffffff", bg = colors.accent })
+set(0, "Search", { fg = "#1e2022", bg = colors.accent })
 
 -- Syntax
 set(0, "Comment", { fg = colors.fg_dim, italic = true })
@@ -49,12 +49,18 @@ set(0, "Number", { fg = colors.lavender })
 set(0, "Boolean", { fg = colors.lavender })
 set(0, "Keyword", { fg = colors.rose, bold = true })
 set(0, "Statement", { fg = colors.rose })
-set(0, "Function", { fg = colors.blue })
+set(0, "Function", { fg = colors.blue, bold = true })
 set(0, "Identifier", { fg = colors.fg })
-set(0, "Type", { fg = colors.accent })
+set(0, "Type", { fg = colors.accent, bold = true })
 set(0, "Constant", { fg = colors.lavender })
 
 -- UI
 set(0, "StatusLine", { fg = colors.fg, bg = colors.surface })
 set(0, "StatusLineNC", { fg = colors.fg_dim, bg = colors.bg_alt })
 set(0, "FloatBorder", { fg = colors.border, bg = colors.surface })
+
+-- Diagnostics
+set(0, "DiagnosticError", { fg = colors.rose, bold = true })
+set(0, "DiagnosticWarn", { fg = colors.accent, bold = true })
+set(0, "DiagnosticInfo", { fg = colors.blue })
+set(0, "DiagnosticHint", { fg = colors.olive })

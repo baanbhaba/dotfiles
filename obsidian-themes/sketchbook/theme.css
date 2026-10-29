@@ -1,0 +1,124 @@
+/* ==========================================================================
+   SKETCHBOOK PAPER - MINIMAL DRAFTSMAN NOTEBOOK OBSIDIAN THEME
+   Clean white notebook paper, graphite ink typography, fine technical lines.
+   ========================================================================== */
+
+.theme-light {
+  /* Core Base Colors */
+  --bg-primary: #f8f9fa;
+  --bg-primary-alt: #f1f3f5;
+  --bg-secondary: #f8f9fa;
+  --bg-secondary-alt: #e9ecef;
+
+  --background-primary: var(--bg-primary);
+  --background-primary-alt: var(--bg-primary-alt);
+  --background-secondary: var(--bg-secondary);
+  --background-secondary-alt: var(--bg-secondary-alt);
+
+  /* Clean Fine Borders */
+  --border-color: #e4e4e7;
+  --background-modifier-border: var(--border-color);
+  --background-modifier-border-hover: #18181b;
+  --background-modifier-border-focus: #2563eb;
+  --divider-color: #e4e4e7;
+
+  /* Text Colors */
+  --text-normal: #18181b;
+  --text-muted: #71717a;
+  --text-faint: #a1a1aa;
+  --text-accent: #18181b;
+  --text-accent-hover: #2563eb;
+
+  /* Accents & Selection */
+  --color-accent: #18181b;
+  --interactive-accent: #18181b;
+  --interactive-accent-hover: #2563eb;
+  --text-selection: rgba(37, 99, 235, 0.22);
+  --interactive-hover: #e9ecef;
+
+  /* Typography */
+  --font-family-editor: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-preview: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --font-family-interface: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+
+  /* Headings */
+  --h1-color: #18181b;
+  --h2-color: #2563eb;
+  --h3-color: #3f3f46;
+  --h4-color: #52525b;
+  --h5-color: #71717a;
+  --h6-color: #a1a1aa;
+
+  /* Tabs & Navigation */
+  --tab-text-color-focused-active: #ffffff;
+  --tab-background-active: #18181b;
+  --status-bar-background: #f8f9fa;
+  --status-bar-text-color: #18181b;
+  --status-bar-border-color: #e4e4e7;
+
+  /* Code Blocks */
+  --code-normal: #18181b;
+  --code-background: #f1f3f5;
+  --code-comment: #a1a1aa;
+  --code-keyword: #2563eb;
+  --code-string: #059669;
+  --code-value: #d97706;
+
+  /* Links & Tags */
+  --link-color: #2563eb;
+  --link-color-hover: #18181b;
+  --link-decoration: underline;
+  --link-external-color: #2563eb;
+  --link-external-color-hover: #18181b;
+  --tag-color: #18181b;
+  --tag-background: #e4e4e7;
+  --tag-background-hover: #d4d4d8;
+  --tag-radius: 2px;
+
+  /* Tables */
+  --table-border-color: #e4e4e7;
+  --table-header-background: #f1f3f5;
+  --table-header-color: #18181b;
+  --table-row-even-background: #f8f9fa;
+}
+
+.nav-file-title.is-active {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 2px;
+}
+
+.nav-file-title:hover:not(.is-active) {
+  background-color: #e9ecef !important;
+  color: #18181b !important;
+}
+
+.workspace-leaf-header-title {
+  color: #18181b !important;
+  font-weight: 700;
+}
+
+.markdown-rendered blockquote {
+  border-left: 3px solid #18181b !important;
+  background-color: #f1f3f5 !important;
+  color: #18181b !important;
+  padding: 8px 16px;
+}
+
+.callout {
+  border: 1px solid #18181b !important;
+  background-color: #ffffff !important;
+  border-radius: 2px !important;
+}
+
+.callout-title {
+  color: #18181b !important;
+  font-weight: 700 !important;
+}
+
+.markdown-rendered hr {
+  border: none !important;
+  height: 1px !important;
+  background: #e4e4e7 !important;
+}

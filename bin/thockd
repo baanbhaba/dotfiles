@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""
+thockd - Ultra low-latency mechanical keyboard sound daemon
+Polyphonic, hardware-accelerated switch audio for Linux / Hyprland
+"""
+
+import os
+import sys
+import json
+import glob
+import time
+import signal
+import asyncio
+import argparse
+from typing import Dict, Optional
+
+# Suppress pygame banner and deprecation warnings
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+import warnings
+warnings.filterwarnings("ignore")
+import pygame
+import evdev
+from evdev import ecodes
+
+CONFIG_DIR = os.path.expanduser("~/.config/thockd")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+PID_FILE = os.path.join(CONFIG_DIR, "thockd.pid")
+SOUNDS_DIR = os.path.join(CONFIG_DIR, "sounds")
+
+DEFAULT_CONFIG = {
+    "enabled": True,
+    "profile": "creamy_thock",
+    "volume": 0.65
+}
+
+def load_config() -> dict:
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                return {**DEFAULT_CONFIG, **json.load(f)}
+        except Exception:
+            pass
+    return DEFAULT_CONFIG.copy()
+
+def save_config(cfg: dict):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(cfg, f, indent=2)
+
+class ThockEngine:
+    def __init__(self, cfg: dict):
+        self.cfg = cfg
+        self.sounds: Dict[str, pygame.mixer.Sound] = {}
+        self.init_audio()
+        self.load_profile(self.cfg.get("profile", "creamy_thock"))
+
+    def init_audio(self):
+        # 44.1kHz, 16-bit, stereo, small 256-sample buffer for sub-millisecond latency
+        try:
+            pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=256)
+            pygame.mixer.set_num_channels(24) # 24 polyphonic voices
+        except Exception as e:
+            print(f"Error initializing audio mixer: {e}", file=sys.stderr)
+
+    def load_profile(self, profile_name: str):
+        profile_dir = os.path.join(SOUNDS_DIR, profile_name)
+        if not os.path.exists(profile_dir):
+            profile_dir = os.path.join(SOUNDS_DIR, "creamy_thock")
+        
+        self.sounds.clear()
+        vol = self.cfg.get("volume", 0.65)
+        for key in ["key", "space", "enter", "backspace"]:
+            p = os.path.join(profile_dir, f"{key}.wav")
+            if os.path.exists(p):
+                snd = pygame.mixer.Sound(p)
+                snd.set_volume(vol)
+                self.sounds[key] = snd
+
+    def play_key(self, code: int):
+        if not self.cfg.get("enabled", True):
+            return
+
+        if code == ecodes.KEY_SPACE:
+            snd = self.sounds.get("space") or self.sounds.get("key")
+        elif code in (ecodes.KEY_ENTER, ecodes.KEY_KPENTER):
+            snd = self.sounds.get("enter") or self.sounds.get("key")
+        elif code == ecodes.KEY_BACKSPACE:
+            snd = self.sounds.get("backspace") or self.sounds.get("key")
+        else:
+            snd = self.sounds.get("key")
+
+        if snd:
+            snd.play()
+
+def get_keyboard_devices():
+    keyboards = []
+    for path in evdev.list_devices():
+        try:
+            dev = evdev.InputDevice(path)
+            caps = dev.capabilities()
+            if ecodes.EV_KEY in caps and ecodes.KEY_A in caps[ecodes.EV_KEY]:
+                keyboards.append(dev)
+        except Exception:
+            pass
+    return keyboards
+
+async def monitor_device(dev: evdev.InputDevice, engine: ThockEngine):
+    try:
+        async for event in dev.async_read_loop():
+            # Only play on initial key press (value == 1), not hold/repeat (2) or release (0)
+            if event.type == ecodes.EV_KEY and event.value == 1:
+                engine.play_key(event.code)
+    except Exception:
+        pass
+
+async def run_daemon(engine: ThockEngine):
+    active_devices = {}
+    tasks = []
+
+    try:
+        while True:
+            current_devs = get_keyboard_devices()
+            current_paths = {d.path for d in current_devs}
+
+            for path in list(active_devices.keys()):
+                if path not in current_paths:
+                    d = active_devices.pop(path)
+                    try:
+                        d.close()
+                    except Exception:
+                        pass
+
+            # Add newly connected devices
+            for d in current_devs:
+                if d.path not in active_devices:
+                    active_devices[d.path] = d
+                    tasks.append(asyncio.create_task(monitor_device(d, engine)))
+
+            await asyncio.sleep(2.0)
+    except asyncio.CancelledError:
+        pass
+    finally:
+        for t in tasks:
+            t.cancel()
+        for d in active_devices.values():
+            try:
+                d.close()
+            except Exception:
+                pass
+
+def reload_daemon():
+    """Notify running daemon of config updates via SIGHUP."""
+    signaled = False
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE) as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGHUP)
+            signaled = True
+        except ProcessLookupError:
+            pass
+        except Exception:
+            pass
+    if not signaled:
+        os.system("systemctl --user kill -s SIGHUP thockd.service >/dev/null 2>&1 || true")
+
+def notify(msg: str, icon: str = "input-keyboard"):
+    os.system(f'notify-send "⌨️ ThockD" "{msg}" -t 1500 -i {icon} 2>/dev/null || true')
+
+def toggle():
+    cfg = load_config()
+    cfg["enabled"] = not cfg.get("enabled", True)
+    save_config(cfg)
+    reload_daemon()
+    status = "Enabled" if cfg["enabled"] else "Muted"
+    icon = "input-keyboard" if cfg["enabled"] else "audio-volume-muted"
+    notify(f"Keyboard Sounds: {status} ({cfg.get('profile', 'creamy_thock')})", icon=icon)
+    print(f"ThockD: {status}")
+
+def set_profile(name: str):
+    cfg = load_config()
+    available = [os.path.basename(p) for p in glob.glob(os.path.join(SOUNDS_DIR, "*")) if os.path.isdir(p)]
+    if name in available:
+        cfg["profile"] = name
+        save_config(cfg)
+        reload_daemon()
+        notify(f"Switched profile to: {name}")
+        print(f"Switched profile to: {name}")
+    else:
+        print(f"Unknown profile '{name}'. Available: {', '.join(available)}")
+
+def main():
+    parser = argparse.ArgumentParser(description="Mechanical keyboard sound daemon")
+    parser.add_argument("--daemon", action="store_true", help="Run in background daemon mode")
+    parser.add_argument("--toggle", action="store_true", help="Toggle typing sounds on/off")
+    parser.add_argument("--profile", type=str, help="Set switch profile")
+    parser.add_argument("--status", action="store_true", help="Check current status")
+    args = parser.parse_args()
+
+    if args.toggle:
+        toggle()
+        return
+
+    if args.profile:
+        set_profile(args.profile)
+        return
+
+    if args.status:
+        cfg = load_config()
+        print(f"ThockD: {'Enabled' if cfg.get('enabled') else 'Disabled'}")
+        print(f"Profile: {cfg.get('profile')}")
+        print(f"Volume: {cfg.get('volume')}")
+        return
+
+    # Daemon execution
+    cfg = load_config()
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
+    engine = ThockEngine(cfg)
+
+    def handle_hup(sig, frame):
+        new_cfg = load_config()
+        prev_profile = engine.cfg.get("profile")
+        engine.cfg = new_cfg
+        if not new_cfg.get("enabled", True):
+            try:
+                pygame.mixer.stop()
+            except Exception:
+                pass
+        if new_cfg.get("profile") != prev_profile:
+            engine.load_profile(new_cfg.get("profile", "creamy_thock"))
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    main_task = loop.create_task(run_daemon(engine))
+
+    def handle_term(sig, frame):
+        main_task.cancel()
+
+    signal.signal(signal.SIGHUP, handle_hup)
+    signal.signal(signal.SIGTERM, handle_term)
+    signal.signal(signal.SIGINT, handle_term)
+
+    try:
+        loop.run_until_complete(main_task)
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        pass
+    finally:
+        try:
+            loop.close()
+        except Exception:
+            pass
+        if os.path.exists(PID_FILE):
+            try:
+                os.remove(PID_FILE)
+            except Exception:
+                pass
+
+if __name__ == "__main__":
+    main()

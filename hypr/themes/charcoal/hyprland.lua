@@ -21,7 +21,7 @@ config.exec_once = {
     "systemctl --user start hyprpolkitagent",
     "mako &",
     "waybar &",
-    "swayosd-server &",
+    "systemctl --user start swayosd.service",
     "nm-applet --indicator &",
     "blueman-applet &",
     "wl-paste --type text --watch cliphist store",

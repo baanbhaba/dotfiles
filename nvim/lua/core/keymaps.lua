@@ -12,10 +12,6 @@ map("n", "<leader>q", ":q<CR>", opts)
 -- Clear search
 map("n", "<Esc>", ":noh<CR>", opts)
 
--- Better movement
-map("n", "<C-d>", "<C-d>zz", opts)
-map("n", "<C-u>", "<C-u>zz", opts)
-
 -- Move selected text
 map("v", "J", ":m '>+1<CR>gv=gv", opts)
 map("v", "K", ":m '<-2<CR>gv=gv", opts)

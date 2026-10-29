@@ -1,0 +1,32 @@
+# Starship Theme: Jaipur (Royal Terracotta & Gold)
+
+format = """
+[  jaipur ](bold #1a0404 bg:#d4a847)\
+[](fg:#d4a847 bg:#250707)\
+[ $directory ](bold #f5ede3 bg:#250707)\
+[](fg:#250707 bg:#c45a3c)\
+[ $git_branch ](bold #f5ede3 bg:#c45a3c)\
+[](fg:#c45a3c)\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+
+[character]
+success_symbol = "[👑 ❯](bold #d4a847) "
+error_symbol = "[👑 ❯](#c45a3c) "
+
+[directory]
+format = "$path"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+symbol = " "
+format = "$symbol$branch"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #a0845c"
+format = " [took $duration]($style)"

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# -----------------------------------------------------
+# ROFI BLUETOOTH MANAGER
+# Clean, modern device switcher via bluetoothctl + rofi
+# -----------------------------------------------------
+
+# Check bluetooth power state
+power_status=$(bluetoothctl show | grep "Powered:" | awk '{print $2}')
+
+if [ "$power_status" = "yes" ]; then
+    toggle="󰂲  Disable Bluetooth"
+else
+    toggle="󰂯  Enable Bluetooth"
+fi
+
+# List paired devices with status
+devices=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    mac=$(echo "$line" | awk '{print $2}')
+    name=$(echo "$line" | cut -d ' ' -f 3-)
+    info=$(bluetoothctl info "$mac" 2>/dev/null)
+    connected=$(echo "$info" | grep "Connected: yes")
+    
+    if [ -n "$connected" ]; then
+        devices+=$"󰂱 [CONNECTED] $name\t$mac\n"
+    else
+        devices+=$"󰂯 [PAIRED]    $name\t$mac\n"
+    fi
+done < <(bluetoothctl devices Paired 2>/dev/null)
+
+options=$(echo -e "$toggle\n󰑐  Scan for Devices\n$devices")
+
+chosen=$(echo -e "$options" | rofi -dmenu -i -p "Bluetooth" -theme-str 'window { width: 520px; }')
+
+if [ -z "$chosen" ]; then
+    exit 0
+fi
+
+if [ "$chosen" = "󰂲  Disable Bluetooth" ]; then
+    bluetoothctl power off
+    notify-send "Bluetooth" "Bluetooth Disabled" -i bluetooth-disabled
+    exit 0
+elif [ "$chosen" = "󰂯  Enable Bluetooth" ]; then
+    bluetoothctl power on
+    notify-send "Bluetooth" "Bluetooth Enabled" -i bluetooth-active
+    exit 0
+elif [ "$chosen" = "󰑐  Scan for Devices" ]; then
+    notify-send "Bluetooth" "Scanning for 10 seconds..." -i bluetooth-active
+    bluetoothctl --timeout 10 scan on
+    exec "$0"
+    exit 0
+fi
+
+# Extract MAC address
+mac=$(echo "$chosen" | awk '{print $NF}')
+name=$(echo "$chosen" | awk -F'\t' '{print $1}' | sed 's/^.*\] *//')
+
+if [[ "$chosen" =~ "\[CONNECTED\]" ]]; then
+    notify-send "Bluetooth" "Disconnecting $name..." -i bluetooth-active
+    bluetoothctl disconnect "$mac" && notify-send "Bluetooth" "Disconnected from $name" -i bluetooth-disabled
+else
+    notify-send "Bluetooth" "Connecting to $name..." -i bluetooth-active
+    bluetoothctl connect "$mac" && notify-send "Bluetooth" "Connected to $name" -i bluetooth-active || notify-send "Bluetooth" "Failed to connect to $name" -i dialog-error
+fi

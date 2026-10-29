@@ -1,0 +1,77 @@
+* {
+    background-image: none;
+    box-shadow: none;
+    font-family: "JetBrainsMono Nerd Font", sans-serif;
+}
+
+window {
+    background-color: rgba(242, 237, 228, 0.94);
+}
+
+button {
+    border-radius: 28px;
+    border: 2px solid #e2dacd;
+    color: #1e2022;
+    background-color: #ffffff;
+    margin: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    box-shadow: 0 6px 20px rgba(30, 32, 34, 0.08);
+    background-repeat: no-repeat;
+    background-position: center 35%;
+    background-size: 28%;
+    transition: all 0.15s ease;
+}
+
+button:focus, button:active, button:hover {
+    outline-style: none;
+}
+
+#lock:hover {
+    background-color: #e5a93c;
+    color: #ffffff;
+    border-color: #e5a93c;
+    box-shadow: 0 8px 24px rgba(229, 169, 60, 0.35);
+}
+
+#logout:hover {
+    background-color: #8e7ca8;
+    color: #ffffff;
+    border-color: #8e7ca8;
+    box-shadow: 0 8px 24px rgba(142, 124, 168, 0.35);
+}
+
+#suspend:hover {
+    background-color: #7d9d8b;
+    color: #ffffff;
+    border-color: #7d9d8b;
+    box-shadow: 0 8px 24px rgba(125, 157, 139, 0.35);
+}
+
+#hibernate:hover {
+    background-color: #d98880;
+    color: #ffffff;
+    border-color: #d98880;
+    box-shadow: 0 8px 24px rgba(217, 136, 128, 0.35);
+}
+
+#reboot:hover {
+    background-color: #7fb3d5;
+    color: #ffffff;
+    border-color: #7fb3d5;
+    box-shadow: 0 8px 24px rgba(127, 179, 213, 0.35);
+}
+
+#shutdown:hover {
+    background-color: #c0392b;
+    color: #ffffff;
+    border-color: #c0392b;
+    box-shadow: 0 8px 24px rgba(192, 57, 43, 0.35);
+}
+
+#lock { background-image: image(url("/usr/share/wlogout/icons/lock.png")); }
+#logout { background-image: image(url("/usr/share/wlogout/icons/logout.png")); }
+#suspend { background-image: image(url("/usr/share/wlogout/icons/suspend.png")); }
+#hibernate { background-image: image(url("/usr/share/wlogout/icons/hibernate.png")); }
+#shutdown { background-image: image(url("/usr/share/wlogout/icons/shutdown.png")); }
+#reboot { background-image: image(url("/usr/share/wlogout/icons/reboot.png")); }

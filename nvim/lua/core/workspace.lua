@@ -1,6 +1,6 @@
 local M = {}
 
-local vault = "/run/media/" .. vim.env.USER .. "/External/6. Common/workspaces"
+local vault = "/run/media/" .. vim.env.USER .. "/MEHH/6. Common/workspaces"
 
 
 local function get_root()

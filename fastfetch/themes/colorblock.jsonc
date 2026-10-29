@@ -1,22 +1,44 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        "type": "small",
+        "type": "data",
+        "source": "           ▄▄▄▄▄▄▄▄\n        ▄██▀▀    ▀▀██▄\n      ▄██▀  ▄████▄  ▀██▄\n     ▄██   ▄██▀  ▀   ▄███\n     ███   ███      ▄██▀██\n▄▄▄▄ ███   ███     ▄██▀ ███\n▄██▀▀████   ███    ▄██▀  ███\n███   ███   ███   ▄██▀   ███\n▀██▄▄██▀    ▀██▄▄▄██▀    ███\n ▀▀▀▀        ▀▀▀▀▀      ███",
         "color": { "1": "yellow", "2": "magenta" },
-        "padding": { "right": 2 }
+        "padding": { "right": 3 }
     },
-    "display": { "separator": "  › " },
+    "display": {
+        "separator": " ❯ ",
+        "percent": { "type": 3 },
+        "bar": {
+            "char": { "elapsed": "■", "total": "─" },
+            "border": { "left": "[ ", "right": " ]" },
+            "width": 10
+        }
+    },
     "modules": [
-        "title",
-        "separator",
-        { "type": "os", "key": "os", "keyColor": "yellow" },
-        { "type": "kernel", "key": "kernel", "keyColor": "magenta" },
-        { "type": "wm", "key": "wm", "keyColor": "blue" },
-        { "type": "shell", "key": "shell", "keyColor": "green" },
-        { "type": "terminal", "key": "term", "keyColor": "magenta" },
-        "separator",
-        { "type": "cpu", "key": "cpu", "keyColor": "yellow" },
-        { "type": "memory", "key": "ram", "keyColor": "green" },
+        {
+            "type": "title",
+            "format": "{#33}▦ {#1}{user-name}{#}{#35}@{host-name}{#}"
+        },
+        {
+            "type": "separator",
+            "string": "─",
+            "outputColor": "35"
+        },
+        { "type": "os", "key": "● OS    ", "keyColor": "yellow" },
+        { "type": "kernel", "key": "■ KERNEL", "keyColor": "magenta" },
+        { "type": "wm", "key": "▲ WM    ", "keyColor": "blue" },
+        { "type": "shell", "key": "◆ SHELL ", "keyColor": "green" },
+        { "type": "terminal", "key": "◈ TERM  ", "keyColor": "cyan" },
+        { "type": "uptime", "key": "● UPTIME", "keyColor": "yellow" },
+        {
+            "type": "separator",
+            "string": "─",
+            "outputColor": "35"
+        },
+        { "type": "cpu", "key": "■ CPU   ", "keyColor": "red" },
+        { "type": "memory", "key": "▲ RAM   ", "keyColor": "magenta" },
+        { "type": "battery", "key": "◆ BAT   ", "keyColor": "green" },
         "break",
         { "type": "colors", "symbol": "circle" }
     ]

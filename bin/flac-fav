@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+flac-fav - Fast Favorites & Hearting Manager for FLAC Library
+Maintains ~/Music/favorites.m3u and triggers desktop feedback.
+"""
+
+import os
+import sys
+import json
+import subprocess
+from typing import List, Optional
+
+FAVORITES_FILE = os.path.expanduser("~/Music/favorites.m3u")
+STATE_FILE = os.path.expanduser("~/.cache/flac_player/queue.json")
+
+def get_current_track_path() -> Optional[str]:
+    # 1. Check flac-queue state
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                state = json.load(f)
+                if state.get("current") and state["current"].get("path"):
+                    if os.path.exists(state["current"]["path"]):
+                        return state["current"]["path"]
+        except Exception:
+            pass
+
+    # 2. Check g4music proc fd
+    try:
+        pids = subprocess.run(['pgrep', '-x', 'g4music'], capture_output=True, text=True).stdout.split()
+        for pid in pids:
+            fd_dir = f'/proc/{pid}/fd'
+            if os.path.exists(fd_dir):
+                for fd in os.listdir(fd_dir):
+                    try:
+                        target = os.readlink(os.path.join(fd_dir, fd))
+                        if target.endswith('.flac') and os.path.exists(target):
+                            return target
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+    # 3. Check MPRIS url
+    try:
+        res = subprocess.run(
+            ["playerctl", "-p", "com.github.neithern.g4music", "metadata", "xesam:url"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=0.8
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            url = res.stdout.strip()
+            if url.startswith("file://"):
+                from urllib.parse import unquote
+                path = unquote(url[7:])
+                if os.path.exists(path):
+                    return path
+    except Exception:
+        pass
+
+    return None
+
+def load_favorites() -> List[str]:
+    if not os.path.exists(FAVORITES_FILE):
+        return []
+    favs = []
+    with open(FAVORITES_FILE, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and os.path.exists(line):
+                if line not in favs:
+                    favs.append(line)
+    return favs
+
+def save_favorites(favs: List[str]):
+    with open(FAVORITES_FILE, "w", encoding="utf-8") as f:
+        f.write("#EXTM3U\n")
+        for p in favs:
+            f.write(f"{p}\n")
+
+def is_favorite(path: str) -> bool:
+    favs = load_favorites()
+    return os.path.abspath(path) in [os.path.abspath(p) for p in favs]
+
+def toggle_favorite(target_path: Optional[str] = None):
+    path = target_path or get_current_track_path()
+    if not path or not os.path.exists(path):
+        subprocess.run(["notify-send", "❤️ Favorites", "No track currently playing to favorite.", "-i", "emblem-favorite", "-t", "2000"])
+        return
+
+    favs = load_favorites()
+    abs_path = os.path.abspath(path)
+    existing = [os.path.abspath(p) for p in favs]
+    fname = os.path.splitext(os.path.basename(path))[0]
+    cover = os.path.join(os.path.dirname(path), "cover.jpg")
+    icon = cover if os.path.exists(cover) else "emblem-favorite"
+
+    if abs_path in existing:
+        favs = [p for p in favs if os.path.abspath(p) != abs_path]
+        save_favorites(favs)
+        subprocess.run(["notify-send", "🤍 Removed from Favorites", fname, "-i", icon, "-t", "2500"])
+    else:
+        favs.append(abs_path)
+        save_favorites(favs)
+        subprocess.run(["notify-send", "❤️ Added to Favorites", f"{fname}\nTotal favorites: {len(favs)}", "-i", icon, "-t", "2500"])
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] == "toggle":
+        target = sys.argv[2] if len(sys.argv) > 2 else None
+        toggle_favorite(target)
+    elif sys.argv[1] == "is-fav":
+        target = sys.argv[2] if len(sys.argv) > 2 else get_current_track_path()
+        if target and is_favorite(target):
+            sys.exit(0)
+        sys.exit(1)
+    elif sys.argv[1] == "list":
+        for f in load_favorites():
+            print(f)
+    elif sys.argv[1] == "play":
+        favs = load_favorites()
+        if not favs:
+            subprocess.run(["notify-send", "❤️ Favorites Empty", "Add tracks to favorites with [f] or via Rofi.", "-i", "emblem-favorite", "-t", "2500"])
+            sys.exit(0)
+        flac_queue = os.path.expanduser("~/.local/bin/flac-queue")
+        subprocess.run([flac_queue, "load-playlist", FAVORITES_FILE])
+
+if __name__ == "__main__":
+    main()

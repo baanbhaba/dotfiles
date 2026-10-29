@@ -1,0 +1,88 @@
+/* -----------------------------------------------------
+   RETROBOY THEME - Rofi
+   GameBoy DMG Dot-Matrix LCD Screen & Chunky Pixel Frame
+   ----------------------------------------------------- */
+
+configuration {
+    modi: "drun,run";
+    show-icons: false;
+    display-drun: "👾 RETROBOY: ";
+    display-run: "🕹️ RUN: ";
+    drun-display-format: "{name}";
+    font: "Silkscreen 11";
+}
+
+* {
+    bg: #9bbc0f;
+    fg: #306230;
+    highlight: #8bac0f;
+    text-selected: #0f380f;
+    text-active: #0f380f;
+    border-color: #0f380f;
+}
+
+window {
+    width: 660px;
+    background-color: @bg;
+    border: 4px;
+    border-color: @border-color;
+    border-radius: 0px;
+    padding: 20px;
+    location: center;
+    anchor: center;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+    spacing: 12px;
+}
+
+inputbar {
+    background-color: transparent;
+    children: [ prompt, entry ];
+    border-bottom: 3px;
+    border-color: @border-color;
+    padding-bottom: 10px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @text-active;
+    font-weight: bold;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @text-active;
+    placeholder: "SELECT CARTRIDGE...";
+    placeholder-color: #306230;
+}
+
+listview {
+    background-color: transparent;
+    lines: 7;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 12px;
+    border-radius: 0px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @highlight;
+    text-color: @text-selected;
+    border-radius: 0px;
+    border: 2px;
+    border-color: @border-color;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    font-weight: bold;
+}

@@ -1,0 +1,111 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 38,
+    "margin-top": 8,
+    "margin-left": 20,
+    "margin-right": 20,
+    "spacing": 6,
+
+    "modules-left": [
+        "custom/music",
+        "hyprland/workspaces"
+    ],
+
+    "modules-center": [
+        "clock",
+        "network"
+    ],
+
+    "modules-right": [
+        "custom/clipboard",
+        "pulseaudio",
+        "battery",
+        "tray"
+    ],
+
+    "custom/pencil": {
+        "format": "✏️ SKETCH",
+        "tooltip": false
+    },
+
+    "hyprland/workspaces": {
+        "active-only": false,
+        "all-outputs": true,
+        "format": "{id}",
+        "on-click": "hyprctl dispatch workspace {id}"
+    },
+
+    "clock": {
+        "interval": 60,
+        "format": "🗓️ {:%I:%M %p | %A, %d %b}",
+        "format-alt": "🖋️ {:%Y · %b %d}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt>{calendar}</tt>"
+    },
+
+    "custom/music": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "/home/baanbhaba/.local/bin/waybar-music",
+        "interval": 2,
+        "on-click": "/home/baanbhaba/.local/bin/music-click --toggle",
+        "on-click-right": "/home/baanbhaba/.local/bin/music-click --library",
+        "on-click-middle": "playerctl -p com.github.neithern.g4music play-pause",
+        "on-scroll-up": "/home/baanbhaba/.local/bin/flac-queue next",
+        "on-scroll-down": "/home/baanbhaba/.local/bin/flac-queue prev",
+        "tooltip": true
+    },
+
+    "custom/weather": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/.local/bin/waybar-weather",
+        "on-click": "~/.local/bin/toggle-space-weather",
+        "interval": 900,
+        "tooltip": true
+    },
+
+    "network": {
+        "format-wifi": "📶 {essid}",
+        "format-ethernet": "🌐 ETH",
+        "format-disconnected": "⚠️ OFFLINE",
+        "max-length": 18,
+        "interval": 5,
+        "on-click": "~/.local/bin/rofi-wifi",
+        "tooltip-format": "{ifname}: {ipaddr}/{cidr} | ⇡ {bandwidthUpBytes} ⇣ {bandwidthDownBytes}"
+    },
+
+    "custom/clipboard": {
+        "format": "📋 CLIP",
+        "on-click": "~/.local/bin/clipboard-menu",
+        "tooltip": false
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "🔇 MUTE",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰏲",
+            "car": "󰄋",
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 5,
+        "tooltip-format": "Volume: {volume}%\nDevice: {desc}\n🖱️ Click: Audio Mixer\n🖱️ Right-Click: Mute Toggle\n📜 Scroll: Adjust Volume"
+    },
+
+    "battery": {
+        "states": { "warning": 20, "critical": 10 },
+        "format": "⚡ {capacity}%"
+    },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8
+    }
+}

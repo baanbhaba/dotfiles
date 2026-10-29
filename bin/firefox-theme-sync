@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# FIREFOX THEME SYNC
+# Synchronizes Firefox theme, UI chrome, and Light/Dark mode with Hyprland theme.
+# ==============================================================================
+
+CURRENT_THEME_FILE="$HOME/.config/hypr/.theme_current"
+THEMES_DIR="$HOME/.config/firefox/themes"
+
+# 1. Determine target theme
+THEME="$1"
+if [ -z "$THEME" ]; then
+    if [ -f "$CURRENT_THEME_FILE" ]; then
+        THEME=$(cat "$CURRENT_THEME_FILE" | tr -d '[:space:]')
+    else
+        THEME="neobrutalism"
+    fi
+fi
+
+if [ ! -d "$THEMES_DIR/$THEME" ]; then
+    echo "Firefox theme directory not found for: $THEME"
+    exit 1
+fi
+
+# 2. Map theme to Light / Dark Mode preferences
+case "$THEME" in
+    "charcoal"|"darkbrutalism"|"jaipur"|"retroboy")
+        MODE="dark"
+        COLOR_SCHEME="prefer-dark"
+        GTK_THEME="Adwaita-dark"
+        SYSTEM_DARK="1"
+        CONTENT_OVERRIDE="0" # 0 = Force Dark
+        TOOLBAR_THEME="0"    # 0 = Dark
+        ;;
+    "neobrutalism"|"colorblock"|"sketchbook")
+        MODE="light"
+        COLOR_SCHEME="prefer-light"
+        GTK_THEME="Adwaita"
+        SYSTEM_DARK="0"
+        CONTENT_OVERRIDE="1" # 1 = Force Light
+        TOOLBAR_THEME="1"    # 1 = Light
+        ;;
+    *)
+        echo "Unknown theme: $THEME"
+        exit 1
+        ;;
+esac
+
+# 3. Update Desktop Portal & GNOME color-scheme (Triggers LIVE dark/light mode in Firefox tabs without restarting!)
+if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface color-scheme "$COLOR_SCHEME" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME" 2>/dev/null || true
+fi
+
+# 4. Update ~/.config/firefox/current symlink
+mkdir -p "$HOME/.config/firefox"
+ln -sfn "$THEMES_DIR/$THEME" "$HOME/.config/firefox/current"
+
+# 5. Locate all active Firefox profiles
+PROFILES=()
+for base in "$HOME/.config/mozilla/firefox" "$HOME/.mozilla/firefox" "$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox"; do
+    if [ -d "$base" ]; then
+        for p in "$base"/*; do
+            if [ -d "$p" ] && [ -f "$p/prefs.js" ]; then
+                PROFILES+=("$p")
+            fi
+        done
+    fi
+done
+
+# 6. Apply userChrome.css, userContent.css, and user.js to each profile
+for profile in "${PROFILES[@]}"; do
+    CHROME_DIR="$profile/chrome"
+    mkdir -p "$CHROME_DIR"
+
+    # Link stylesheets
+    ln -sf "$THEMES_DIR/$THEME/userChrome.css" "$CHROME_DIR/userChrome.css"
+    ln -sf "$THEMES_DIR/$THEME/userContent.css" "$CHROME_DIR/userContent.css"
+
+    # Update user.js
+    USER_JS="$profile/user.js"
+
+    python3 - "$USER_JS" "$SYSTEM_DARK" "$CONTENT_OVERRIDE" "$TOOLBAR_THEME" << 'EOF'
+import sys, os
+
+user_js_path = sys.argv[1]
+sys_dark = sys.argv[2]
+content_override = sys.argv[3]
+toolbar_theme = sys.argv[4]
+
+prefs_to_set = {
+    'toolkit.legacyUserProfileCustomizations.stylesheets': 'true',
+    'svg.context-properties.content.enabled': 'true',
+    'layout.css.color-mix.enabled': 'true',
+    'browser.tabs.drawInTitlebar': 'true',
+    'ui.systemUsesDarkTheme': sys_dark,
+    'layout.css.prefers-color-scheme.content-override': content_override,
+    'browser.theme.content-theme': content_override,
+    'browser.theme.toolbar-theme': toolbar_theme,
+}
+
+lines = []
+if os.path.exists(user_js_path):
+    with open(user_js_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+matched_keys = set()
+new_lines = []
+for line in lines:
+    stripped = line.strip()
+    matched = False
+    for k, v in prefs_to_set.items():
+        if stripped.startswith(f'user_pref("{k}"') or stripped.startswith(f"user_pref('{k}'"):
+            new_lines.append(f'user_pref("{k}", {v});\n')
+            matched_keys.add(k)
+            matched = True
+            break
+    if not matched:
+        new_lines.append(line)
+
+for k, v in prefs_to_set.items():
+    if k not in matched_keys:
+        new_lines.append(f'user_pref("{k}", {v});\n')
+
+with open(user_js_path, 'w', encoding='utf-8') as f:
+    f.writelines(new_lines)
+EOF
+
+    echo "Applied Firefox theme '$THEME' ($MODE mode) to profile: $(basename "$profile")"
+done
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Firefox Theme Sync" "Switched to ${THEME^} (${MODE} mode)" -i firefox 2>/dev/null || true
+fi

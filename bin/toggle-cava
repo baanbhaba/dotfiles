@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Toggle floating Cava audio visualizer
+address=$(hyprctl clients -j | jq -r '.[] | select(.class == "cava-visualizer") | .address' 2>/dev/null | head -n 1)
+if [[ -n "$address" ]]; then
+    hyprctl dispatch closewindow "address:$address"
+else
+    hyprctl dispatch exec "[float; size 850 280; center] kitty --class cava-visualizer --title 'Audio Visualizer' -e cava"
+fi

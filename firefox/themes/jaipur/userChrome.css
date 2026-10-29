@@ -1,0 +1,214 @@
+/* ==========================================================================
+   FIREFOX THEME: JAIPUR (ROYAL TERRACOTTA & GOLD)
+   ========================================================================== */
+
+:root {
+  /* Colors */
+  --bg-wine: #1a0404;
+  --bg-terracotta: #250707;
+  --bg-terracotta-surface: #2f0b0b;
+  --bg-terracotta-hover: rgba(212, 168, 71, 0.15);
+  --accent-gold: #d4a847;
+  --accent-crimson: #c45a3c;
+  --text-ivory: #f5ede3;
+  --text-gold-dim: #a0845c;
+  --border-crimson: #4a1515;
+  --border-gold: #d4a847;
+  --royal-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  --gold-glow: 0 0 10px rgba(212, 168, 71, 0.35);
+  
+  /* System / Proton Overrides */
+  --toolbar-bgcolor: var(--bg-terracotta) !important;
+  --toolbar-color: var(--text-ivory) !important;
+  --toolbarbutton-icon-fill: var(--accent-gold) !important;
+  --toolbarbutton-hover-background: var(--bg-terracotta-hover) !important;
+  
+  --lwt-accent-color: var(--bg-wine) !important;
+  --lwt-text-color: var(--text-ivory) !important;
+  --lwt-selected-tab-background-color: var(--accent-crimson) !important;
+  
+  --toolbar-field-background-color: var(--bg-wine) !important;
+  --toolbar-field-color: var(--text-ivory) !important;
+  --toolbar-field-border-color: var(--border-crimson) !important;
+  --toolbar-field-focus-background-color: var(--bg-wine) !important;
+  --toolbar-field-focus-color: var(--text-ivory) !important;
+  --toolbar-field-focus-border-color: var(--accent-gold) !important;
+  
+  --tab-selected-bgcolor: var(--accent-crimson) !important;
+  --tab-selected-textcolor: var(--text-ivory) !important;
+  --tab-hover-background-color: var(--bg-terracotta-hover) !important;
+  
+  --arrowpanel-background: var(--bg-terracotta-surface) !important;
+  --arrowpanel-color: var(--text-ivory) !important;
+  --arrowpanel-border-color: var(--accent-gold) !important;
+  
+  --sidebar-background-color: var(--bg-wine) !important;
+  --sidebar-text-color: var(--text-ivory) !important;
+  --sidebar-border-color: var(--border-crimson) !important;
+}
+
+/* Base Window & Font */
+#navigator-toolbox {
+  background-color: var(--bg-wine) !important;
+  border-bottom: 2px solid var(--accent-crimson) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* Navigation Toolbar */
+#nav-bar {
+  background-color: var(--bg-terracotta) !important;
+  border-top: 1px solid var(--border-crimson) !important;
+  padding: 3px 6px !important;
+}
+
+#PersonalToolbar {
+  background-color: var(--bg-wine) !important;
+  color: var(--text-gold-dim) !important;
+  border-top: 1px solid var(--border-crimson) !important;
+  font-size: 12px !important;
+}
+
+#PersonalToolbar .bookmark-item {
+  color: var(--text-gold-dim) !important;
+}
+
+#PersonalToolbar .bookmark-item:hover {
+  color: var(--text-ivory) !important;
+  background-color: var(--bg-terracotta-hover) !important;
+}
+
+/* Tabs Toolbar */
+#TabsToolbar {
+  background-color: var(--bg-wine) !important;
+}
+
+.tabbrowser-tab {
+  padding-inline: 2px !important;
+  font-size: 13px !important;
+}
+
+.tab-background {
+  border-radius: 8px 8px 0 0 !important;
+  margin-block: 4px 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Inactive Tab */
+.tabbrowser-tab:not([selected="true"]) .tab-background {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.tabbrowser-tab:not([selected="true"]):hover .tab-background {
+  background-color: var(--bg-terracotta-hover) !important;
+  border: 1px solid var(--border-crimson) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]) .tab-label {
+  color: var(--text-gold-dim) !important;
+}
+
+.tabbrowser-tab:not([selected="true"]):hover .tab-label {
+  color: var(--text-ivory) !important;
+}
+
+/* Active Tab */
+.tabbrowser-tab[selected="true"] .tab-background {
+  background: linear-gradient(180deg, #c45a3c 0%, #9c3c22 100%) !important;
+  border: 1px solid var(--accent-gold) !important;
+  box-shadow: 0 2px 10px rgba(196, 90, 60, 0.4) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-label {
+  color: var(--text-ivory) !important;
+  font-weight: 700 !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button {
+  fill: var(--text-ivory) !important;
+  color: var(--text-ivory) !important;
+}
+
+.tabbrowser-tab[selected="true"] .tab-close-button:hover {
+  background-color: rgba(26, 4, 4, 0.4) !important;
+}
+
+/* URL Bar */
+#urlbar {
+  font-size: 13px !important;
+}
+
+#urlbar-background {
+  background-color: var(--bg-wine) !important;
+  border: 1px solid var(--border-crimson) !important;
+  border-radius: 8px !important;
+  transition: all 0.25s ease !important;
+}
+
+#urlbar[focused="true"] > #urlbar-background {
+  border: 1px solid var(--accent-gold) !important;
+  box-shadow: var(--gold-glow) !important;
+  background-color: var(--bg-wine) !important;
+}
+
+#urlbar-input {
+  color: var(--text-ivory) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+}
+
+/* URL Bar Dropdown */
+#urlbar-results {
+  background-color: var(--bg-terracotta-surface) !important;
+  color: var(--text-ivory) !important;
+  border-top: 1px solid var(--border-crimson) !important;
+}
+
+.urlbarView-row[selected] {
+  background-color: rgba(212, 168, 71, 0.2) !important;
+  color: var(--accent-gold) !important;
+}
+
+.urlbarView-row:hover:not([selected]) {
+  background-color: var(--bg-terracotta-hover) !important;
+}
+
+/* Buttons and Controls */
+toolbarbutton {
+  border-radius: 6px !important;
+}
+
+#nav-bar toolbarbutton:hover {
+  background-color: var(--bg-terracotta-hover) !important;
+}
+
+/* Sidebar & Findbar */
+#sidebar-box {
+  background-color: var(--bg-wine) !important;
+  border-right: 1px solid var(--border-crimson) !important;
+}
+
+#sidebar-header {
+  background-color: var(--bg-terracotta) !important;
+  color: var(--accent-gold) !important;
+  border-bottom: 1px solid var(--accent-gold) !important;
+}
+
+findbar {
+  background-color: var(--bg-terracotta) !important;
+  border-top: 1px solid var(--border-crimson) !important;
+  color: var(--text-ivory) !important;
+}
+
+/* Popups and Panels */
+menupopup, panel {
+  --panel-background: var(--bg-terracotta-surface) !important;
+  --panel-color: var(--text-ivory) !important;
+  --panel-border-color: var(--accent-gold) !important;
+  font-family: "JetBrainsMono Nerd Font", monospace !important;
+  border-radius: 8px !important;
+}
+
+menuitem:hover, menu:hover {
+  background-color: var(--bg-terracotta-hover) !important;
+  color: var(--accent-gold) !important;
+}
