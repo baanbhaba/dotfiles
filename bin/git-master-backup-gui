@@ -1,0 +1,761 @@
+#!/usr/bin/env python3
+"""
+Git Master Backup - GUI Dashboard
+Universal, multi-drive Git repository synchronization dashboard for Hyprland / Wayland.
+"""
+
+import sys
+import os
+import glob
+import json
+import subprocess
+from datetime import datetime
+from pathlib import Path
+
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QFileDialog, QScrollArea, QGridLayout,
+    QFrame, QMessageBox, QDialog, QLineEdit, QCheckBox, QRadioButton,
+    QButtonGroup, QTextEdit, QListWidget, QListWidgetItem, QProgressBar,
+    QSizePolicy, QSplitter
+)
+from PyQt5.QtGui import QFont, QColor, QCursor, QTextCursor
+from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURATION & CONSTANTS
+# ─────────────────────────────────────────────────────────────────────────────
+CONFIG_DIR = Path.home() / ".config" / "git-master-backup"
+CONFIG_FILE = CONFIG_DIR / "config.json"
+
+DEFAULT_EXCLUDES = [
+    "*/.cache/*",
+    "*/.local/share/*",
+    "*/.gemini/*",
+    "*/.cargo/*",
+    "*/.rustup/*",
+    "*/.npm/*",
+    "*/.mozilla/*",
+    "*/node_modules/*",
+    "*/.electron/*",
+    "*/.Trash*/*",
+]
+
+def detect_mounted_drives():
+    """Detects mounted USB and external storage devices for the current user."""
+    user = os.environ.get("USER", os.getlogin() if hasattr(os, "getlogin") else "user")
+    detected = []
+    search_paths = [
+        f"/run/media/{user}/*",
+        f"/media/{user}/*",
+        "/mnt/*"
+    ]
+    for pattern in search_paths:
+        for p in glob.glob(pattern):
+            if os.path.isdir(p) and os.access(p, os.R_OK):
+                resolved = str(Path(p).resolve())
+                if resolved not in detected and resolved != "/":
+                    detected.append(resolved)
+    return detected
+
+def load_config():
+    """Loads or initializes user configuration."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    home_dir = str(Path.home())
+    
+    config = {
+        "scan_directories": [home_dir],
+        "exclude_patterns": DEFAULT_EXCLUDES,
+        "protocol": "both",  # "both", "ssh", "https"
+        "dry_run": False,
+        "auto_detect_drives": True,
+        "commit_prefix": "Auto-backup"
+    }
+
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                config.update(saved)
+        except Exception:
+            pass
+
+    # Auto-add mounted drives if enabled and not already listed
+    if config.get("auto_detect_drives", True):
+        for drive in detect_mounted_drives():
+            if drive not in config["scan_directories"]:
+                config["scan_directories"].append(drive)
+
+    return config
+
+def save_config(cfg):
+    """Saves user configuration to disk."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=4)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BACKUP WORKER THREAD
+# ─────────────────────────────────────────────────────────────────────────────
+class BackupWorker(QThread):
+    log_signal = pyqtSignal(str, str)     # text, level ("info", "success", "warn", "error", "title")
+    progress_signal = pyqtSignal(int, int) # current, total
+    finished_signal = pyqtSignal(dict)    # summary dict
+
+    def __init__(self, directories, excludes, protocol, dry_run, commit_prefix):
+        super().__init__()
+        self.directories = directories
+        self.excludes = excludes
+        self.protocol = protocol
+        self.dry_run = dry_run
+        self.commit_prefix = commit_prefix
+        self.is_aborted = False
+
+    def abort(self):
+        self.is_aborted = True
+
+    def run(self):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.log_signal.emit(f"🚀 Starting Git Master Backup at {timestamp}", "title")
+        self.log_signal.emit(f"🌐 Protocol Mode: {self.protocol.upper()}", "info")
+        if self.dry_run:
+            self.log_signal.emit("🔍 DRY-RUN MODE: Scanning and checking changes without pushing.", "warn")
+
+        # 1. Discover all .git directories
+        git_dirs = []
+        for sdir in self.directories:
+            if not os.path.isdir(sdir):
+                continue
+            self.log_signal.emit(f"📂 Scanning directory: {sdir}", "info")
+
+            cmd = ["find", sdir]
+            for excl in self.excludes:
+                cmd.extend(["-not", "-path", excl])
+            cmd.extend(["-type", "d", "-name", ".git"])
+
+            try:
+                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                for line in res.stdout.strip().split("\n"):
+                    if line:
+                        git_dirs.append(line)
+            except Exception as e:
+                self.log_signal.emit(f"Failed to scan {sdir}: {e}", "error")
+
+        total_repos = len(git_dirs)
+        self.log_signal.emit(f"🔎 Discovered {total_repos} Git repositories.", "title")
+
+        summary = {
+            "pushed": [],
+            "up_to_date": [],
+            "skipped": [],
+            "failed": []
+        }
+
+        # 2. Process each repository
+        for idx, gdir in enumerate(git_dirs, start=1):
+            if self.is_aborted:
+                self.log_signal.emit("⏹ Backup stopped by user.", "warn")
+                break
+
+            self.progress_signal.emit(idx, total_repos)
+            repo_path = os.path.dirname(gdir)
+            repo_name = os.path.basename(repo_path)
+
+            self.log_signal.emit(f"\n[{idx}/{total_repos}] Checking {repo_name} ({repo_path})", "info")
+
+            # Validate git
+            chk = subprocess.run(["git", "-C", repo_path, "rev-parse", "--git-dir"],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if chk.returncode != 0:
+                self.log_signal.emit("   ✖ Invalid git directory.", "error")
+                summary["failed"].append((repo_path, "Invalid git directory"))
+                continue
+
+            # Remote URL
+            rem = subprocess.run(["git", "-C", repo_path, "remote", "get-url", "origin"],
+                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            remote_url = rem.stdout.strip()
+            if not remote_url:
+                self.log_signal.emit("   ⚠️ No remote 'origin' configured. Skipping.", "warn")
+                summary["skipped"].append((repo_path, "No remote origin"))
+                continue
+
+            # Protocol Filter
+            is_ssh = remote_url.startswith("git@")
+            is_https = remote_url.startswith("https://")
+            if self.protocol == "ssh" and not is_ssh:
+                self.log_signal.emit(f"   ⚠️ Skipping non-SSH remote: {remote_url}", "warn")
+                summary["skipped"].append((repo_path, "Non-SSH remote skipped"))
+                continue
+            elif self.protocol == "https" and not is_https:
+                self.log_signal.emit(f"   ⚠️ Skipping non-HTTPS remote: {remote_url}", "warn")
+                summary["skipped"].append((repo_path, "Non-HTTPS remote skipped"))
+                continue
+
+            # Branch
+            br = subprocess.run(["git", "-C", repo_path, "branch", "--show-current"],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            branch = br.stdout.strip()
+            if not branch:
+                br2 = subprocess.run(["git", "-C", repo_path, "rev-parse", "--abbrev-ref", "HEAD"],
+                                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                branch = br2.stdout.strip() or "HEAD"
+
+            self.log_signal.emit(f"   🌿 Branch: {branch} | 🌐 Remote: {remote_url}", "info")
+
+            # Check status changes
+            st = subprocess.run(["git", "-C", repo_path, "status", "--porcelain"],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            changes = st.stdout.strip()
+            had_changes = bool(changes)
+
+            if had_changes:
+                lines = changes.split("\n")
+                self.log_signal.emit(f"   📝 Detected {len(lines)} uncommitted file changes.", "warn")
+                if not self.dry_run:
+                    subprocess.run(["git", "-C", repo_path, "add", "-A"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    subprocess.run(["git", "-C", repo_path, "commit", "-m", f"{self.commit_prefix}: {timestamp}"],
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    self.log_signal.emit("   ✓ Committed local modifications.", "info")
+
+            # Check if ahead of remote
+            ahead_run = subprocess.run(["git", "-C", repo_path, "rev-list", "--count", "@{u}..HEAD"],
+                                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            ahead_count = ahead_run.stdout.strip()
+            is_ahead = (ahead_count != "0") if ahead_count.isdigit() else had_changes
+
+            if is_ahead or had_changes:
+                if self.dry_run:
+                    self.log_signal.emit("   🔍 [DRY-RUN] Would push changes to remote.", "warn")
+                    summary["pushed"].append((repo_path, f"{branch} (dry-run)"))
+                else:
+                    self.log_signal.emit(f"   📤 Pushing branch '{branch}' to origin...", "info")
+                    push_res = subprocess.run(["git", "-C", repo_path, "push", "origin", branch],
+                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    if push_res.returncode == 0:
+                        self.log_signal.emit("   ✓ Push completed successfully!", "success")
+                        summary["pushed"].append((repo_path, branch))
+                    else:
+                        # Try with upstream
+                        push_up = subprocess.run(["git", "-C", repo_path, "push", "--set-upstream", "origin", branch],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                        if push_up.returncode == 0:
+                            self.log_signal.emit("   ✓ Push with upstream completed!", "success")
+                            summary["pushed"].append((repo_path, branch))
+                        else:
+                            err_msg = push_up.stdout.strip().split("\n")[-1] if push_up.stdout else "Push failed"
+                            self.log_signal.emit(f"   ✖ Push failed: {err_msg}", "error")
+                            summary["failed"].append((repo_path, err_msg))
+            else:
+                self.log_signal.emit("   💤 Clean & already up to date with remote.", "success")
+                summary["up_to_date"].append((repo_path, branch))
+
+        self.finished_signal.emit(summary)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN GUI WINDOW
+# ─────────────────────────────────────────────────────────────────────────────
+class GitMasterBackupGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.config = load_config()
+        self.worker = None
+
+        self.setWindowTitle("Git Master Backup")
+        self.resize(1000, 700)
+        self.setMinimumSize(850, 580)
+        self.init_ui()
+        self.apply_theme()
+
+    def init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        main_layout = QVBoxLayout(central)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(14)
+
+        # ── HEADER ──
+        header_card = QFrame()
+        header_card.setObjectName("headerCard")
+        h_layout = QHBoxLayout(header_card)
+        h_layout.setContentsMargins(18, 14, 18, 14)
+
+        icon_title = QVBoxLayout()
+        title = QLabel("🚀 GIT MASTER BACKUP")
+        title.setObjectName("appTitle")
+        subtitle = QLabel("Universal Git Repository Auto-Sync & Multi-Drive Backup Suite")
+        subtitle.setObjectName("appSubtitle")
+        icon_title.addWidget(title)
+        icon_title.addWidget(subtitle)
+        h_layout.addLayout(icon_title)
+
+        h_layout.addStretch()
+
+        self.btn_refresh_drives = QPushButton("🔄 Refresh Drives")
+        self.btn_refresh_drives.clicked.connect(self.refresh_drives)
+        h_layout.addWidget(self.btn_refresh_drives)
+
+        main_layout.addWidget(header_card)
+
+        # ── SPLITTER (Left: Sources & Settings, Right: Console & Summary) ──
+        splitter = QSplitter(Qt.Horizontal)
+
+        # ─ LEFT PANEL: Watched Sources & Controls ─
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 10, 0)
+        left_layout.setSpacing(12)
+
+        # Watched Drives/Folders Card
+        sources_card = QFrame()
+        sources_card.setObjectName("card")
+        sc_layout = QVBoxLayout(sources_card)
+        sc_layout.setContentsMargins(14, 14, 14, 14)
+        sc_layout.setSpacing(10)
+
+        sc_header = QHBoxLayout()
+        sc_title = QLabel("📁 Watched Drives & Folders")
+        sc_title.setObjectName("sectionTitle")
+        sc_header.addWidget(sc_title)
+        sc_header.addStretch()
+        sc_layout.addLayout(sc_header)
+
+        self.list_dirs = QListWidget()
+        self.list_dirs.setObjectName("dirList")
+        sc_layout.addWidget(self.list_dirs)
+
+        # Buttons below list
+        btn_row1 = QHBoxLayout()
+        self.btn_add_folder = QPushButton("➕ Add Folder")
+        self.btn_add_folder.clicked.connect(self.add_folder)
+        self.btn_add_drive = QPushButton("💾 Add Drive")
+        self.btn_add_drive.clicked.connect(self.add_drive)
+        self.btn_remove = QPushButton("🗑 Remove")
+        self.btn_remove.clicked.connect(self.remove_selected)
+        btn_row1.addWidget(self.btn_add_folder)
+        btn_row1.addWidget(self.btn_add_drive)
+        btn_row1.addWidget(self.btn_remove)
+        sc_layout.addLayout(btn_row1)
+
+        left_layout.addWidget(sources_card)
+
+        # Options Card
+        opts_card = QFrame()
+        opts_card.setObjectName("card")
+        oc_layout = QVBoxLayout(opts_card)
+        oc_layout.setContentsMargins(14, 14, 14, 14)
+        oc_layout.setSpacing(8)
+
+        oc_title = QLabel("⚙ Backup Configuration")
+        oc_title.setObjectName("sectionTitle")
+        oc_layout.addWidget(oc_title)
+
+        # Protocol
+        proto_layout = QHBoxLayout()
+        proto_lbl = QLabel("Protocol:")
+        proto_lbl.setObjectName("fieldLabel")
+        self.rb_both = QRadioButton("Both (SSH + HTTPS)")
+        self.rb_ssh = QRadioButton("SSH Only")
+        self.rb_https = QRadioButton("HTTPS Only")
+        self.proto_group = QButtonGroup()
+        self.proto_group.addButton(self.rb_both)
+        self.proto_group.addButton(self.rb_ssh)
+        self.proto_group.addButton(self.rb_https)
+
+        curr_proto = self.config.get("protocol", "both")
+        if curr_proto == "ssh":
+            self.rb_ssh.setChecked(True)
+        elif curr_proto == "https":
+            self.rb_https.setChecked(True)
+        else:
+            self.rb_both.setChecked(True)
+
+        self.rb_both.toggled.connect(self.save_settings)
+        self.rb_ssh.toggled.connect(self.save_settings)
+        self.rb_https.toggled.connect(self.save_settings)
+
+        proto_layout.addWidget(proto_lbl)
+        proto_layout.addWidget(self.rb_both)
+        proto_layout.addWidget(self.rb_ssh)
+        proto_layout.addWidget(self.rb_https)
+        proto_layout.addStretch()
+        oc_layout.addLayout(proto_layout)
+
+        # Dry run checkbox
+        self.chk_dry_run = QCheckBox("Dry-Run Mode (Scan and preview without making changes)")
+        self.chk_dry_run.setChecked(self.config.get("dry_run", False))
+        self.chk_dry_run.toggled.connect(self.save_settings)
+        oc_layout.addWidget(self.chk_dry_run)
+
+        # Auto-detect drives
+        self.chk_auto_detect = QCheckBox("Automatically include newly mounted USB drives")
+        self.chk_auto_detect.setChecked(self.config.get("auto_detect_drives", True))
+        self.chk_auto_detect.toggled.connect(self.save_settings)
+        oc_layout.addWidget(self.chk_auto_detect)
+
+        left_layout.addWidget(opts_card)
+
+        # Master Action Button
+        self.btn_run = QPushButton("🚀 Start Master Backup")
+        self.btn_run.setObjectName("primaryActionButton")
+        self.btn_run.setFixedHeight(46)
+        self.btn_run.clicked.connect(self.toggle_backup)
+        left_layout.addWidget(self.btn_run)
+
+        splitter.addWidget(left_widget)
+
+        # ─ RIGHT PANEL: Live Console & Metrics ─
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(10, 0, 0, 0)
+        right_layout.setSpacing(12)
+
+        # Summary Metric Cards
+        self.metrics_card = QFrame()
+        self.metrics_card.setObjectName("card")
+        m_layout = QGridLayout(self.metrics_card)
+        m_layout.setContentsMargins(12, 12, 12, 12)
+        m_layout.setSpacing(8)
+
+        self.lbl_pushed = QLabel("0 Pushed")
+        self.lbl_pushed.setObjectName("metricPushed")
+        self.lbl_uptodate = QLabel("0 Up to Date")
+        self.lbl_uptodate.setObjectName("metricUpToDate")
+        self.lbl_skipped = QLabel("0 Skipped")
+        self.lbl_skipped.setObjectName("metricSkipped")
+        self.lbl_failed = QLabel("0 Failed")
+        self.lbl_failed.setObjectName("metricFailed")
+
+        m_layout.addWidget(self.lbl_pushed, 0, 0)
+        m_layout.addWidget(self.lbl_uptodate, 0, 1)
+        m_layout.addWidget(self.lbl_skipped, 0, 2)
+        m_layout.addWidget(self.lbl_failed, 0, 3)
+        right_layout.addWidget(self.metrics_card)
+
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setObjectName("progressBar")
+        self.progress_bar.setFixedHeight(12)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(False)
+        right_layout.addWidget(self.progress_bar)
+
+        # Console Log
+        self.console = QTextEdit()
+        self.console.setObjectName("consoleOutput")
+        self.console.setReadOnly(True)
+        right_layout.addWidget(self.console)
+
+        splitter.addWidget(right_widget)
+        splitter.setSizes([420, 580])
+        main_layout.addWidget(splitter)
+
+        self.populate_dir_list()
+
+    def populate_dir_list(self):
+        self.list_dirs.clear()
+        home = str(Path.home())
+        for path in self.config.get("scan_directories", []):
+            item = QListWidgetItem()
+            if path == home:
+                label = f"🏠 Home ({path})"
+            elif "/run/media/" in path or "/media/" in path or "/mnt/" in path:
+                label = f"💾 External Drive ({path})"
+            else:
+                label = f"📁 {path}"
+            item.setText(label)
+            item.setData(Qt.UserRole, path)
+            item.setCheckState(Qt.Checked)
+            self.list_dirs.addItem(item)
+
+    def refresh_drives(self):
+        drives = detect_mounted_drives()
+        added_count = 0
+        existing = self.config.get("scan_directories", [])
+        for d in drives:
+            if d not in existing:
+                existing.append(d)
+                added_count += 1
+        self.config["scan_directories"] = existing
+        save_config(self.config)
+        self.populate_dir_list()
+        self.log_to_console(f"Refreshed external drives. Found {len(drives)} mounted devices (+{added_count} new).", "info")
+
+    def add_folder(self):
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder to Watch for Git Repositories", str(Path.home()))
+        if folder:
+            existing = self.config.get("scan_directories", [])
+            if folder not in existing:
+                existing.append(folder)
+                self.config["scan_directories"] = existing
+                save_config(self.config)
+                self.populate_dir_list()
+                self.log_to_console(f"Added watched directory: {folder}", "success")
+
+    def add_drive(self):
+        drives = detect_mounted_drives()
+        if not drives:
+            drive = QFileDialog.getExistingDirectory(self, "Select Mounted Drive / Partition", "/run/media")
+            if drive:
+                drives = [drive]
+
+        existing = self.config.get("scan_directories", [])
+        added = 0
+        for d in drives:
+            if d not in existing:
+                existing.append(d)
+                added += 1
+
+        self.config["scan_directories"] = existing
+        save_config(self.config)
+        self.populate_dir_list()
+        self.log_to_console(f"Synchronized mounted drives (+{added} added).", "success")
+
+    def remove_selected(self):
+        row = self.list_dirs.currentRow()
+        if row >= 0:
+            item = self.list_dirs.item(row)
+            path = item.data(Qt.UserRole)
+            existing = self.config.get("scan_directories", [])
+            if path in existing:
+                existing.remove(path)
+                self.config["scan_directories"] = existing
+                save_config(self.config)
+                self.populate_dir_list()
+                self.log_to_console(f"Removed watched directory: {path}", "warn")
+
+    def save_settings(self):
+        if self.rb_ssh.isChecked():
+            self.config["protocol"] = "ssh"
+        elif self.rb_https.isChecked():
+            self.config["protocol"] = "https"
+        else:
+            self.config["protocol"] = "both"
+
+        self.config["dry_run"] = self.chk_dry_run.isChecked()
+        self.config["auto_detect_drives"] = self.chk_auto_detect.isChecked()
+        save_config(self.config)
+
+    def log_to_console(self, text, level="info"):
+        colors = {
+            "title": "#00E5FF",
+            "info": "#CAD3F5",
+            "success": "#50FA7B",
+            "warn": "#F1FA8C",
+            "error": "#FF5555"
+        }
+        color = colors.get(level, "#CAD3F5")
+        time_str = datetime.now().strftime("%H:%M:%S")
+        html = f"<span style='color: #6272A4;'>[{time_str}]</span> <span style='color: {color};'>{text}</span>"
+        self.console.append(html)
+        self.console.moveCursor(QTextCursor.End)
+
+    def toggle_backup(self):
+        if self.worker and self.worker.isRunning():
+            self.worker.abort()
+            self.btn_run.setText("🚀 Start Master Backup")
+            self.btn_run.setEnabled(False)
+            return
+
+        # Gather checked directories
+        active_dirs = []
+        for i in range(self.list_dirs.count()):
+            item = self.list_dirs.item(i)
+            if item.checkState() == Qt.Checked:
+                active_dirs.append(item.data(Qt.UserRole))
+
+        if not active_dirs:
+            QMessageBox.warning(self, "No Directories Selected", "Please select at least one watched folder or drive.")
+            return
+
+        self.console.clear()
+        self.progress_bar.setValue(0)
+        self.btn_run.setText("⏹ Stop Backup")
+        self.btn_run.setStyleSheet("background-color: #FF5555; color: #FFFFFF;")
+
+        protocol = "both"
+        if self.rb_ssh.isChecked():
+            protocol = "ssh"
+        elif self.rb_https.isChecked():
+            protocol = "https"
+
+        self.worker = BackupWorker(
+            directories=active_dirs,
+            excludes=self.config.get("exclude_patterns", DEFAULT_EXCLUDES),
+            protocol=protocol,
+            dry_run=self.chk_dry_run.isChecked(),
+            commit_prefix=self.config.get("commit_prefix", "Auto-backup")
+        )
+        self.worker.log_signal.connect(self.log_to_console)
+        self.worker.progress_signal.connect(self.update_progress)
+        self.worker.finished_signal.connect(self.on_backup_finished)
+        self.worker.start()
+
+    def update_progress(self, current, total):
+        if total > 0:
+            pct = int((current / total) * 100)
+            self.progress_bar.setValue(pct)
+
+    def on_backup_finished(self, summary):
+        self.progress_bar.setValue(100)
+        self.btn_run.setText("🚀 Start Master Backup")
+        self.btn_run.setStyleSheet("")
+        self.btn_run.setEnabled(True)
+
+        pushed_len = len(summary["pushed"])
+        uptodate_len = len(summary["up_to_date"])
+        skipped_len = len(summary["skipped"])
+        failed_len = len(summary["failed"])
+
+        self.lbl_pushed.setText(f"🚀 {pushed_len} Pushed")
+        self.lbl_uptodate.setText(f"💤 {uptodate_len} Up to Date")
+        self.lbl_skipped.setText(f"⚠️ {skipped_len} Skipped")
+        self.lbl_failed.setText(f"❌ {failed_len} Failed")
+
+        self.log_to_console(
+            f"\n📊 Summary: {pushed_len} pushed, {uptodate_len} up to date, {skipped_len} skipped, {failed_len} failed.",
+            "title"
+        )
+
+    def apply_theme(self):
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #12141A;
+            }
+            #headerCard {
+                background-color: #1A1D24;
+                border: 2px solid #262B36;
+                border-radius: 12px;
+            }
+            #appTitle {
+                font-family: 'Space Grotesk', 'Nunito', 'Hack', sans-serif;
+                font-size: 20px;
+                font-weight: bold;
+                color: #00E5FF;
+            }
+            #appSubtitle {
+                font-size: 12px;
+                color: #8A92A6;
+            }
+            #card {
+                background-color: #1A1D24;
+                border: 2px solid #262B36;
+                border-radius: 10px;
+            }
+            #sectionTitle {
+                font-size: 14px;
+                font-weight: bold;
+                color: #FFFFFF;
+            }
+            #fieldLabel {
+                font-size: 13px;
+                color: #CAD3F5;
+            }
+            #dirList {
+                background-color: #12141A;
+                border: 1px solid #262B36;
+                border-radius: 8px;
+                color: #CAD3F5;
+                font-size: 13px;
+                padding: 6px;
+            }
+            #dirList::item {
+                padding: 6px;
+                border-radius: 4px;
+            }
+            #dirList::item:selected {
+                background-color: #262B36;
+                color: #00E5FF;
+            }
+            #consoleOutput {
+                background-color: #0E1015;
+                border: 1px solid #262B36;
+                border-radius: 8px;
+                font-family: 'JetBrainsMono Nerd Font', 'Hack', 'Courier New', monospace;
+                font-size: 12px;
+                padding: 10px;
+            }
+            #progressBar {
+                border: 1px solid #262B36;
+                border-radius: 6px;
+                background-color: #0E1015;
+            }
+            #progressBar::chunk {
+                background-color: #00E5FF;
+                border-radius: 5px;
+            }
+            QPushButton {
+                background-color: #262B36;
+                border: 1px solid #363D4D;
+                color: #CAD3F5;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #363D4D;
+                color: #FFFFFF;
+            }
+            #primaryActionButton {
+                background-color: #00E5FF;
+                border: none;
+                color: #0A0D12;
+                font-size: 15px;
+                font-weight: bold;
+                border-radius: 8px;
+            }
+            #primaryActionButton:hover {
+                background-color: #33EBFF;
+            }
+            QCheckBox, QRadioButton {
+                color: #CAD3F5;
+                font-size: 12px;
+                spacing: 8px;
+            }
+            #metricPushed {
+                background-color: #122820;
+                color: #50FA7B;
+                border: 1px solid #1E5038;
+                border-radius: 6px;
+                padding: 8px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+            }
+            #metricUpToDate {
+                background-color: #122430;
+                color: #00E5FF;
+                border: 1px solid #1A465C;
+                border-radius: 6px;
+                padding: 8px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+            }
+            #metricSkipped {
+                background-color: #2D2A18;
+                color: #F1FA8C;
+                border: 1px solid #5A5424;
+                border-radius: 6px;
+                padding: 8px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+            }
+            #metricFailed {
+                background-color: #2D1818;
+                color: #FF5555;
+                border: 1px solid #5A2424;
+                border-radius: 6px;
+                padding: 8px;
+                font-weight: bold;
+                qproperty-alignment: AlignCenter;
+            }
+        """)
+
+def main():
+    app = QApplication(sys.argv)
+    window = GitMasterBackupGUI()
+    window.show()
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()

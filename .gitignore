@@ -9,3 +9,5 @@
 *.log
 .Trash*
 *.pid
+__pycache__/
+*.pyc

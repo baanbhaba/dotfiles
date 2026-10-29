@@ -272,6 +272,13 @@ if [ -d "$DOTFILES_DIR/hypr/scripts" ]; then
     chmod +x "$DOTFILES_DIR/hypr/scripts/"* 2>/dev/null || true
 fi
 
+# Deploy desktop shortcuts
+if [ -d "$DOTFILES_DIR/applications" ]; then
+    mkdir -p "$HOME/.local/share/applications"
+    cp -f "$DOTFILES_DIR/applications/"*.desktop "$HOME/.local/share/applications/" 2>/dev/null || true
+    success "Deployed desktop application launchers."
+fi
+
 # --- Hardware Permissions & Services ---
 step "Configuring User Groups & Services..."
 

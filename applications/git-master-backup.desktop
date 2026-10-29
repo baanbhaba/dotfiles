@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Git Master Backup
+GenericName=Multi-Drive Git Backup Suite
+Comment=Universal multi-drive Git repository auto-sync and backup dashboard
+Exec=git-master-backup-gui
+Icon=git
+Categories=Development;Utility;Archiving;
+Keywords=git;backup;sync;github;repository;drive;
+Terminal=false
+StartupNotify=true
+StartupWMClass=git-master-backup-gui

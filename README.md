@@ -60,6 +60,26 @@ An integrated terminal audio workstation built directly into the rice:
 
 ---
 
+## 💾 Git Master Backup Suite (Universal CLI & GUI)
+
+A universal repository discovery and multi-drive auto-backup utility designed to run on any computer for any user:
+
+- **Universal Multi-Drive Watcher**: Automatically detects external USB drives (`/run/media/$USER/*`, `/media/$USER/*`, `/mnt/*`), user directories, and custom folders.
+- **PyQt5 GUI Dashboard (`git-master-backup-gui` or `backup-gui`)**:
+  - Interactive watchlist: Checkbox tree to toggle drives and folders on the fly.
+  - One-click native folder/drive chooser (`+ Add Folder`, `+ Add Drive`).
+  - Real-time animated progress bar and live syntax-highlighted terminal log.
+  - Multi-threaded execution (`QThread`) prevents UI freezing during network pushes.
+  - Live metric tiles: Repositories pushed, up-to-date, skipped, and failed.
+  - Available directly from the application launcher (Rofi) as **Git Master Backup**.
+- **Interactive Terminal Suite (`git-master-backup` or `backup`)**:
+  - Interactive TUI menu with folder management, protocol switcher (SSH / HTTPS / Both), and dry-run preview mode.
+  - Non-interactive automation flag (`-y` / `--non-interactive`) for crontabs and hooks.
+  - Direct dry-run check (`-n` / `--dry-run`).
+  - Persistent user configuration in `~/.config/git-master-backup/config.json`.
+
+---
+
 ## ⌨️ Keybindings Cheat Sheet
 
 ### Core & Application Launchers
