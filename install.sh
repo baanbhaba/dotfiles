@@ -85,6 +85,7 @@ step "Installing Core Desktop Ecosystem & Dependencies..."
 case "$DISTRO_ID" in
     fedora)
         info "Configuring & installing packages via DNF..."
+        sudo dnf copr enable -y erikreider/swayosd 2>/dev/null || true
         FEDORA_PKGS=(
             hyprland hyprlock hypridle hyprpaper
             waybar rofi-wayland kitty mako cava btop fastfetch
